@@ -86,6 +86,13 @@ td select.manual { border-color: var(--warn); color: var(--warn) }
 .empty { padding: 28px; text-align: center; color: var(--muted) }
 .note { color: var(--muted); font-size: 12.5px; max-width: 80ch }
 .status { font-size: 13px; color: var(--muted) }
+.bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-height: 46px; padding: 6px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px }
+#bulkInfo.strong { color: var(--accent); font-weight: 600; font-size: 14px }
+.bulkCtl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px }
+.bulkCtl select { border: 1px solid var(--line); border-radius: 6px; background: var(--bg); padding: 6px 8px }
+th.ck, td.ck { width: 34px; padding-right: 0; cursor: default }
+.ck input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; margin: 2px 0 0 }
+tr.sel, tr.isbad.sel { background: var(--accent-soft) }
 .hbtns { display: flex; gap: 8px; flex-wrap: wrap }
 .dropText { flex: 1 1 220px; min-width: 0 }
 .btn.danger { color: var(--bad) }
@@ -179,9 +186,18 @@ td select.manual { border-color: var(--warn); color: var(--warn) }
       <div class="seg" id="typeSeg"><button type="button" data-t="" class="on">Any type</button><button type="button" data-t="normal">Standard</button><button type="button" data-t="split">Split</button><button type="button" data-t="fourDay">4 Day</button><button type="button" data-t="straight">Straight</button></div>
       <input type="search" id="q" placeholder="Search duty number…">
     </div>
+    <div class="bulk" id="bulk">
+      <span id="bulkInfo" class="note">Tick duties in the table to change their type together. Shift-click selects a range.</span>
+      <span class="bulkCtl" id="bulkCtl" hidden>
+        <label for="bulkType">Set type to</label>
+        <select id="bulkType"><option value="normal">Standard</option><option value="split">Split</option><option value="fourDay">4 Day</option><option value="straight">Straight</option><option value="auto">Auto (detect again)</option></select>
+        <button type="button" class="btn primary" id="bulkApply">Apply to selected</button>
+        <button type="button" class="btn" id="bulkClear">Clear selection</button>
+      </span>
+    </div>
     <div class="tablebox"><table>
       <thead><tr>
-        <th data-k="duty">Duty</th><th data-k="type">Type</th><th data-k="compass">Compass</th><th data-k="maxRelief">Relief</th><th data-k="maxOnBus">Max on bus</th><th>Pieces <span style="text-transform:none;letter-spacing:0">(on bus · <i style="font-style:normal">relief</i>)</span></th><th data-k="pay">Pay</th><th data-k="nIssues">Result</th>
+        <th class="ck"><input type="checkbox" id="ckAll" aria-label="Select all shown duties"></th><th data-k="duty">Duty</th><th data-k="type">Type</th><th data-k="compass">Compass</th><th data-k="maxRelief">Relief</th><th data-k="maxOnBus">Max on bus</th><th>Pieces <span style="text-transform:none;letter-spacing:0">(on bus · <i style="font-style:normal">relief</i>)</span></th><th data-k="pay">Pay</th><th data-k="nIssues">Result</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table></div>
@@ -298,7 +314,7 @@ function saveJobs() {
   try { localStorage.setItem('dutyJobs', JSON.stringify(jobs)); localStorage.setItem('dutyActiveJob', jobId || ''); return true; }
   catch (e) { const st = $('status'); st.textContent = 'This browser has run out of space to save jobs. Delete an older job and upload again.'; st.classList.add('err'); return false; }
 }
-function selectJob(id) { const j = jobs.find(j => j.id === id) || jobs[0]; jobId = j ? j.id : null; files = j ? j.files : []; active = 0; try { localStorage.setItem('dutyActiveJob', jobId || ''); } catch (e) {} }
+function selectJob(id) { if (window.selected) clearSel(); const j = jobs.find(j => j.id === id) || jobs[0]; jobId = j ? j.id : null; files = j ? j.files : []; active = 0; try { localStorage.setItem('dutyActiveJob', jobId || ''); } catch (e) {} }
 const stamp = d => d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 const $ = id => document.getElementById(id);
 const parseHM = s => { const m = String(s).trim().match(/^(\d{1,2}):(\d{2})$/); return m ? (+m[1]) * 60 + (+m[2]) : null; };
@@ -335,7 +351,7 @@ function renderFiles(all) {
       <span class="nums"><span><b>${ev.length}</b><span>duties</span></span><span class="${bad ? 'bad' : 'good'}"><b>${bad}</b><span>with errors</span></span></span>
       <span class="types">${Object.entries(t).map(([k, v]) => TYPE_LABEL[k] + ' ' + v).join(' · ')}</span>
       ${f.incomplete && f.incomplete.length ? `<span class="types" style="color:var(--warn)">Not read: ${f.incomplete.map(esc).join(', ')}</span>` : ''}</button>`; }).join('');
-  document.querySelectorAll('.fcard').forEach(b => b.onclick = () => { active = +b.dataset.i; render(); });
+  document.querySelectorAll('.fcard').forEach(b => b.onclick = () => { active = +b.dataset.i; clearSel(); render(); });
 }
 
 function cellTime(v, limitBad) { return `<span class="${limitBad ? 'over' : ''}">${fmt(v)}</span>`; }
@@ -368,7 +384,8 @@ function render() {
   $('tbody').innerHTML = rows.length ? rows.map(r => {
     const iss = r.issues.join(' ');
     const pieces = r.d.pieces.map((p, k) => (k && p.relief != null ? `<i>·${fmt(p.relief)}·</i> ` : (k ? '<i>·</i> ' : '')) + fmt(p.onBus)).join(' ');
-    return `<tr class="${r.nIssues ? 'isbad' : ''}">
+    return `<tr class="${r.nIssues ? 'isbad' : ''} ${selected.has(r.key) ? 'sel' : ''}">
+      <td class="ck"><input type="checkbox" class="rowck" data-key="${esc(r.key)}" ${selected.has(r.key) ? 'checked' : ''} aria-label="Select duty ${esc(r.d.duty)}"></td>
       <td class="mono"><b>${esc(r.d.duty)}</b></td>
       <td><select data-key="${esc(r.key)}" class="${r.manual ? 'manual' : ''}" aria-label="Duty type ${esc(r.d.duty)}">
         <option value="auto">Auto: ${TYPE_LABEL[checkDuty(r.d, r.sunday, rules, 'auto').type]}</option>
@@ -379,14 +396,41 @@ function render() {
       <td class="pieces">${pieces}</td>
       <td class="mono">${fmt(r.pay)}</td>
       <td>${r.nIssues ? `<ul class="issues">${r.issues.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : '<span class="pill ok">OK</span>'}</td></tr>`; }).join('')
-    : `<tr><td colspan="8" class="empty">${view === 'bad' ? 'No errors in this file with the current filters.' : 'No duties match these filters.'}</td></tr>`;
+    : `<tr><td colspan="9" class="empty">${view === 'bad' ? 'No errors in this file with the current filters.' : 'No duties match these filters.'}</td></tr>`;
   document.querySelectorAll('td select').forEach(s => s.onchange = () => { overrides[s.dataset.key] = s.value; if (s.value === 'auto') delete overrides[s.dataset.key];
     try { localStorage.setItem('dutyOverrides', JSON.stringify(overrides)); } catch (e) {} render(); });
+  shownKeys = rows.map(r => r.key);
+  [...selected].forEach(k => { if (!shownKeys.includes(k)) selected.delete(k); });
+  const cks = [...document.querySelectorAll('.rowck')];
+  cks.forEach((c, i) => c.onclick = e => {
+    if (e.shiftKey && lastCk != null) { const [a, b] = [Math.min(lastCk, i), Math.max(lastCk, i)]; for (let k = a; k <= b; k++) { cks[k].checked = c.checked; c.checked ? selected.add(cks[k].dataset.key) : selected.delete(cks[k].dataset.key); } }
+    else c.checked ? selected.add(c.dataset.key) : selected.delete(c.dataset.key);
+    lastCk = i; updateBulk(); });
+  updateBulk();
   const total = all.reduce((n, ev) => n + ev.filter(x => x.nIssues).length, 0);
   $('foot').textContent = `Showing ${rows.length} of ${all[active].length} duties in this file. Across all files: ${total} duties with errors.`;
 }
+var selected = new Set(), shownKeys = [], lastCk = null;
+function updateBulk(msg) {
+  const n = selected.size;
+  document.querySelectorAll('.rowck').forEach(c => c.closest('tr').classList.toggle('sel', c.checked));
+  $('bulkCtl').hidden = !n;
+  $('bulkInfo').textContent = msg || (n ? `${n} dut${n === 1 ? 'y' : 'ies'} selected` : 'Tick duties in the table to change their type together. Shift-click selects a range.');
+  $('bulkInfo').classList.toggle('strong', !!n && !msg);
+  const all = $('ckAll'); all.checked = n > 0 && n === shownKeys.length; all.indeterminate = n > 0 && n < shownKeys.length;
+}
+function clearSel() { selected.clear(); lastCk = null; }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
+$('ckAll').onchange = e => { clearSel(); if (e.target.checked) shownKeys.forEach(k => selected.add(k)); document.querySelectorAll('.rowck').forEach(c => c.checked = e.target.checked); updateBulk(); };
+$('bulkClear').onclick = () => { clearSel(); document.querySelectorAll('.rowck').forEach(c => c.checked = false); updateBulk(); };
+$('bulkApply').onclick = () => {
+  const t = $('bulkType').value, n = selected.size; if (!n) return;
+  selected.forEach(k => { if (t === 'auto') delete overrides[k]; else overrides[k] = t; });
+  try { localStorage.setItem('dutyOverrides', JSON.stringify(overrides)); } catch (e) {}
+  clearSel(); render();
+  updateBulk(`Changed ${n} dut${n === 1 ? 'y' : 'ies'} to ${t === 'auto' ? 'Auto' : TYPE_LABEL[t]}.` + (view === 'bad' ? ' Duties that now pass are hidden in Errors only.' : ''));
+};
 document.querySelectorAll('#viewSeg button').forEach(b => b.onclick = () => { view = b.dataset.v; document.querySelectorAll('#viewSeg button').forEach(x => x.classList.toggle('on', x === b)); render(); });
 document.querySelectorAll('#typeSeg button').forEach(b => b.onclick = () => { typeFilter = b.dataset.t; document.querySelectorAll('#typeSeg button').forEach(x => x.classList.toggle('on', x === b)); render(); });
 document.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => { const k = th.dataset.k; sortDir = sortKey === k ? -sortDir : 1; sortKey = k; render(); });
