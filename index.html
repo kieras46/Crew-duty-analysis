@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WB Crew Duty Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: depot-office worksheet — rules strip on top, per-file summary, then a dense sortable duty table. */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --line: #d9dfe6; --fg: #17202b; --muted: #5d6b7a;
+  --accent: #0d5aa7; --accent-soft: #e3eefa;
+  --bad: #b42318; --bad-soft: #fdecea; --ok: #1f7a4d; --ok-soft: #e6f4ec; --warn: #9a6200;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11161c; --surface: #19212a; --line: #2c3743; --fg: #e5ebf1; --muted: #95a3b2;
+  --accent: #6aaaf0; --accent-soft: #1b2e44; --bad: #ff8a7a; --bad-soft: #3a1d1a; --ok: #62c994; --ok-soft: #173225; --warn: #e2b04a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11161c; --surface: #19212a; --line: #2c3743; --fg: #e5ebf1; --muted: #95a3b2;
+  --accent: #6aaaf0; --accent-soft: #1b2e44; --bad: #ff8a7a; --bad-soft: #3a1d1a; --ok: #62c994; --ok-soft: #173225; --warn: #e2b04a; color-scheme: dark }
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+body { margin: 0 }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 14px; line-height: 1.45 }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px }
+h1 { font-size: 26px; margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+h1 span { color: var(--accent) }
+.sub { color: var(--muted); margin: 4px 0 0; max-width: 65ch }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; font-weight: 600 }
+.drop { border: 1.5px dashed var(--line); border-radius: 10px; background: var(--surface); padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; cursor: pointer }
+.drop.over { border-color: var(--accent); background: var(--accent-soft) }
+.drop b { font-weight: 600 }
+.drop small { color: var(--muted) }
+button, select, input { font: inherit; color: inherit }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; border-radius: 7px; cursor: pointer; font-weight: 500 }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface) }
+.btn:hover { border-color: var(--accent) }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+details.rules { background: var(--surface); border: 1px solid var(--line); border-radius: 10px }
+details.rules summary { padding: 12px 16px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap }
+details.rules summary small { color: var(--muted); font-weight: 400 }
+.rgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0; border-top: 1px solid var(--line) }
+.rcol { padding: 12px 16px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; gap: 8px; align-content: start }
+.rcol h3 { margin: 0; font-size: 13px }
+.rcol h3 em { font-style: normal; color: var(--muted); font-weight: 400 }
+.rrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted) }
+.rrow input[type=text] { width: 64px; font-family: var(--mono); text-align: right; padding: 3px 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg) }
+.rrow input.wide { width: 100%; text-align: left }
+.rfoot { padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; color: var(--muted) }
+.files { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px }
+.fcard { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; cursor: pointer; text-align: left }
+.fcard.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent) }
+.fcard .fname { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere }
+.fcard .day { font-weight: 600 }
+.fcard .nums { display: flex; gap: 14px; font-variant-numeric: tabular-nums; flex-wrap: wrap }
+.fcard .nums b { font-size: 20px; display: block; line-height: 1.1 }
+.fcard .nums span { color: var(--muted); font-size: 12px }
+.fcard .bad b { color: var(--bad) }
+.fcard .good b { color: var(--ok) }
+.fcard .types { font-size: 12px; color: var(--muted) }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center }
+.toolbar input[type=search] { padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); min-width: 0; flex: 1 1 180px }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; background: var(--surface) }
+.seg button { border: 0; background: none; padding: 7px 12px; cursor: pointer }
+.seg button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600 }
+.tablebox { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto }
+table { border-collapse: collapse; width: 100%; min-width: 860px; font-variant-numeric: tabular-nums }
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--surface); cursor: pointer; white-space: nowrap }
+td.mono, .mono { font-family: var(--mono); font-size: 13px }
+tr.isbad td:first-child { box-shadow: inset 3px 0 0 var(--bad) }
+tr.isbad { background: var(--bad-soft) }
+td .over { color: var(--bad); font-weight: 600 }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap }
+.pill.ok { background: var(--ok-soft); color: var(--ok) }
+.pill.bad { background: var(--bad); color: var(--surface) }
+.issues { margin: 0; padding: 0; list-style: none; color: var(--bad); font-size: 13px }
+td select { border: 1px solid var(--line); border-radius: 5px; background: var(--bg); padding: 2px 4px; font-size: 13px }
+td select.manual { border-color: var(--warn); color: var(--warn) }
+.pieces { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap }
+.pieces i { font-style: normal; color: var(--accent) }
+.empty { padding: 28px; text-align: center; color: var(--muted) }
+.note { color: var(--muted); font-size: 12.5px; max-width: 80ch }
+.status { font-size: 13px; color: var(--muted) }
+.hbtns { display: flex; gap: 8px; flex-wrap: wrap }
+.dropText { flex: 1 1 220px; min-width: 0 }
+.btn.danger { color: var(--bad) }
+.btn.danger.armed { background: var(--bad); color: var(--surface); border-color: var(--bad) }
+.jobs { display: flex; flex-wrap: wrap; gap: 8px }
+.job { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 12px; cursor: pointer; text-align: left; display: grid; gap: 2px; max-width: 100% }
+.job.active { border-color: var(--accent); background: var(--accent-soft) }
+.job b { font-weight: 600; overflow-wrap: anywhere }
+.job small { color: var(--muted); font-variant-numeric: tabular-nums }
+.job .e { color: var(--bad) } .job .g { color: var(--ok) }
+.jobHead { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px }
+.jobHead input { font-size: 18px; font-weight: 600; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; background: none; flex: 1 1 260px; min-width: 0 }
+.jobHead input:hover, .jobHead input:focus { border-color: var(--line); background: var(--surface) }
+.emptyBox { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 28px 20px; text-align: center; display: grid; gap: 8px; justify-items: center }
+.emptyBox h3 { margin: 0; font-size: 17px }
+.emptyBox p { margin: 0; color: var(--muted); max-width: 60ch }
+.status.err { color: var(--bad) }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>WB <span>Crew Duty</span> Check</h1>
+      <p class="sub">Upload a “WB CREW DUTY SUMMARY” PDF. The tool reads every duty and checks compass, relief and time on bus against the rules below. You can change a duty’s type by hand in the table.</p>
+    </div>
+    <div class="hbtns"><button class="btn" id="copyCsv" type="button">Copy errors (CSV)</button><button class="btn" id="dlCsv" type="button">Download errors (CSV)</button></div>
+  </header>
+
+  <div class="drop" id="drop">
+    <input type="file" id="fileIn" accept="application/pdf" multiple hidden>
+    <input type="file" id="fileAdd" accept="application/pdf" multiple hidden>
+    <button type="button" class="btn primary" id="newJobBtn">New job: choose PDFs</button>
+    <span class="dropText"><b>or drag PDF files here</b><br><small id="status" class="status">Each upload creates a new job. Jobs are saved in this browser, so you can come back to earlier analyses.</small></span>
+    <button type="button" class="btn" id="addBtn" hidden>Add PDFs to this job</button>
+  </div>
+
+  <details class="rules" id="rulesBox">
+    <summary>Rules <small>click to view or change (format h:mm)</small></summary>
+    <div class="rgrid">
+      <div class="rcol"><h3>Standard <em>Mon–Sat</em></h3>
+        <div class="rrow">Compass max <input type="text" id="r_normal_compassMax"></div>
+        <div class="rrow">Relief min <input type="text" id="r_normal_reliefMin"></div></div>
+      <div class="rcol"><h3>Split <em>Mon–Sat</em></h3>
+        <div class="rrow">Compass min <input type="text" id="r_split_compassMin"></div>
+        <div class="rrow">Compass max <input type="text" id="r_split_compassMax"></div>
+        <div class="rrow">Relief min <input type="text" id="r_split_reliefMin"></div></div>
+      <div class="rcol"><h3>4 Day <em>Mon–Sat</em></h3>
+        <div class="rrow">Compass min <input type="text" id="r_fourDay_compassMin"></div>
+        <div class="rrow">Relief min <input type="text" id="r_fourDay_reliefMin"></div></div>
+      <div class="rcol"><h3>Sunday <em>no splits</em></h3>
+        <div class="rrow">Compass max <input type="text" id="r_sunNormal_compassMax"></div>
+        <div class="rrow">Relief min <input type="text" id="r_sunNormal_reliefMin"></div>
+        <div class="rrow">4 Day compass min <input type="text" id="r_sunFourDay_compassMin"></div>
+        <div class="rrow">4 Day relief min <input type="text" id="r_sunFourDay_reliefMin"></div></div>
+      <div class="rcol"><h3>Time on bus</h3>
+        <div class="rrow">Straight through max <input type="text" id="r_straightOnBusMax"></div>
+        <div class="rrow">All others, max per piece <input type="text" id="r_onBusMax"></div>
+        <label class="rrow" style="justify-content:flex-start;gap:8px"><input type="checkbox" id="r_joinShortBreaks"> Join pieces when the break is shorter than relief min</label></div>
+      <div class="rcol"><h3>Identifying 4 Day</h3>
+        <div class="rrow" style="display:grid">Duty numbers (regex, comma-separated)<input type="text" class="wide" id="r_fourDayPattern"></div>
+        <p class="note" style="margin:0">A duty with no relief is straight through. Any other duty with compass over the standard max (Mon–Sat) is a split.</p></div>
+    </div>
+    <div class="rfoot"><span class="note">Relief is the longest break in the duty (with 3 pieces, the short break is just a bus changeover).</span><button class="btn" id="resetRules" type="button">Restore defaults</button></div>
+  </details>
+
+  <section id="jobsSec">
+    <h2>Jobs</h2>
+    <div class="jobs" id="jobs"></div>
+  </section>
+
+  <section id="emptySec" class="emptyBox">
+    <h3>No duties loaded yet</h3>
+    <p>Choose one or more “WB CREW DUTY SUMMARY” PDF files (for example Mon–Thu, Friday, Saturday and Sunday together). They are read in your browser and never uploaded anywhere.</p>
+    <button type="button" class="btn primary" id="emptyBtn">Choose PDFs</button>
+  </section>
+
+  <section id="jobSec" hidden>
+    <div class="jobHead">
+      <input type="text" id="jobName" aria-label="Job name">
+      <span class="note" id="jobMeta"></span>
+      <button type="button" class="btn danger" id="delJob">Delete job</button>
+    </div>
+    <div class="files" id="files"></div>
+  </section>
+
+  <section id="tableSec" style="display:grid;gap:10px" hidden>
+    <div class="toolbar">
+      <div class="seg" id="viewSeg"><button type="button" data-v="bad" class="on">Errors only</button><button type="button" data-v="all">All</button></div>
+      <div class="seg" id="typeSeg"><button type="button" data-t="" class="on">Any type</button><button type="button" data-t="normal">Standard</button><button type="button" data-t="split">Split</button><button type="button" data-t="fourDay">4 Day</button><button type="button" data-t="straight">Straight</button></div>
+      <input type="search" id="q" placeholder="Search duty number…">
+    </div>
+    <div class="tablebox"><table>
+      <thead><tr>
+        <th data-k="duty">Duty</th><th data-k="type">Type</th><th data-k="compass">Compass</th><th data-k="maxRelief">Relief</th><th data-k="maxOnBus">Max on bus</th><th>Pieces <span style="text-transform:none;letter-spacing:0">(on bus · <i style="font-style:normal">relief</i>)</span></th><th data-k="pay">Pay</th><th data-k="nIssues">Result</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+    <p class="note" id="foot"></p>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// ---- Duty parser + checker (shared by the HTML tool and node tests) ----
+const DUR = /^\d{1,2}:\d{2}$/, HHMM = /^\d{4}$/, BOARD = /^[A-Za-z0-9]+\/\d{1,3}$/, DUTY = /^[A-Za-z]?\d{2,5}$/;
+const toMin = s => { if (!s) return null; const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+const fmt = m => m == null ? '' : (m < 0 ? '-' : '') + Math.floor(Math.abs(m) / 60) + ':' + String(Math.abs(m) % 60).padStart(2, '0');
+
+function parseLines(lines) {
+  let dayLabel = '', commencing = '', duties = [], cur = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    const dm = line.match(/Days:\s*(.+?)\s+Commencing/);
+    if (dm && !dayLabel) dayLabel = dm[1].trim();
+    const cm = line.match(/Commencing:\s*(\d{2}\/\d{2}\/\d{4})/);
+    if (cm && !commencing) commencing = cm[1];
+    const t = line.split(/\s+/);
+    if (t.length < 3) continue;
+    let i = 0, dutyNo = null;
+    if (DUTY.test(t[0]) && BOARD.test(t[1])) { dutyNo = t[0]; i = 1; }
+    else if (!BOARD.test(t[0])) continue;
+    if (!cur && !dutyNo) continue;
+    const board = t[i++];
+    const rest = t.slice(i);
+    const times = [], durs = [], locs = [];
+    let seenLoc = 0;
+    const pre = [];
+    for (const x of rest) {
+      if (DUR.test(x)) durs.push(x);
+      else if (HHMM.test(x)) { (seenLoc ? times : pre).push(x); }
+      else if (/^[A-Za-z][A-Za-z-]*$/.test(x)) { locs.push(x); seenLoc++; }
+    }
+    if (!durs.length || times.length < 2) continue;
+    const piece = { board, bookOn: pre[0] || '', from: locs[0] || '', on: times[0], off: times[1], to: locs[1] || '', bookOff: times[2] || '', onBus: toMin(durs[0]), relief: null };
+    if (dutyNo) { cur = { duty: dutyNo, pieces: [], reliefs: [], totals: null }; duties.push(cur); }
+    if (durs.length === 2) { piece.relief = toMin(durs[1]); }
+    else if (durs.length >= 5) {
+      const d = durs.map(toMin);
+      if (d.length >= 6) { piece.relief = d[4]; cur.totals = { onBusTotal: d[1], dutyTotal: d[2], compass: d[3], pay: d[5] }; }
+      else { cur.totals = { onBusTotal: d[1], dutyTotal: d[2], compass: d[3], pay: d[4] }; }
+    }
+    if (piece.relief != null) cur.reliefs.push(piece.relief);
+    cur.pieces.push(piece);
+    if (cur.totals) cur = null;
+  }
+  return { dayLabel, commencing, duties: duties.filter(d => d.totals) , incomplete: duties.filter(d => !d.totals).map(d => d.duty) };
+}
+
+const DEFAULT_RULES = {
+  normal: { compassMax: 510, reliefMin: 38 },
+  split: { compassMin: 511, compassMax: 690, reliefMin: 120 },
+  fourDay: { compassMin: 540, reliefMin: 38 },
+  sunNormal: { compassMax: 420, reliefMin: 38 },
+  sunFourDay: { compassMin: 480, reliefMin: 38 },
+  straightOnBusMax: 320, onBusMax: 300,
+  fourDayPattern: '^F?24\\d\\d$, ^54\\d\\d$, ^79\\d$',
+  joinShortBreaks: false,
+};
+
+function isSundayLabel(l) { return /sun/i.test(l); }
+
+function classify(d, sunday, rules, override) {
+  if (override && override !== 'auto') return override;
+  const pats = rules.fourDayPattern.split(',').map(s => s.trim()).filter(Boolean);
+  if (pats.some(p => { try { return new RegExp(p, 'i').test(d.duty); } catch { return false; } })) return 'fourDay';
+  if (!d.reliefs.length) return 'straight';
+  if (!sunday && d.totals.compass > rules.normal.compassMax) return 'split';
+  return 'normal';
+}
+
+function checkDuty(d, sunday, rules, override) {
+  const type = classify(d, sunday, rules, override);
+  const c = d.totals.compass, maxRel = d.reliefs.length ? Math.max(...d.reliefs) : null;
+  const issues = [];
+  const R = sunday ? { normal: rules.sunNormal, fourDay: rules.sunFourDay } : { normal: rules.normal, fourDay: rules.fourDay, split: rules.split };
+  if (type === 'split' && sunday) issues.push('No splits allowed on Sunday');
+  const r = type === 'straight' ? null : (R[type] || rules.split);
+  if (r) {
+    if (r.compassMax != null && c > r.compassMax) issues.push(`Compass ${fmt(c)} > max ${fmt(r.compassMax)}`);
+    if (r.compassMin != null && c < r.compassMin) issues.push(`Compass ${fmt(c)} < min ${fmt(r.compassMin)}`);
+    if (maxRel == null) issues.push(`No relief (minimum ${fmt(r.reliefMin)} required)`);
+    else if (maxRel < r.reliefMin) issues.push(`Relief ${fmt(maxRel)} < min ${fmt(r.reliefMin)}`);
+  } else if (sunday && c > rules.sunNormal.compassMax) issues.push(`Compass ${fmt(c)} > max ${fmt(rules.sunNormal.compassMax)}`);
+  else if (!sunday && c > rules.normal.compassMax) issues.push(`Compass ${fmt(c)} > max ${fmt(rules.normal.compassMax)}`);
+  // time on bus: per piece, optionally joining pieces separated by a break shorter than the relief minimum
+  const busMax = type === 'straight' ? rules.straightOnBusMax : rules.onBusMax;
+  const spells = [];
+  d.pieces.forEach((p, k) => {
+    if (k > 0 && rules.joinShortBreaks && p.relief != null && p.relief < (sunday ? rules.sunNormal.reliefMin : rules.normal.reliefMin)) spells[spells.length - 1] += p.onBus;
+    else spells.push(p.onBus);
+  });
+  spells.forEach(s => { if (s > busMax) issues.push(`On bus ${fmt(s)} > max ${fmt(busMax)}`); });
+  return { type, compass: c, maxRelief: maxRel, maxOnBus: Math.max(...spells), issues };
+}
+
+if (typeof module !== 'undefined') module.exports = { parseLines, checkDuty, DEFAULT_RULES, isSundayLabel, fmt };
+
+const TYPE_LABEL = { normal: 'Standard', split: 'Split', fourDay: '4 Day', straight: 'Straight' };
+let jobs = [], jobId = null, files = [], active = 0, view = 'bad', typeFilter = '', sortKey = null, sortDir = 1;
+let overrides = {};
+let rules = JSON.parse(JSON.stringify(DEFAULT_RULES));
+try { const s = localStorage.getItem('dutyRules'); if (s) rules = Object.assign(rules, JSON.parse(s)); } catch (e) {}
+try { const s = localStorage.getItem('dutyOverrides'); if (s) overrides = JSON.parse(s); } catch (e) {}
+try { const s = localStorage.getItem('dutyJobs'); if (s) jobs = JSON.parse(s) || []; } catch (e) { jobs = []; }
+try { jobId = localStorage.getItem('dutyActiveJob'); } catch (e) {}
+function saveJobs() {
+  try { localStorage.setItem('dutyJobs', JSON.stringify(jobs)); localStorage.setItem('dutyActiveJob', jobId || ''); return true; }
+  catch (e) { const st = $('status'); st.textContent = 'This browser has run out of space to save jobs. Delete an older job and upload again.'; st.classList.add('err'); return false; }
+}
+function selectJob(id) { const j = jobs.find(j => j.id === id) || jobs[0]; jobId = j ? j.id : null; files = j ? j.files : []; active = 0; try { localStorage.setItem('dutyActiveJob', jobId || ''); } catch (e) {} }
+const stamp = d => d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+const $ = id => document.getElementById(id);
+const parseHM = s => { const m = String(s).trim().match(/^(\d{1,2}):(\d{2})$/); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+
+const RULE_FIELDS = [['normal','compassMax'],['normal','reliefMin'],['split','compassMin'],['split','compassMax'],['split','reliefMin'],['fourDay','compassMin'],['fourDay','reliefMin'],['sunNormal','compassMax'],['sunNormal','reliefMin'],['sunFourDay','compassMin'],['sunFourDay','reliefMin'],[null,'straightOnBusMax'],[null,'onBusMax']];
+function fillRules() {
+  RULE_FIELDS.forEach(([g, k]) => { const el = $('r_' + (g ? g + '_' : '') + k); el.value = fmt(g ? rules[g][k] : rules[k]); });
+  $('r_fourDayPattern').value = rules.fourDayPattern; $('r_joinShortBreaks').checked = rules.joinShortBreaks;
+}
+function saveRules() { try { localStorage.setItem('dutyRules', JSON.stringify(rules)); } catch (e) {} }
+RULE_FIELDS.forEach(([g, k]) => { const el = $('r_' + (g ? g + '_' : '') + k);
+  el.addEventListener('change', () => { const v = parseHM(el.value); if (v == null) { el.value = fmt(g ? rules[g][k] : rules[k]); return; } if (g) rules[g][k] = v; else rules[k] = v; el.value = fmt(v); saveRules(); render(); }); });
+$('r_fourDayPattern').addEventListener('change', e => { rules.fourDayPattern = e.target.value; saveRules(); render(); });
+$('r_joinShortBreaks').addEventListener('change', e => { rules.joinShortBreaks = e.target.checked; saveRules(); render(); });
+$('resetRules').addEventListener('click', () => { rules = JSON.parse(JSON.stringify(DEFAULT_RULES)); saveRules(); $('dlCsv').addEventListener('click', () => {
+  const j = jobs.find(j => j.id === jobId); if (!j) return;
+  const { csv } = errorCsv(); const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' }));
+  a.download = j.name.replace(/[^\w\- ]+/g, '_').slice(0, 80) + ' - errors.csv'; document.body.appendChild(a); a.click(); a.remove();
+});
+selectJob(jobId); fillRules(); render(); });
+
+function evaluate(f) {
+  const sunday = isSundayLabel(f.dayLabel);
+  return f.duties.map(d => { const key = jobId + '|' + f.name + '|' + d.duty; const r = checkDuty(d, sunday, rules, overrides[key]);
+    return { d, key, manual: !!overrides[key] && overrides[key] !== 'auto', ...r, pay: d.totals.pay, nIssues: r.issues.length, sunday }; });
+}
+
+function renderFiles(all) {
+  $('files').innerHTML = files.map((f, i) => { const ev = all[i]; const bad = ev.filter(x => x.nIssues).length;
+    const t = {}; ev.forEach(x => t[x.type] = (t[x.type] || 0) + 1);
+    return `<button type="button" class="fcard ${i === active ? 'active' : ''}" data-i="${i}">
+      <span class="fname">${esc(f.name)}</span><span class="day">${esc(f.dayLabel || 'Unknown days')}</span>
+      <span class="nums"><span><b>${ev.length}</b><span>duties</span></span><span class="${bad ? 'bad' : 'good'}"><b>${bad}</b><span>with errors</span></span></span>
+      <span class="types">${Object.entries(t).map(([k, v]) => TYPE_LABEL[k] + ' ' + v).join(' · ')}</span>
+      ${f.incomplete && f.incomplete.length ? `<span class="types" style="color:var(--warn)">Not read: ${f.incomplete.map(esc).join(', ')}</span>` : ''}</button>`; }).join('');
+  document.querySelectorAll('.fcard').forEach(b => b.onclick = () => { active = +b.dataset.i; render(); });
+}
+
+function cellTime(v, limitBad) { return `<span class="${limitBad ? 'over' : ''}">${fmt(v)}</span>`; }
+
+function renderJobs() {
+  $('jobsSec').hidden = !jobs.length;
+  $('jobs').innerHTML = jobs.slice().sort((a, b) => b.created - a.created).map(j => {
+    const bad = j.files.reduce((n, f) => n + evaluate(f).filter(x => x.nIssues).length, 0);
+    const n = j.files.reduce((n, f) => n + f.duties.length, 0);
+    return `<button type="button" class="job ${j.id === jobId ? 'active' : ''}" data-id="${esc(j.id)}"><b>${esc(j.name)}</b>
+      <small>${j.files.length} file${j.files.length === 1 ? '' : 's'} · ${n} duties · <span class="${bad ? 'e' : 'g'}">${bad} with errors</span></small></button>`; }).join('');
+  document.querySelectorAll('.job').forEach(b => b.onclick = () => { selectJob(b.dataset.id); render(); });
+}
+
+function render() {
+  if (jobId && !jobs.find(j => j.id === jobId)) selectJob(null);
+  const job = jobs.find(j => j.id === jobId);
+  const evalFiles = f => evaluate(f);
+  renderJobs();
+  $('emptySec').hidden = !!job; $('jobSec').hidden = !job; $('tableSec').hidden = !job; $('addBtn').hidden = !job;
+  if (!job) return;
+  if (document.activeElement !== $('jobName')) $('jobName').value = job.name;
+  $('jobMeta').textContent = 'Created ' + stamp(new Date(job.created));
+  const all = files.map(evalFiles); renderFiles(all);
+  if (active >= files.length) active = 0;
+  const q = $('q').value.trim().toLowerCase();
+  let rows = all[active].filter(r => (view === 'all' || r.nIssues) && (!typeFilter || r.type === typeFilter) && (!q || r.d.duty.toLowerCase().includes(q)));
+  if (sortKey) rows.sort((a, b) => { const x = sortKey === 'duty' ? a.d.duty : a[sortKey], y = sortKey === 'duty' ? b.d.duty : b[sortKey];
+    return (x > y ? 1 : x < y ? -1 : 0) * sortDir; });
+  $('tbody').innerHTML = rows.length ? rows.map(r => {
+    const iss = r.issues.join(' ');
+    const pieces = r.d.pieces.map((p, k) => (k && p.relief != null ? `<i>·${fmt(p.relief)}·</i> ` : (k ? '<i>·</i> ' : '')) + fmt(p.onBus)).join(' ');
+    return `<tr class="${r.nIssues ? 'isbad' : ''}">
+      <td class="mono"><b>${esc(r.d.duty)}</b></td>
+      <td><select data-key="${esc(r.key)}" class="${r.manual ? 'manual' : ''}" aria-label="Duty type ${esc(r.d.duty)}">
+        <option value="auto">Auto: ${TYPE_LABEL[checkDuty(r.d, r.sunday, rules, 'auto').type]}</option>
+        ${Object.entries(TYPE_LABEL).map(([k, l]) => `<option value="${k}" ${r.manual && r.type === k ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
+      <td class="mono">${cellTime(r.compass, /Compass/.test(iss))}</td>
+      <td class="mono">${r.maxRelief == null ? '<span style="color:var(--muted)">none</span>' : cellTime(r.maxRelief, /Relief/.test(iss))}</td>
+      <td class="mono">${cellTime(r.maxOnBus, /On bus/.test(iss))}</td>
+      <td class="pieces">${pieces}</td>
+      <td class="mono">${fmt(r.pay)}</td>
+      <td>${r.nIssues ? `<ul class="issues">${r.issues.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : '<span class="pill ok">OK</span>'}</td></tr>`; }).join('')
+    : `<tr><td colspan="8" class="empty">${view === 'bad' ? 'No errors in this file with the current filters.' : 'No duties match these filters.'}</td></tr>`;
+  document.querySelectorAll('td select').forEach(s => s.onchange = () => { overrides[s.dataset.key] = s.value; if (s.value === 'auto') delete overrides[s.dataset.key];
+    try { localStorage.setItem('dutyOverrides', JSON.stringify(overrides)); } catch (e) {} render(); });
+  const total = all.reduce((n, ev) => n + ev.filter(x => x.nIssues).length, 0);
+  $('foot').textContent = `Showing ${rows.length} of ${all[active].length} duties in this file. Across all files: ${total} duties with errors.`;
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+document.querySelectorAll('#viewSeg button').forEach(b => b.onclick = () => { view = b.dataset.v; document.querySelectorAll('#viewSeg button').forEach(x => x.classList.toggle('on', x === b)); render(); });
+document.querySelectorAll('#typeSeg button').forEach(b => b.onclick = () => { typeFilter = b.dataset.t; document.querySelectorAll('#typeSeg button').forEach(x => x.classList.toggle('on', x === b)); render(); });
+document.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => { const k = th.dataset.k; sortDir = sortKey === k ? -sortDir : 1; sortKey = k; render(); });
+$('q').addEventListener('input', render);
+
+// ---- PDF reading (pdf.js) ----
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+async function pdfLines(buf) {
+  const doc = await pdfjsLib.getDocument({ data: buf }).promise; const lines = [];
+  for (let p = 1; p <= doc.numPages; p++) {
+    const tc = await (await doc.getPage(p)).getTextContent();
+    const items = tc.items.filter(it => it.str && it.str.trim()).map(it => ({ s: it.str, x: it.transform[4], y: it.transform[5], w: it.width }));
+    items.sort((a, b) => b.y - a.y || a.x - b.x);
+    const rows = [];
+    for (const it of items) { const r = rows.find(r => Math.abs(r.y - it.y) < 2.5); if (r) r.items.push(it); else rows.push({ y: it.y, items: [it] }); }
+    rows.sort((a, b) => b.y - a.y);
+    for (const r of rows) { r.items.sort((a, b) => a.x - b.x); let s = '', end = null;
+      for (const it of r.items) { s += (end != null && it.x - end > 1 ? ' ' : (end != null && !/\s$/.test(s) && !/^\s/.test(it.s) && it.x - end > 0.2 ? ' ' : '')) + it.s; end = it.x + it.w; }
+      lines.push(s); }
+  }
+  return lines;
+}
+async function loadFiles(list, mode) {
+  const st = $('status'); st.classList.remove('err');
+  const pdfs = [...list].filter(f => /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
+  if (!pdfs.length) { st.textContent = 'That isn’t a PDF. Choose a .pdf crew duty summary.'; st.classList.add('err'); return; }
+  if (!window.pdfjsLib) { st.textContent = 'The PDF reader didn’t load. Refresh the page and try again.'; st.classList.add('err'); return; }
+  st.textContent = 'Reading ' + pdfs.length + ' file(s)…';
+  const out = [], failed = [];
+  for (const f of pdfs) {
+    try { const r = parseLines(await pdfLines(await f.arrayBuffer()));
+      if (!r.duties.length) failed.push(f.name); else out.push({ name: f.name, dayLabel: r.dayLabel, commencing: r.commencing, duties: r.duties.map(d => ({ duty: d.duty, reliefs: d.reliefs, totals: d.totals, pieces: d.pieces.map(p => ({ onBus: p.onBus, relief: p.relief })) })), incomplete: r.incomplete });
+    } catch (e) { failed.push(f.name); }
+  }
+  if (out.length) {
+    const job = mode === 'add' && jobs.find(j => j.id === jobId);
+    if (job) { out.forEach(f => { const i = job.files.findIndex(x => x.name === f.name); if (i >= 0) job.files[i] = f; else job.files.push(f); }); }
+    else {
+      const comm = [...new Set(out.map(f => f.commencing).filter(Boolean))].join(', ');
+      const now = new Date();
+      jobs.push({ id: 'j' + now.getTime(), name: (comm ? 'Commencing ' + comm : 'Duties') + ' · checked ' + stamp(now), created: now.getTime(), files: out });
+      jobId = 'j' + now.getTime();
+    }
+    selectJob(jobId); saveJobs();
+  }
+  st.textContent = (out.length ? `${mode === 'add' ? 'Added to this job' : 'New job created'}: ${out.map(f => f.name + ' (' + f.duties.length + ' duties)').join(', ')}.` : '') + (failed.length ? ` No duties found in: ${failed.join(', ')}. Check that it is a “CREW DUTY SUMMARY” report.` : '');
+  if (failed.length) st.classList.add('err');
+  render();
+}
+$('fileIn').addEventListener('change', e => { loadFiles(e.target.files, 'new'); e.target.value = ''; });
+$('fileAdd').addEventListener('change', e => { loadFiles(e.target.files, 'add'); e.target.value = ''; });
+$('newJobBtn').onclick = $('emptyBtn').onclick = () => $('fileIn').click();
+$('addBtn').onclick = () => $('fileAdd').click();
+$('jobName').addEventListener('change', e => { const j = jobs.find(j => j.id === jobId); if (!j) return; j.name = e.target.value.trim() || j.name; e.target.value = j.name; saveJobs(); renderJobs(); });
+let delTimer = null;
+$('delJob').onclick = () => { const b = $('delJob');
+  if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Click again to delete'; delTimer = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Delete job'; }, 4000); return; }
+  clearTimeout(delTimer); b.classList.remove('armed'); b.textContent = 'Delete job';
+  Object.keys(overrides).forEach(k => { if (k.startsWith(jobId + '|')) delete overrides[k]; });
+  try { localStorage.setItem('dutyOverrides', JSON.stringify(overrides)); } catch (e) {}
+  jobs = jobs.filter(j => j.id !== jobId); selectJob(jobs.length ? jobs.slice().sort((a, b) => b.created - a.created)[0].id : null); saveJobs();
+  $('status').classList.remove('err'); $('status').textContent = 'Job deleted.'; render(); };
+const drop = $('drop');
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => loadFiles(e.dataTransfer.files, 'new'));
+
+function errorCsv() {
+  const rows = [['File', 'Days', 'Duty', 'Type', 'Compass', 'Relief', 'Max on bus', 'Issues']];
+  files.forEach(f => evaluate(f).filter(r => r.nIssues).forEach(r => rows.push([f.name, f.dayLabel, r.d.duty, TYPE_LABEL[r.type], fmt(r.compass), fmt(r.maxRelief), fmt(r.maxOnBus), r.issues.join('; ')])));
+  const csv = rows.map(r => r.map(c => /[",;\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c).join(',')).join('\n');
+  return { csv, n: rows.length - 1 };
+}
+$('copyCsv').addEventListener('click', async () => {
+  const { csv, n } = errorCsv(); const rows = { length: n + 1 };
+  const b = $('copyCsv');
+  try { await navigator.clipboard.writeText(csv); b.textContent = 'Copied ' + (rows.length - 1) + ' rows'; }
+  catch (e) { b.textContent = 'Copy blocked'; }
+  setTimeout(() => b.textContent = 'Copy errors (CSV)', 2500);
+});
+
+$('dlCsv').addEventListener('click', () => {
+  const j = jobs.find(j => j.id === jobId); if (!j) return;
+  const { csv } = errorCsv(); const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' }));
+  a.download = j.name.replace(/[^\w\- ]+/g, '_').slice(0, 80) + ' - errors.csv'; document.body.appendChild(a); a.click(); a.remove();
+});
+selectJob(jobId); fillRules(); render();
+</script>
+</body>
+</html>
