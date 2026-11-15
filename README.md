@@ -35,6 +35,8 @@ Default rota duty numbers (editable under **Assignment settings**):
 
 Oldbury runs the Mon–Thu duties on Friday too, so Oldbury Fridays are planned from the Mon–Thu PDF.
 
+Every driver gets at least 11:00 rest between finishing one duty and starting the next day's duty (editable). With **Finish before**, duties that finish closest to the requested time are preferred.
+
 Early means book off by 14:30 and Late means book on from 15:00 (both editable). Routes come from the running board numbers: 12/xx covers routes 12 and 13, 87/xx covers 82 and 87, and any other board runs its own number (74/10 is route 74). A specific route request means every piece of the duty runs on one of the requested routes. Jobs uploaded before this version have no sign-on/off times stored, so upload their PDFs again to use time and route requests.
 
 ## Rules checked (defaults, editable under **Rules**)
