@@ -165,7 +165,11 @@ td.days { white-space: nowrap }
 .muted { color: var(--muted) }
 .picker { width: 100%; min-width: 150px; font-size: 13px; padding: 5px; border: 1px solid var(--accent); border-radius: 6px; background: var(--surface) }
 td.tot b { display: block; font-size: 15px }
-td.tot small { font-size: 12px } .okc { color: var(--ok) } .offc { color: var(--warn) }
+td.tot small { font-size: 12px; font-weight: 600 } .okc { color: var(--ok) } .overc { color: var(--bad) }
+.tabs .tabEnd { margin-left: auto; display: flex; align-items: center; gap: 10px; padding-bottom: 4px }
+.tabs .tabEnd button { border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg); padding: 6px 12px; font-size: 13px; font-weight: 500; margin: 0 }
+.tabs .tabEnd button:disabled { color: var(--muted); cursor: default; opacity: .6 }
+.tabs .tabEnd button:not(:disabled):hover { border-color: var(--accent) }
 tr.gap td:nth-child(2) { box-shadow: inset 3px 0 0 var(--bad) }
 </style>
 </head>
@@ -200,7 +204,7 @@ tr.gap td:nth-child(2) { box-shadow: inset 3px 0 0 var(--bad) }
     <button type="button" class="btn primary" id="emptyBtn">Choose PDFs</button>
   </section>
 
-  <nav class="tabs" id="tabs" aria-label="Views"><button type="button" data-tab="check" class="on">Duty check</button><button type="button" data-tab="assign">Driver assignment</button></nav>
+  <nav class="tabs" id="tabs" aria-label="Views"><button type="button" data-tab="check" class="on">Duty check</button><button type="button" data-tab="assign">Driver assignment</button><span class="tabEnd"><span class="note" id="undoMsg" aria-live="polite"></span><button type="button" id="undoBtn" class="undo" disabled>Undo</button></span></nav>
 
   <div id="checkView" class="view">
   <details class="rules" id="rulesBox">
@@ -447,10 +451,10 @@ function fillRules() {
 }
 function saveRules() { try { localStorage.setItem('dutyRules', JSON.stringify(rules)); } catch (e) {} }
 RULE_FIELDS.forEach(([g, k]) => { const el = $('r_' + (g ? g + '_' : '') + k);
-  el.addEventListener('change', () => { const v = parseHM(el.value); if (v == null) { el.value = fmt(g ? rules[g][k] : rules[k]); return; } if (g) rules[g][k] = v; else rules[k] = v; el.value = fmt(v); saveRules(); render(); }); });
-$('r_fourDayPattern').addEventListener('change', e => { rules.fourDayPattern = e.target.value; saveRules(); render(); });
-$('r_joinShortBreaks').addEventListener('change', e => { rules.joinShortBreaks = e.target.checked; saveRules(); render(); });
-$('resetRules').addEventListener('click', () => { rules = JSON.parse(JSON.stringify(DEFAULT_RULES)); saveRules(); fillRules(); render(); });
+  el.addEventListener('change', () => { const v = parseHM(el.value); if (v == null) { el.value = fmt(g ? rules[g][k] : rules[k]); return; } pushUndo('duty check rule'); if (g) rules[g][k] = v; else rules[k] = v; el.value = fmt(v); saveRules(); render(); }); });
+$('r_fourDayPattern').addEventListener('change', e => { pushUndo('4 Day numbers'); rules.fourDayPattern = e.target.value; saveRules(); render(); });
+$('r_joinShortBreaks').addEventListener('change', e => { pushUndo('duty check rule'); rules.joinShortBreaks = e.target.checked; saveRules(); render(); });
+$('resetRules').addEventListener('click', () => { pushUndo('restore rule defaults'); rules = JSON.parse(JSON.stringify(DEFAULT_RULES)); saveRules(); fillRules(); render(); });
 function saveFile(name, text, type) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\ufeff' + text], { type }));
@@ -522,7 +526,7 @@ function render() {
       <td class="mono">${fmt(r.pay)}</td>
       <td>${r.nIssues ? `<ul class="issues">${r.issues.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : '<span class="pill ok">OK</span>'}</td></tr>`; }).join('')
     : `<tr><td colspan="9" class="empty">${view === 'bad' ? 'No errors in this file with the current filters.' : 'No duties match these filters.'}</td></tr>`;
-  document.querySelectorAll('td select').forEach(s => s.onchange = () => { overrides[s.dataset.key] = s.value; if (s.value === 'auto') delete overrides[s.dataset.key];
+  document.querySelectorAll('td select').forEach(s => s.onchange = () => { pushUndo('duty type'); overrides[s.dataset.key] = s.value; if (s.value === 'auto') delete overrides[s.dataset.key];
     try { localStorage.setItem('dutyOverrides', JSON.stringify(overrides)); } catch (e) {} render(); });
   shownKeys = rows.map(r => r.key);
   [...selected].forEach(k => { if (!shownKeys.includes(k)) selected.delete(k); });
@@ -550,7 +554,7 @@ function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<':
 $('ckAll').onchange = e => { clearSel(); if (e.target.checked) shownKeys.forEach(k => selected.add(k)); document.querySelectorAll('.rowck').forEach(c => c.checked = e.target.checked); updateBulk(); };
 $('bulkClear').onclick = () => { clearSel(); document.querySelectorAll('.rowck').forEach(c => c.checked = false); updateBulk(); };
 $('bulkApply').onclick = () => {
-  const t = $('bulkType').value, n = selected.size; if (!n) return;
+  const t = $('bulkType').value, n = selected.size; if (!n) return; pushUndo('type of ' + n + ' duties');
   selected.forEach(k => { if (t === 'auto') delete overrides[k]; else overrides[k] = t; });
   try { localStorage.setItem('dutyOverrides', JSON.stringify(overrides)); } catch (e) {}
   clearSel(); render();
@@ -808,6 +812,22 @@ function assignAll(job) {
   return { res, info };
 }
 
+// ---------- Undo ----------
+const undoStack = [];
+function snapshot() { return JSON.stringify({ drivers, asg, overrides, rules, locks: jobs.map(j => [j.id, j.locks || {}]) }); }
+function pushUndo(label) { undoStack.push({ label, snap: snapshot() }); if (undoStack.length > 60) undoStack.shift(); updateUndo(); }
+function updateUndo() { const b = $('undoBtn'); if (!b) return; const last = undoStack[undoStack.length - 1];
+  b.disabled = !last; b.textContent = last ? 'Undo: ' + last.label : 'Undo'; b.title = last ? 'Undo the last change (Ctrl+Z)' : 'Nothing to undo'; }
+function undo() {
+  const last = undoStack.pop(); if (!last) return; const o = JSON.parse(last.snap);
+  drivers = o.drivers; asg = o.asg; overrides = o.overrides; rules = o.rules;
+  o.locks.forEach(([id, l]) => { const j = jobs.find(x => x.id === id); if (j) j.locks = l; });
+  saveDrivers(); saveAsg(); saveRules(); saveJobs(); try { localStorage.setItem('dutyOverrides', JSON.stringify(overrides)); } catch (e) {}
+  editKey = null; fillRules(); fillAsgSettings(); renderDrivers(); render(); renderAssignResults(); updateUndo();
+  const st = $('undoMsg'); st.textContent = 'Undone: ' + last.label; clearTimeout(undo.t); undo.t = setTimeout(() => st.textContent = '', 3000);
+}
+let editKey = null; // one undo step per edited field
+
 // ---------- UI ----------
 function dayCells(dr) { return DAYS.map(([d, s]) => `<button type="button" class="dayT ${dr.days[d] ? 'on' : ''}" data-id="${dr.id}" data-day="${d}" aria-pressed="${dr.days[d]}" title="${dr.days[d] ? 'Works' : 'Rest day'} ${s}">${dr.days[d] ? s : 'RD'}</button>`).join(''); }
 function opt(list, v) { return list.map(([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${l}</option>`).join(''); }
@@ -836,6 +856,9 @@ function syncRow(tr) {
 function onDriverEdit(e) {
   const t = e.target; const tr = t.closest('tr'); if (!tr || !t.dataset.f) return;
   const dr = drivers.find(x => x.id === tr.dataset.id); if (!dr) return;
+  const fk = dr.id + '|' + t.dataset.f;
+  if (editKey !== fk) { pushUndo('edit ' + (dr.name || 'driver')); editKey = fk; }
+  if (e.type === 'change') editKey = null;
   let v = t.value;
   if (['tStart', 'tEnd'].includes(t.dataset.f) || (t.dataset.f === 'sval' && dr.special === 'break')) { if (e.type === 'change' && v.trim()) { const m = parseClock(v); if (m != null) { v = t.dataset.f === 'sval' ? fmt(m) : clock(m); t.value = v; t.classList.remove('badIn'); } else t.classList.add('badIn'); } }
   dr[t.dataset.f] = v; saveDrivers(); syncRow(tr); if (e.type === 'change') renderAssignResults();
@@ -869,7 +892,7 @@ function renderAssignResults() {
     const diff = tot - asg.target; const close = Math.abs(diff) <= 30;
     return `<tr class="${miss ? 'gap' : ''}"><td class="mono">${esc(dr.no)}</td><td><b>${esc(dr.name || '(no name)')}</b><small class="sub2">${esc(dr.roll)}${dr.rota !== 'any' ? ' · ' + esc(dr.rota) : ''}</small></td>
       ${DAYS.map(([d]) => `<td class="dc">${cellHtml(R[d], dr, d)}</td>`).join('')}
-      <td class="mono tot"><b>${fmt(tot)}</b><small class="${close ? 'okc' : 'offc'}">${diff >= 0 ? '+' : '−'}${fmt(Math.abs(diff))}</small></td></tr>`;
+      <td class="mono tot"><b>${fmt(tot)}</b><small class="${diff > 0 ? 'overc' : 'okc'}">${diff > 0 ? '+' : diff < 0 ? '−' : '±'}${fmt(Math.abs(diff))}</small></td></tr>`;
   });
   $('asgBody').innerHTML = rows.join('');
   $('asgSum').innerHTML = `<span class="pill ok">${full} fully assigned</span>${gaps ? `<span class="pill bad">${gaps} with gaps</span>` : ''}<span class="note">Target ${fmt(asg.target)} a week. The ± figure shows the difference.</span>`;
@@ -892,7 +915,7 @@ function openPicker(btn) {
     <optgroup label="All other duties">${all.filter(du => !fits.includes(du)).map(du => `<option value="${esc(du.no)}" ${du.no === curNo ? 'selected' : ''}>${esc(line(du))} · ${esc(fitReason(dr, du))}</option>`).join('')}</optgroup>`;
   if (!curNo) sel.value = '__auto';
   btn.replaceWith(sel); sel.focus();
-  const done = () => { const v = sel.value; job.locks = job.locks || {}; const L = job.locks[dr.id] = job.locks[dr.id] || {};
+  const done = () => { const v = sel.value; pushUndo('change ' + d.charAt(0).toUpperCase() + d.slice(1) + ' for ' + (dr.name || 'driver')); job.locks = job.locks || {}; const L = job.locks[dr.id] = job.locks[dr.id] || {};
     if (v === '__auto') delete L[d]; else if (v === '__none') L[d] = ''; else {
       // with "same number" on, apply to every working day served by the same PDF; otherwise to this day only
       const key = poolKey(lastAsg.info, d, dr);
@@ -955,6 +978,7 @@ function importRows(text, replace) {
     dr.notes = [dtext, spec, wdays].filter(Boolean).join(' | ');
     added.push(dr);
   });
+  if (added.length) pushUndo(replace ? 'replace driver list' : 'paste drivers');
   if (replace) drivers = added; else drivers = drivers.concat(added);
   saveDrivers(); renderDrivers(); renderAssignResults();
   return added.length;
@@ -968,43 +992,46 @@ function fillAsgSettings() {
 }
 function initAssign() {
   fillAsgSettings(); renderDrivers();
-  $('a_target').onchange = e => { const v = parseHM(e.target.value); if (v != null) asg.target = v; e.target.value = fmt(asg.target); saveAsg(); renderAssignResults(); };
-  $('a_early').onchange = e => { const v = parseClock(e.target.value); if (v != null) asg.earlyEnd = v; e.target.value = clock(asg.earlyEnd); saveAsg(); renderAssignResults(); };
-  $('a_late').onchange = e => { const v = parseClock(e.target.value); if (v != null) asg.lateStart = v; e.target.value = clock(asg.lateStart); saveAsg(); renderAssignResults(); };
-  $('a_valid').onchange = e => { asg.onlyValid = e.target.checked; saveAsg(); renderAssignResults(); };
-  $('a_rest').onchange = e => { const v = parseHM(e.target.value); if (v != null) asg.minRest = v; e.target.value = fmt(asg.minRest); saveAsg(); renderAssignResults(); };
-  $('a_same').onchange = e => { asg.sameNumber = e.target.checked; saveAsg(); renderAssignResults(); };
-  $('rangeBody').addEventListener('change', e => { const t = e.target; if (!t.dataset.r) return; asg.ranges[t.dataset.r] = asg.ranges[t.dataset.r] || {}; asg.ranges[t.dataset.r][t.dataset.g] = t.value.trim(); saveAsg(); renderAssignResults(); });
-  $('a_boards').onchange = e => { asg.boards = e.target.value; saveAsg(); renderAssignResults(); };
-  $('friBox').addEventListener('change', e => { const r = e.target.dataset.r; if (!r) return; const set = new Set(asg.friFromMT || []); e.target.checked ? set.add(r) : set.delete(r); asg.friFromMT = [...set]; saveAsg(); renderAssignResults(); });
-  $('a_reset').onclick = () => { asg = JSON.parse(JSON.stringify(DEFAULT_ASG)); saveAsg(); fillAsgSettings(); renderAssignResults(); };
+  $('a_target').onchange = e => { pushUndo('assignment setting'); const v = parseHM(e.target.value); if (v != null) asg.target = v; e.target.value = fmt(asg.target); saveAsg(); renderAssignResults(); };
+  $('a_early').onchange = e => { pushUndo('assignment setting'); const v = parseClock(e.target.value); if (v != null) asg.earlyEnd = v; e.target.value = clock(asg.earlyEnd); saveAsg(); renderAssignResults(); };
+  $('a_late').onchange = e => { pushUndo('assignment setting'); const v = parseClock(e.target.value); if (v != null) asg.lateStart = v; e.target.value = clock(asg.lateStart); saveAsg(); renderAssignResults(); };
+  $('a_valid').onchange = e => { pushUndo('assignment setting'); asg.onlyValid = e.target.checked; saveAsg(); renderAssignResults(); };
+  $('a_rest').onchange = e => { pushUndo('assignment setting'); const v = parseHM(e.target.value); if (v != null) asg.minRest = v; e.target.value = fmt(asg.minRest); saveAsg(); renderAssignResults(); };
+  $('a_same').onchange = e => { pushUndo('assignment setting'); asg.sameNumber = e.target.checked; saveAsg(); renderAssignResults(); };
+  $('rangeBody').addEventListener('change', e => { const t = e.target; if (!t.dataset.r) return; pushUndo('rota numbers'); asg.ranges[t.dataset.r] = asg.ranges[t.dataset.r] || {}; asg.ranges[t.dataset.r][t.dataset.g] = t.value.trim(); saveAsg(); renderAssignResults(); });
+  $('a_boards').onchange = e => { pushUndo('assignment setting'); asg.boards = e.target.value; saveAsg(); renderAssignResults(); };
+  $('friBox').addEventListener('change', e => { const r = e.target.dataset.r; if (!r) return; pushUndo('Friday setting'); const set = new Set(asg.friFromMT || []); e.target.checked ? set.add(r) : set.delete(r); asg.friFromMT = [...set]; saveAsg(); renderAssignResults(); });
+  $('a_reset').onclick = () => { pushUndo('restore assignment defaults'); asg = JSON.parse(JSON.stringify(DEFAULT_ASG)); saveAsg(); fillAsgSettings(); renderAssignResults(); };
   $('drvBody').addEventListener('input', onDriverEdit); $('drvBody').addEventListener('change', onDriverEdit);
   $('drvBody').addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
-    if (t.dataset.del) { drivers = drivers.filter(x => x.id !== t.dataset.del); saveDrivers(); renderDrivers(); renderAssignResults(); return; }
-    if (t.dataset.day) { const dr = drivers.find(x => x.id === t.dataset.id); dr.days[t.dataset.day] = !dr.days[t.dataset.day]; saveDrivers();
+    if (t.dataset.del) { pushUndo('remove driver'); drivers = drivers.filter(x => x.id !== t.dataset.del); saveDrivers(); renderDrivers(); renderAssignResults(); return; }
+    if (t.dataset.day) { const dr = drivers.find(x => x.id === t.dataset.id); pushUndo('working days of ' + (dr.name || 'driver')); dr.days[t.dataset.day] = !dr.days[t.dataset.day]; saveDrivers();
       t.outerHTML = dayCells(dr).split('</button>').find(h => h.includes(`data-day="${t.dataset.day}"`)) + '</button>'; renderAssignResults(); }
   });
-  const add = () => { const dr = newDriver(); dr.no = String(drivers.reduce((m, x) => Math.max(m, parseFloat(x.no) || 0), 0) + 1); drivers.push(dr); saveDrivers(); renderDrivers(); renderAssignResults(); const el = $(dr.id + '_name'); if (el) el.focus(); };
+  const add = () => { pushUndo('add driver'); const dr = newDriver(); dr.no = String(drivers.reduce((m, x) => Math.max(m, parseFloat(x.no) || 0), 0) + 1); drivers.push(dr); saveDrivers(); renderDrivers(); renderAssignResults(); const el = $(dr.id + '_name'); if (el) el.focus(); };
   $('addDrv').onclick = add; $('addDrv2').onclick = add;
   $('pasteBtn2').onclick = () => { $('pasteBox').open = true; $('pasteText').focus(); };
   const imp = replace => { const n = importRows($('pasteText').value, replace); $('pasteMsg').textContent = n ? `Imported ${n} driver${n === 1 ? '' : 's'}. Check the duty type of each one, especially rows with several times in one cell.` : 'No driver rows found. Copy the rows from your sheet (columns No to saturday) and paste them here.'; if (n) $('pasteText').value = ''; };
   $('pasteAdd').onclick = () => imp(false); $('pasteReplace').onclick = () => imp(true);
   let clr = null; $('clearDrv').onclick = () => { const b = $('clearDrv');
     if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Click again to remove all'; clr = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Remove all drivers'; }, 4000); return; }
-    clearTimeout(clr); b.classList.remove('armed'); b.textContent = 'Remove all drivers'; drivers = []; saveDrivers(); renderDrivers(); renderAssignResults(); };
+    clearTimeout(clr); b.classList.remove('armed'); b.textContent = 'Remove all drivers'; pushUndo('remove all drivers'); drivers = []; saveDrivers(); renderDrivers(); renderAssignResults(); };
   $('asgBody').addEventListener('click', e => { const b = e.target.closest('.cellBtn'); if (b) openPicker(b); });
-  $('asgReset').onclick = () => { const job = jobs.find(j => j.id === jobId); if (!job) return; job.locks = {}; saveJobs(); renderAssignResults(); };
+  $('asgReset').onclick = () => { const job = jobs.find(j => j.id === jobId); if (!job) return; pushUndo('clear manual changes'); job.locks = {}; saveJobs(); renderAssignResults(); };
   $('asgCopy').onclick = async () => { const tsv = assignTable().map(r => r.join('\t')).join('\n'); const b = $('asgCopy');
     try { await navigator.clipboard.writeText(tsv); b.textContent = 'Copied. Paste into Google Sheets'; } catch (e) { b.textContent = 'Copy blocked'; }
     setTimeout(() => b.textContent = 'Copy for Google Sheets', 2500); };
   $('asgDl').onclick = () => { const job = jobs.find(j => j.id === jobId); if (!job) return;
     const csv = assignTable().map(r => r.map(c => /[",\n]/.test(c) ? '"' + String(c).replace(/"/g, '""') + '"' : c).join(',')).join('\n');
     saveFile(job.name + ' - driver assignment.csv', csv, 'text/csv'); };
+  $('undoBtn').onclick = undo;
+  document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { e.preventDefault(); undo(); } });
+  updateUndo();
   // tabs
   const showTab = t => { $('checkView').hidden = t !== 'check'; $('assignView').hidden = t !== 'assign';
-    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t)); if (t === 'assign') renderAssignResults(); };
-  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { if (location.hash !== '#' + b.dataset.tab) location.hash = b.dataset.tab; showTab(b.dataset.tab); });
+    document.querySelectorAll('#tabs button[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t)); if (t === 'assign') renderAssignResults(); };
+  document.querySelectorAll('#tabs button[data-tab]').forEach(b => b.onclick = () => { if (location.hash !== '#' + b.dataset.tab) location.hash = b.dataset.tab; showTab(b.dataset.tab); });
   window.addEventListener('hashchange', () => showTab(location.hash === '#assign' ? 'assign' : 'check'));
   showTab(location.hash === '#assign' ? 'assign' : 'check');
 }
