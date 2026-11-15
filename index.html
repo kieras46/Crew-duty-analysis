@@ -110,6 +110,60 @@ tr.sel, tr.isbad.sel { background: var(--accent-soft) }
 .emptyBox h3 { margin: 0; font-size: 17px }
 .emptyBox p { margin: 0; color: var(--muted); max-width: 60ch }
 .status.err { color: var(--bad) }
+.view { display: grid; gap: 20px }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap }
+.tabs button { border: 0; background: none; padding: 10px 14px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; font-size: 15px }
+.tabs button.on { color: var(--accent); border-bottom-color: var(--accent) }
+.lead { margin: 0; font-size: 14px }
+.cbrow { justify-content: flex-start !important; gap: 8px }
+.rcol.wide2 { grid-column: span 2 }
+@media (max-width: 700px) { .rcol.wide2 { grid-column: auto } }
+.rtab { overflow-x: auto }
+.rangeT { min-width: 0; width: 100% }
+.rangeT th, .rangeT td { padding: 3px 4px; border: 0; position: static; cursor: default }
+.rangeT input { width: 100%; min-width: 86px; font-family: var(--mono); font-size: 12.5px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg) }
+.asgBlock { display: grid; gap: 10px }
+.blockHead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px }
+.blockHead h2 { margin: 0 }
+.pastePad { padding: 12px 16px; border-top: 1px solid var(--line); display: grid; gap: 10px }
+.pastePad textarea { width: 100%; font-family: var(--mono); font-size: 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); padding: 8px }
+.drvT { min-width: 1180px }
+.drvT th { cursor: default }
+.drvT td { vertical-align: middle; padding: 6px 6px }
+.drvT input[type=text], .drvT select { border: 1px solid var(--line); border-radius: 5px; background: var(--bg); padding: 4px 6px; font-size: 13px }
+.drvT input.badIn { border-color: var(--bad) }
+.w3 { width: 3.2em } .w5 { width: 6.2em } .w6 { width: 6.5em } .w7 { width: 8em } .w10 { width: 11em } .w12 { width: 13em }
+.stack { display: flex; flex-direction: column; gap: 4px; align-items: flex-start }
+.tpair { display: flex; gap: 4px }
+.lc { text-transform: none; letter-spacing: 0; font-weight: 400 }
+td.days { white-space: nowrap }
+.dayT { width: 38px; padding: 4px 0; margin-right: 2px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); color: var(--muted); font-size: 12px; cursor: pointer; font-family: var(--mono) }
+.dayT.on { background: var(--accent); border-color: var(--accent); color: var(--surface); font-family: var(--sans); font-weight: 600 }
+.x { border: 0; background: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 0 6px }
+.x:hover { color: var(--bad) }
+.asgNotes { margin: 0; padding: 10px 14px 10px 30px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--warn); font-size: 13px }
+.asgSum { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.asgT { min-width: 980px }
+.asgT th { cursor: default }
+.asgT td { vertical-align: top }
+.asgT .sub2 { display: block; color: var(--muted); font-size: 12px }
+.asgT td.dc { padding: 4px }
+.cellBtn { display: grid; gap: 1px; width: 100%; min-width: 86px; text-align: left; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); padding: 5px 7px; cursor: pointer; font-variant-numeric: tabular-nums }
+.cellBtn:hover { border-color: var(--accent) }
+.cellBtn b { font-family: var(--mono); font-size: 14px }
+.cellBtn small { color: var(--muted); font-size: 11.5px; font-family: var(--mono) }
+.cellBtn i { font-style: normal; font-size: 10.5px; color: var(--warn); text-transform: uppercase; letter-spacing: .06em }
+.cellBtn.locked { border-color: var(--warn) }
+.cellBtn i.errf { color: var(--bad) }
+.boardsT { width: 100%; font-family: var(--mono); font-size: 12.5px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); padding: 6px }
+.cellBtn.miss { background: var(--bad-soft); border-color: var(--bad) }
+.cellBtn.miss b, .cellBtn.miss small { color: var(--bad); font-family: var(--sans) }
+.rd { display: inline-block; padding: 6px 8px; color: var(--muted); font-family: var(--mono); font-size: 12px }
+.muted { color: var(--muted) }
+.picker { width: 100%; min-width: 150px; font-size: 13px; padding: 5px; border: 1px solid var(--accent); border-radius: 6px; background: var(--surface) }
+td.tot b { display: block; font-size: 15px }
+td.tot small { font-size: 12px } .okc { color: var(--ok) } .offc { color: var(--warn) }
+tr.gap td:nth-child(2) { box-shadow: inset 3px 0 0 var(--bad) }
 </style>
 </head>
 <body>
@@ -131,6 +185,21 @@ tr.sel, tr.isbad.sel { background: var(--accent-soft) }
     <button type="button" class="btn" id="addBtn" hidden>Add PDFs to this job</button>
   </div>
 
+
+  <section id="jobsSec">
+    <h2>Jobs</h2>
+    <div class="jobs" id="jobs"></div>
+  </section>
+
+  <section id="emptySec" class="emptyBox">
+    <h3>No duties loaded yet</h3>
+    <p>Choose one or more “WB CREW DUTY SUMMARY” PDF files (for example Mon–Thu, Friday, Saturday and Sunday together). They are read in your browser and never uploaded anywhere.</p>
+    <button type="button" class="btn primary" id="emptyBtn">Choose PDFs</button>
+  </section>
+
+  <nav class="tabs" id="tabs" aria-label="Views"><button type="button" data-tab="check" class="on">Duty check</button><button type="button" data-tab="assign">Driver assignment</button></nav>
+
+  <div id="checkView" class="view">
   <details class="rules" id="rulesBox">
     <summary>Rules <small>click to view or change (format h:mm)</small></summary>
     <div class="rgrid">
@@ -159,17 +228,6 @@ tr.sel, tr.isbad.sel { background: var(--accent-soft) }
     </div>
     <div class="rfoot"><span class="note">Relief is the longest break in the duty (with 3 pieces, the short break is just a bus changeover).</span><button class="btn" id="resetRules" type="button">Restore defaults</button></div>
   </details>
-
-  <section id="jobsSec">
-    <h2>Jobs</h2>
-    <div class="jobs" id="jobs"></div>
-  </section>
-
-  <section id="emptySec" class="emptyBox">
-    <h3>No duties loaded yet</h3>
-    <p>Choose one or more “WB CREW DUTY SUMMARY” PDF files (for example Mon–Thu, Friday, Saturday and Sunday together). They are read in your browser and never uploaded anywhere.</p>
-    <button type="button" class="btn primary" id="emptyBtn">Choose PDFs</button>
-  </section>
 
   <section id="jobSec" hidden>
     <div class="jobHead">
@@ -203,6 +261,65 @@ tr.sel, tr.isbad.sel { background: var(--accent-soft) }
     </table></div>
     <p class="note" id="foot"></p>
   </section>
+  </div>
+
+  <div id="assignView" class="view" hidden>
+    <p class="note lead">Duties from the selected job are given to drivers by their requests: rota, duty type, special condition and working days. Each driver gets duties whose weekly pay is as close as possible to the target. Drivers higher in the list (lower No) are served first.</p>
+
+    <details class="rules" id="asgSettings">
+      <summary>Assignment settings <small>target, Early/Late, rota duty numbers</small></summary>
+      <div class="rgrid">
+        <div class="rcol"><h3>Weekly pay</h3>
+          <div class="rrow">Target per driver <input type="text" id="a_target"></div>
+          <label class="rrow cbrow"><input type="checkbox" id="a_valid"> Use only duties that pass the duty check</label>
+          <label class="rrow cbrow"><input type="checkbox" id="a_same"> Prefer the same duty number on every day</label></div>
+        <div class="rcol"><h3>Early and Late</h3>
+          <div class="rrow">Early: book off by <input type="text" id="a_early"></div>
+          <div class="rrow">Late: book on from <input type="text" id="a_late"></div>
+          <p class="note" style="margin:0">Finish before 00:00 means finishing by midnight.</p></div>
+        <div class="rcol"><h3>Friday uses Mon–Thu duties</h3>
+          <div id="friBox"></div>
+          <p class="note" style="margin:0">For these rotas, Friday is planned from the Mon–Thu PDF (the same duties run on Friday).</p></div>
+        <div class="rcol"><h3>Running boards and routes</h3>
+          <textarea id="a_boards" rows="4" class="boardsT" aria-label="Running board to routes"></textarea>
+          <p class="note" style="margin:0">One per line: board = routes. Boards not listed run their own route (74/10 is route 74).</p></div>
+        <div class="rcol wide2"><h3>Rota duty numbers <em>ranges, comma-separated</em></h3>
+          <div class="rtab"><table class="rangeT"><thead><tr><th></th><th>Mon–Thu</th><th>Fri (F…)</th><th>Sat</th><th>Sun</th></tr></thead><tbody id="rangeBody"></tbody></table></div></div>
+      </div>
+      <div class="rfoot"><span class="note">Settings are saved in this browser.</span><button class="btn" id="a_reset" type="button">Restore defaults</button></div>
+    </details>
+
+    <section class="asgBlock">
+      <div class="blockHead"><h2>Drivers and requests</h2>
+        <div class="hbtns"><button type="button" class="btn" id="addDrv">Add driver</button><button type="button" class="btn" id="pasteBtn2">Paste from Google Sheets</button><button type="button" class="btn danger" id="clearDrv">Remove all drivers</button></div></div>
+      <details class="rules" id="pasteBox">
+        <summary>Paste from Google Sheets <small>copy the rows from No to saturday</small></summary>
+        <div class="pastePad">
+          <p class="note" style="margin:0">Select the driver rows in your sheet (columns No, Roll number, Name, Rotas requested, Duty type / time, Special condition, Working days, sunday … saturday), copy, and paste below. RD in a day column becomes a rest day. Duty type and break are read from the text where possible; the original text is kept in Notes.</p>
+          <textarea id="pasteText" rows="5" placeholder="Paste rows here"></textarea>
+          <div class="hbtns"><button type="button" class="btn primary" id="pasteAdd">Add to list</button><button type="button" class="btn" id="pasteReplace">Replace list</button><span class="note" id="pasteMsg"></span></div>
+        </div>
+      </details>
+      <div id="drvEmpty" class="emptyBox"><h3>No drivers yet</h3><p>Add drivers one by one, or paste them from your Google Sheet. The list is saved in this browser and used for every job.</p><button type="button" class="btn primary" id="addDrv2">Add driver</button></div>
+      <div class="tablebox" id="drvBox" hidden><table class="drvT">
+        <thead><tr><th>No</th><th>Roll number</th><th>Name</th><th>Rota</th><th>Duty type / time</th><th>Special condition</th><th>Working days <span class="lc">(click: works / RD)</span></th><th>Notes</th><th></th></tr></thead>
+        <tbody id="drvBody"></tbody></table></div>
+    </section>
+
+    <section class="asgBlock">
+      <div class="blockHead"><h2>Assignment</h2>
+        <div class="hbtns"><button type="button" class="btn primary" id="asgCopy">Copy for Google Sheets</button><button type="button" class="btn" id="asgDl">Download CSV</button><button type="button" class="btn" id="asgReset">Clear manual changes</button></div></div>
+      <p class="note" id="asgNoJob">Load a job with duty PDFs first (New job: choose PDFs), then the drivers are assigned automatically.</p>
+      <div id="asgOut" hidden>
+        <p class="note">Job: <b id="asgJobName"></b>. Click a duty to change it; your choice is kept (marked fixed) and the other drivers are re-planned around it.</p>
+        <ul class="asgNotes" id="asgNotes" hidden></ul>
+        <div class="asgSum" id="asgSum"></div>
+        <div class="tablebox"><table class="asgT">
+          <thead><tr><th>No</th><th>Driver</th><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Week</th></tr></thead>
+          <tbody id="asgBody"></tbody></table></div>
+      </div>
+    </section>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
@@ -329,13 +446,16 @@ RULE_FIELDS.forEach(([g, k]) => { const el = $('r_' + (g ? g + '_' : '') + k);
   el.addEventListener('change', () => { const v = parseHM(el.value); if (v == null) { el.value = fmt(g ? rules[g][k] : rules[k]); return; } if (g) rules[g][k] = v; else rules[k] = v; el.value = fmt(v); saveRules(); render(); }); });
 $('r_fourDayPattern').addEventListener('change', e => { rules.fourDayPattern = e.target.value; saveRules(); render(); });
 $('r_joinShortBreaks').addEventListener('change', e => { rules.joinShortBreaks = e.target.checked; saveRules(); render(); });
-$('resetRules').addEventListener('click', () => { rules = JSON.parse(JSON.stringify(DEFAULT_RULES)); saveRules(); $('dlCsv').addEventListener('click', () => {
+$('resetRules').addEventListener('click', () => { rules = JSON.parse(JSON.stringify(DEFAULT_RULES)); saveRules(); fillRules(); render(); });
+function saveFile(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + text], { type }));
+  a.download = name.replace(/[^\w\- .]+/g, '_').slice(0, 90); document.body.appendChild(a); a.click(); a.remove();
+}
+$('dlCsv').addEventListener('click', () => {
   const j = jobs.find(j => j.id === jobId); if (!j) return;
-  const { csv } = errorCsv(); const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' }));
-  a.download = j.name.replace(/[^\w\- ]+/g, '_').slice(0, 80) + ' - errors.csv'; document.body.appendChild(a); a.click(); a.remove();
+  saveFile(j.name + ' - errors.csv', errorCsv().csv, 'text/csv');
 });
-selectJob(jobId); fillRules(); render(); });
 
 function evaluate(f) {
   const sunday = isSundayLabel(f.dayLabel);
@@ -371,6 +491,7 @@ function render() {
   const job = jobs.find(j => j.id === jobId);
   const evalFiles = f => evaluate(f);
   renderJobs();
+  if (typeof renderAssignResults === 'function') renderAssignResults();
   $('emptySec').hidden = !!job; $('jobSec').hidden = !job; $('tableSec').hidden = !job; $('addBtn').hidden = !job;
   if (!job) return;
   if (document.activeElement !== $('jobName')) $('jobName').value = job.name;
@@ -462,7 +583,7 @@ async function loadFiles(list, mode) {
   const out = [], failed = [];
   for (const f of pdfs) {
     try { const r = parseLines(await pdfLines(await f.arrayBuffer()));
-      if (!r.duties.length) failed.push(f.name); else out.push({ name: f.name, dayLabel: r.dayLabel, commencing: r.commencing, duties: r.duties.map(d => ({ duty: d.duty, reliefs: d.reliefs, totals: d.totals, pieces: d.pieces.map(p => ({ onBus: p.onBus, relief: p.relief })) })), incomplete: r.incomplete });
+      if (!r.duties.length) failed.push(f.name); else out.push({ name: f.name, dayLabel: r.dayLabel, commencing: r.commencing, duties: r.duties.map(d => ({ duty: d.duty, reliefs: d.reliefs, totals: d.totals, pieces: d.pieces.map(p => ({ b: p.board, bookOn: p.bookOn, bookOff: p.bookOff, onBus: p.onBus, relief: p.relief })) })), incomplete: r.incomplete });
     } catch (e) { failed.push(f.name); }
   }
   if (out.length) {
@@ -518,7 +639,354 @@ $('dlCsv').addEventListener('click', () => {
   a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' }));
   a.download = j.name.replace(/[^\w\- ]+/g, '_').slice(0, 80) + ' - errors.csv'; document.body.appendChild(a); a.click(); a.remove();
 });
-selectJob(jobId); fillRules(); render();
+// ================= Driver assignment module =================
+const DAYS = [['sun', 'Sun', 'Sunday'], ['mon', 'Mon', 'Monday'], ['tue', 'Tue', 'Tuesday'], ['wed', 'Wed', 'Wednesday'], ['thu', 'Thu', 'Thursday'], ['fri', 'Fri', 'Friday'], ['sat', 'Sat', 'Saturday']];
+const ROTAS = ['WB', 'Soho', 'Bearwood', 'Oldbury'];
+const GROUPS = [['mt', 'Mon–Thu'], ['fri', 'Fri'], ['sat', 'Sat'], ['sun', 'Sun']];
+const DTYPES = [['any', 'Any'], ['early', 'Early'], ['late', 'Late'], ['finish', 'Finish before'], ['start', 'Start after'], ['between', 'Start after + finish before']];
+const SPECIALS = [['none', 'None'], ['break', 'Minimum break'], ['route', 'Specific route']];
+const DEFAULT_ASG = {
+  target: 2130, earlyEnd: 870, lateStart: 900, onlyValid: false, sameNumber: false,
+  friFromMT: ['Oldbury'],
+  boards: '12 = 12, 13\n87 = 82, 87',
+  ranges: {
+    WB: { mt: '1-99', fri: '1-99', sat: '401-499', sun: '821-899' },
+    Soho: { mt: '201-399', fri: '201-399', sat: '501-599', sun: '701-799' },
+    Bearwood: { mt: '3001-3099', fri: '3001-3099', sat: '6001-6099', sun: '7601-7699' },
+    Oldbury: { mt: '7001-7199', fri: '7001-7199', sat: '7501-7599', sun: '9501-9599' },
+  },
+};
+let asg = JSON.parse(JSON.stringify(DEFAULT_ASG));
+let drivers = [];
+try { const s = localStorage.getItem('dutyAssignSettings2'); if (s) { const o = JSON.parse(s); asg = Object.assign(asg, o, { ranges: Object.assign({}, asg.ranges, o.ranges || {}) }); } } catch (e) {}
+try { const s = localStorage.getItem('dutyDrivers'); if (s) drivers = JSON.parse(s) || []; } catch (e) { drivers = []; }
+const saveAsg = () => { try { localStorage.setItem('dutyAssignSettings2', JSON.stringify(asg)); } catch (e) {} };
+const saveDrivers = () => { try { localStorage.setItem('dutyDrivers', JSON.stringify(drivers)); } catch (e) {} };
+const newDriver = () => ({ id: 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), no: '', roll: '', name: '', rota: 'any', dtype: 'any', tStart: '', tEnd: '', special: 'none', sval: '', days: { sun: false, mon: true, tue: true, wed: true, thu: true, fri: true, sat: false }, notes: '' });
+
+const hhmm = s => { if (!s || !/^\d{3,4}$/.test(s)) return null; const v = +s; return Math.floor(v / 100) * 60 + v % 100; };
+const clock = m => { if (m == null) return ''; m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+const parseClock = s => { const m = String(s || '').trim().match(/^(\d{1,2})[:.]?(\d{2})$/); if (!m || +m[1] > 24 || +m[2] > 59) return null; return +m[1] * 60 + +m[2]; };
+
+function daysOfLabel(label) {
+  const order = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  const re = /(monday|tuesday|wednesday|thursday|friday|saturday|sunday)(?:\s*(?:to|-|–)\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday))?/gi;
+  const out = new Set(); let m;
+  while ((m = re.exec(label || ''))) {
+    const a = order.indexOf(m[1].slice(0, 3).toLowerCase()); const b = m[2] ? order.indexOf(m[2].slice(0, 3).toLowerCase()) : a;
+    for (let i = a; i <= b; i++) out.add(order[i]);
+  }
+  return [...out];
+}
+const groupOfDays = ds => ds.some(d => ['mon', 'tue', 'wed', 'thu'].includes(d)) ? 'mt' : ds.includes('fri') ? 'fri' : ds.includes('sat') ? 'sat' : 'sun';
+function inRanges(num, spec) {
+  return String(spec || '').split(',').some(r => { const m = r.trim().match(/^(\d+)\s*[-–]\s*(\d+)$/); if (m) return num >= +m[1] && num <= +m[2]; return r.trim() !== '' && +r.trim() === num; });
+}
+
+// Build per-job duty info: which file covers which day, plus timing/route/validity per duty
+function jobInfo(job) {
+  const dayFile = {}, warn = []; let oldData = false;
+  const fileDuties = job.files.map((f, fi) => {
+    const ds = daysOfLabel(f.dayLabel); const g = groupOfDays(ds);
+    ds.forEach(d => { if (dayFile[d] == null) dayFile[d] = fi; else warn.push(`${f.name} also covers ${d}; using the first file.`); });
+    const ev = evaluate(f);
+    return f.duties.map((d, i) => {
+      const p0 = d.pieces[0] || {}, pl = d.pieces[d.pieces.length - 1] || {};
+      if (p0.bookOn === undefined) oldData = true;
+      const s = hhmm(p0.bookOn); let e = hhmm(pl.bookOff); if (s != null && e != null && e < s) e += 1440;
+      const num = parseInt(String(d.duty).replace(/^\D+/, ''), 10);
+      const rota = ROTAS.find(r => inRanges(num, (asg.ranges[r] || {})[g])) || '';
+      return { no: d.duty, num, pay: d.totals.pay, s, e, maxRelief: d.reliefs.length ? Math.max(...d.reliefs) : null,
+        routes: d.pieces.map(p => String(p.b || '').split('/')[0]).filter(Boolean), valid: !ev[i].nIssues, fi, g, rota };
+    });
+  });
+  return { dayFile, fileDuties, warn, oldData };
+}
+
+function boardMap() { const m = {}; String(asg.boards || '').split(/\n/).forEach(l => { const x = l.match(/^\s*(\w+)\s*[=:]\s*(.+)$/); if (x) m[x[1].toUpperCase()] = x[2].split(/[\s,;]+/).filter(Boolean).map(r => r.toUpperCase()); }); return m; }
+const routesOfBoard = (b, bm) => bm[String(b).toUpperCase()] || [String(b).toUpperCase()];
+function limitEnd(v) { return v == null ? null : (v === 0 ? 1440 : v < 240 ? v + 1440 : v); }
+function fitReason(dr, du) {
+  if (asg.onlyValid && !du.valid) return 'fails duty check';
+  if (dr.rota !== 'any' && du.rota !== dr.rota) return 'other rota';
+  const needTime = dr.dtype !== 'any';
+  if (needTime && (du.s == null || du.e == null)) return 'no sign-on/off times (upload the PDFs again)';
+  const ts = parseClock(dr.tStart), te = limitEnd(parseClock(dr.tEnd));
+  if (dr.dtype === 'early' && du.e > asg.earlyEnd) return 'not early';
+  if (dr.dtype === 'late' && du.s < asg.lateStart) return 'not late';
+  if ((dr.dtype === 'finish' || dr.dtype === 'between') && te != null && du.e > te) return 'finishes too late';
+  if ((dr.dtype === 'start' || dr.dtype === 'between') && ts != null && du.s < ts) return 'starts too early';
+  if (dr.special === 'break') { const b = parseClock(dr.sval); if (b != null && (du.maxRelief == null || du.maxRelief < b)) return 'break too short'; }
+  if (dr.special === 'route') { const rs = String(dr.sval || '').split(/[\s,;]+/).filter(Boolean).map(x => x.toUpperCase()); const bm = boardMap();
+    if (rs.length && !du.routes.every(b => routesOfBoard(b, bm).some(r => rs.includes(r)))) return 'other route'; }
+  return '';
+}
+
+// duties that can be worked on a given day; Friday also offers Mon–Thu duties of the rotas set in settings
+function dayPool(info, d, dr) {
+  const fi = info.dayFile[d]; let list = fi != null ? info.fileDuties[fi] : [];
+  if (d === 'fri' && info.dayFile.mon != null && (asg.friFromMT || []).length) {
+    const rotas = (asg.friFromMT || []).filter(r => dr.rota === 'any' || dr.rota === r);
+    if (rotas.length) list = list.filter(du => !rotas.includes(du.rota)).concat(info.fileDuties[info.dayFile.mon].filter(du => rotas.includes(du.rota)));
+  }
+  return list;
+}
+const poolKey = (info, d, dr) => d === 'fri' && dr.rota !== 'any' && (asg.friFromMT || []).includes(dr.rota) && info.dayFile.mon != null ? 'f' + info.dayFile.mon : 'f' + info.dayFile[d];
+function assignAll(job) {
+  const info = jobInfo(job); const used = {}; DAYS.forEach(([d]) => used[d] = new Set());
+  const res = {}; const locks = job.locks || {};
+  const byNo = (d, no) => dayPool(info, d, { rota: 'any' }).find(x => x.no === no);
+  // 1. locked cells first
+  drivers.forEach(dr => { res[dr.id] = {}; const L = locks[dr.id] || {};
+    DAYS.forEach(([d]) => { if (!dr.days[d]) { res[dr.id][d] = { rd: true }; return; }
+      if (L[d] === undefined) return;
+      if (L[d] === '') { res[dr.id][d] = { locked: true, reason: 'Left empty by you' }; return; }
+      const du = byNo(d, L[d]);
+      if (du) { res[dr.id][d] = { du, locked: true }; used[d].add(du.no); } });
+  });
+  // 2. drivers in list order (No column)
+  const order = drivers.slice().sort((a, b) => (parseFloat(a.no) || 1e9) - (parseFloat(b.no) || 1e9));
+  order.forEach(dr => {
+    const R = res[dr.id]; const open = DAYS.map(([d]) => d).filter(d => dr.days[d] && !R[d]);
+    open.filter(d => !dayPool(info, d, dr).length && info.dayFile[d] == null).forEach(d => R[d] = { reason: 'No PDF loaded for this day' });
+    const lockedPay = DAYS.reduce((n, [d]) => n + (R[d] && R[d].du ? R[d].du.pay : 0), 0);
+    const workDays = open.filter(d => !R[d]);
+    if (!workDays.length) return;
+    // one unit per day, or per PDF when the same number is wanted all week
+    let units;
+    if (asg.sameNumber) { const g = {}; workDays.forEach(d => { const k = poolKey(info, d, dr); (g[k] = g[k] || []).push(d); }); units = Object.values(g); }
+    else units = workDays.map(d => [d]);
+    const fitting = units.map(u => dayPool(info, u[0], dr).filter(du => !fitReason(dr, du)));
+    let cands = units.map((u, k) => fitting[k].filter(du => u.every(d => !used[d].has(du.no))));
+    // split multi-day units that have no duty free on all their days
+    const split = []; units.forEach((u, k) => { if (!cands[k].length && u.length > 1) u.forEach(d => split.push({ u: [d], f: fitting[k] })); else split.push({ u, f: fitting[k], c: cands[k] }); });
+    units = split.map(x => x.u); const fits = split.map(x => x.f); cands = split.map(x => x.c || x.f.filter(du => x.u.every(d => !used[d].has(du.no))));
+    const lockedNums = DAYS.map(([d]) => R[d] && R[d].du ? R[d].du.num : null).filter(x => x != null);
+    const nDays = units.reduce((n, u) => n + (cands[units.indexOf(u)].length ? u.length : 0), 0);
+    // greedy: aim each unit at the remaining target per remaining day
+    const picks = []; let rem = asg.target - lockedPay, remDays = nDays;
+    units.forEach((u, k) => { const c = cands[k]; if (!c.length) { picks.push(null); return; }
+      const ideal = rem / Math.max(1, remDays) ; let best = null, bs = Infinity;
+      c.forEach(du => { const sc = Math.abs(du.pay - ideal) * u.length; if (sc < bs) { bs = sc; best = du; } });
+      picks.push(best); rem -= best.pay * u.length; remDays -= u.length; });
+    // improve: change one unit at a time while the weekly total gets closer to the target
+    const total = () => lockedPay + picks.reduce((n, p, k) => n + (p ? p.pay * units[k].length : 0), 0);
+    const mism = () => { if (!asg.sameNumber) return 0; const nums = picks.filter(Boolean).map(p => p.num).concat(lockedNums); return new Set(nums).size - (nums.length ? 1 : 0); };
+    const score = () => Math.abs(total() - asg.target) + mism() * 6;
+    for (let it = 0; it < 4; it++) { let changed = false;
+      units.forEach((u, k) => { if (!picks[k]) return; const orig = picks[k]; let bs = score(), bd = orig;
+        cands[k].forEach(du => { picks[k] = du; const sc = score(); if (sc < bs - 0.01) { bs = sc; bd = du; } });
+        picks[k] = bd; if (bd !== orig) changed = true; });
+      if (!changed) break; }
+    units.forEach((u, k) => { const du = picks[k];
+      u.forEach(d => {
+        if (du) { R[d] = { du }; used[d].add(du.no); }
+        else { const noRota = dr.rota !== 'any' && !dayPool(info, d, { rota: 'any' }).some(x => x.rota === dr.rota);
+          R[d] = { reason: fits[k].length ? 'All matching duties are already taken' : noRota ? `No ${dr.rota} duties for this day` : 'No duty meets these requirements' }; }
+      }); });
+  });
+  return { res, info };
+}
+
+// ---------- UI ----------
+function dayCells(dr) { return DAYS.map(([d, s]) => `<button type="button" class="dayT ${dr.days[d] ? 'on' : ''}" data-id="${dr.id}" data-day="${d}" aria-pressed="${dr.days[d]}" title="${dr.days[d] ? 'Works' : 'Rest day'} ${s}">${dr.days[d] ? s : 'RD'}</button>`).join(''); }
+function opt(list, v) { return list.map(([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${l}</option>`).join(''); }
+function renderDrivers() {
+  $('drvEmpty').hidden = drivers.length > 0; $('drvBox').hidden = !drivers.length;
+  $('drvBody').innerHTML = drivers.map(dr => `<tr data-id="${dr.id}">
+    <td><input type="text" id="${dr.id}_no" data-f="no" value="${esc(dr.no)}" class="w3" aria-label="No"></td>
+    <td><input type="text" id="${dr.id}_roll" data-f="roll" value="${esc(dr.roll)}" class="w6" aria-label="Roll number"></td>
+    <td><input type="text" id="${dr.id}_name" data-f="name" value="${esc(dr.name)}" class="w10" aria-label="Name"></td>
+    <td><select id="${dr.id}_rota" data-f="rota" aria-label="Rota"><option value="any">Any</option>${ROTAS.map(r => `<option ${dr.rota === r ? 'selected' : ''}>${r}</option>`).join('')}</select></td>
+    <td><div class="stack"><select id="${dr.id}_dtype" data-f="dtype" aria-label="Duty type">${opt(DTYPES, dr.dtype)}</select>
+      <span class="tpair"><input type="text" id="${dr.id}_tStart" data-f="tStart" value="${esc(dr.tStart)}" placeholder="after hh:mm" class="w5 tS" aria-label="Start after"><input type="text" id="${dr.id}_tEnd" data-f="tEnd" value="${esc(dr.tEnd)}" placeholder="before hh:mm" class="w5 tE" aria-label="Finish before"></span></div></td>
+    <td><div class="stack"><select id="${dr.id}_special" data-f="special" aria-label="Special condition">${opt(SPECIALS, dr.special)}</select>
+      <input type="text" id="${dr.id}_sval" data-f="sval" value="${esc(dr.sval)}" class="w7 sV" aria-label="Special condition value"></div></td>
+    <td class="days">${dayCells(dr)}</td>
+    <td><input type="text" id="${dr.id}_notes" data-f="notes" value="${esc(dr.notes)}" class="w12" aria-label="Notes"></td>
+    <td><button type="button" class="x" data-del="${dr.id}" aria-label="Remove driver">×</button></td></tr>`).join('');
+  document.querySelectorAll('#drvBody tr').forEach(syncRow);
+}
+function syncRow(tr) {
+  const dr = drivers.find(x => x.id === tr.dataset.id); if (!dr) return;
+  tr.querySelector('.tS').hidden = !['start', 'between'].includes(dr.dtype);
+  tr.querySelector('.tE').hidden = !['finish', 'between'].includes(dr.dtype);
+  const sv = tr.querySelector('.sV'); sv.hidden = dr.special === 'none'; sv.placeholder = dr.special === 'break' ? 'h:mm, e.g. 1:00' : 'e.g. 74, 87';
+}
+function onDriverEdit(e) {
+  const t = e.target; const tr = t.closest('tr'); if (!tr || !t.dataset.f) return;
+  const dr = drivers.find(x => x.id === tr.dataset.id); if (!dr) return;
+  let v = t.value;
+  if (['tStart', 'tEnd'].includes(t.dataset.f) || (t.dataset.f === 'sval' && dr.special === 'break')) { if (e.type === 'change' && v.trim()) { const m = parseClock(v); if (m != null) { v = t.dataset.f === 'sval' ? fmt(m) : clock(m); t.value = v; t.classList.remove('badIn'); } else t.classList.add('badIn'); } }
+  dr[t.dataset.f] = v; saveDrivers(); syncRow(tr); if (e.type === 'change') renderAssignResults();
+}
+
+function cellHtml(c, dr, d) {
+  if (!c) return '<span class="muted">—</span>';
+  if (c.rd) return '<span class="rd">RD</span>';
+  if (c.du) return `<button type="button" class="cellBtn ${c.locked ? 'locked' : ''}" data-id="${dr.id}" data-day="${d}" title="Change duty"><b>${esc(c.du.no)}</b><small>${fmt(c.du.pay)}${c.du.s != null ? ' · ' + clock(c.du.s) + '–' + clock(c.du.e) : ''}</small>${c.locked ? '<i>fixed</i>' : ''}${c.du.valid ? '' : '<i class="errf">duty check error</i>'}</button>`;
+  return `<button type="button" class="cellBtn miss ${c.locked ? 'locked' : ''}" data-id="${dr.id}" data-day="${d}" title="${esc(c.reason || '')}"><b>—</b><small>${esc(c.reason || 'Not assigned')}</small></button>`;
+}
+let lastAsg = null;
+function renderAssignResults() {
+  if ($('assignView').hidden) return;
+  const job = jobs.find(j => j.id === jobId);
+  $('asgNoJob').hidden = !!job; $('asgOut').hidden = !job || !drivers.length;
+  if (!job) return;
+  $('asgJobName').textContent = job.name;
+  if (!drivers.length) return;
+  const { res, info } = lastAsg = assignAll(job);
+  const missingDays = DAYS.filter(([d]) => info.dayFile[d] == null).map(([, , l]) => l);
+  const notes = [];
+  if (info.oldData) notes.push('This job was saved before sign-on/off times were stored. Upload its PDFs again as a new job to use Early, Late, times and routes.');
+  if (missingDays.length) notes.push('No PDF in this job for: ' + missingDays.join(', ') + '.');
+  info.warn.forEach(w => notes.push(w));
+  $('asgNotes').innerHTML = notes.map(n => `<li>${esc(n)}</li>`).join(''); $('asgNotes').hidden = !notes.length;
+  let full = 0, gaps = 0;
+  const rows = drivers.slice().sort((a, b) => (parseFloat(a.no) || 1e9) - (parseFloat(b.no) || 1e9)).map(dr => {
+    const R = res[dr.id] || {}; const tot = DAYS.reduce((n, [d]) => n + (R[d] && R[d].du ? R[d].du.pay : 0), 0);
+    const miss = DAYS.some(([d]) => dr.days[d] && !(R[d] && R[d].du)); miss ? gaps++ : full++;
+    const diff = tot - asg.target; const close = Math.abs(diff) <= 30;
+    return `<tr class="${miss ? 'gap' : ''}"><td class="mono">${esc(dr.no)}</td><td><b>${esc(dr.name || '(no name)')}</b><small class="sub2">${esc(dr.roll)}${dr.rota !== 'any' ? ' · ' + esc(dr.rota) : ''}</small></td>
+      ${DAYS.map(([d]) => `<td class="dc">${cellHtml(R[d], dr, d)}</td>`).join('')}
+      <td class="mono tot"><b>${fmt(tot)}</b><small class="${close ? 'okc' : 'offc'}">${diff >= 0 ? '+' : '−'}${fmt(Math.abs(diff))}</small></td></tr>`;
+  });
+  $('asgBody').innerHTML = rows.join('');
+  $('asgSum').innerHTML = `<span class="pill ok">${full} fully assigned</span>${gaps ? `<span class="pill bad">${gaps} with gaps</span>` : ''}<span class="note">Target ${fmt(asg.target)} a week. The ± figure shows the difference.</span>`;
+}
+
+// cell picker
+function openPicker(btn) {
+  const job = jobs.find(j => j.id === jobId); if (!job || !lastAsg) return;
+  const dr = drivers.find(x => x.id === btn.dataset.id), d = btn.dataset.day; const pool = dayPool(lastAsg.info, d, { rota: 'any' }); if (!pool.length) return;
+  const cur = lastAsg.res[dr.id][d]; const curNo = cur && cur.du ? cur.du.no : '';
+  const taken = new Set(); drivers.forEach(o => { if (o.id !== dr.id) { const c = lastAsg.res[o.id][d]; if (c && c.du) taken.add(c.du.no); } });
+  const all = pool; const bm = boardMap();
+  const fits = all.filter(du => !fitReason(dr, du));
+  const line = du => `${du.no} · pay ${fmt(du.pay)}${du.s != null ? ' · ' + clock(du.s) + '–' + clock(du.e) : ''}${du.rota ? ' · ' + du.rota : ''}${du.routes.length ? ' · rt ' + [...new Set(du.routes.flatMap(b => routesOfBoard(b, bm)))].join('/') : ''}${du.valid ? '' : ' · has errors'}${taken.has(du.no) ? ' · taken' : ''}`;
+  const sel = document.createElement('select'); sel.className = 'picker'; sel.setAttribute('aria-label', 'Choose duty');
+  sel.innerHTML = `<option value="__auto">Auto (let the tool choose)</option><option value="__none">Leave empty</option>
+    <optgroup label="Meets requirements (${fits.length})">${fits.map(du => `<option value="${esc(du.no)}" ${du.no === curNo ? 'selected' : ''}>${esc(line(du))}</option>`).join('')}</optgroup>
+    <optgroup label="All other duties">${all.filter(du => !fits.includes(du)).map(du => `<option value="${esc(du.no)}" ${du.no === curNo ? 'selected' : ''}>${esc(line(du))} · ${esc(fitReason(dr, du))}</option>`).join('')}</optgroup>`;
+  if (!curNo) sel.value = '__auto';
+  btn.replaceWith(sel); sel.focus();
+  const done = () => { const v = sel.value; job.locks = job.locks || {}; const L = job.locks[dr.id] = job.locks[dr.id] || {};
+    if (v === '__auto') delete L[d]; else if (v === '__none') L[d] = ''; else {
+      // with "same number" on, apply to every working day served by the same PDF; otherwise to this day only
+      const key = poolKey(lastAsg.info, d, dr);
+      const days = asg.sameNumber ? DAYS.map(([x]) => x).filter(x => dr.days[x] && poolKey(lastAsg.info, x, dr) === key) : [d];
+      days.forEach(x => { L[x] = v; });
+      drivers.forEach(o => { if (o.id !== dr.id && job.locks[o.id]) days.forEach(x => { if (job.locks[o.id][x] === v) delete job.locks[o.id][x]; }); });
+    }
+    saveJobs(); renderAssignResults(); };
+  sel.addEventListener('change', done); sel.addEventListener('blur', () => { if (document.body.contains(sel)) renderAssignResults(); });
+}
+
+function assignTable() {
+  const head = ['No', 'Roll number', 'Name', 'Rota', ...DAYS.map(([, , l]) => l.toLowerCase()), 'Weekly pay'];
+  const rows = [head];
+  if (lastAsg) drivers.slice().sort((a, b) => (parseFloat(a.no) || 1e9) - (parseFloat(b.no) || 1e9)).forEach(dr => { const R = lastAsg.res[dr.id] || {};
+    const tot = DAYS.reduce((n, [d]) => n + (R[d] && R[d].du ? R[d].du.pay : 0), 0);
+    rows.push([dr.no, dr.roll, dr.name, dr.rota === 'any' ? '' : dr.rota, ...DAYS.map(([d]) => !dr.days[d] ? 'RD' : R[d] && R[d].du ? R[d].du.no : ''), fmt(tot)]); });
+  return rows;
+}
+
+// ---- paste from Google Sheets ----
+function pTime(tok, pmHint) {
+  tok = String(tok).trim().toLowerCase(); let m = tok.match(/^(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)$/);
+  if (m) { let h = +m[1] % 12 + (m[3] === 'pm' ? 12 : 0); return h * 60 + (+m[2] || 0); }
+  m = tok.match(/^(\d{1,2})[:.](\d{2})$/); if (m) return +m[1] * 60 + +m[2];
+  m = tok.match(/^\d{3,4}$/); if (m) { const v = +tok; return Math.floor(v / 100) * 60 + v % 100; }
+  m = tok.match(/^\d{1,2}$/); if (m) return +tok * 60;
+  return null;
+}
+function parseDutyText(t) {
+  const s = String(t || '').toLowerCase().replace(/\s+/g, ' ').trim(); const out = { dtype: 'any', tStart: '', tEnd: '' };
+  if (!s) return out;
+  const T = '(\\d{1,2}[:.]\\d{2}|\\d{3,4}|\\d{1,2}\\s*(?:am|pm)|\\d{1,2})';
+  const fin = s.match(new RegExp('(?:finish(?:\\s+before)?|fin(?:\\s+by)?)\\s*' + T + '|' + T + '\\s*(?:f\\b|fin\\b|finish)'));
+  const st = s.match(new RegExp('(?:start(?:\\s+after)?|staft|after)\\s*' + T));
+  const rg = s.match(new RegExp('^' + T + '\\s*(?:-|to)\\s*' + T + '$'));
+  const set = (k, v) => { const m = pTime(v); if (m != null) out[k] = clock(m); };
+  if (rg) { set('tStart', rg[1]); set('tEnd', rg[2]); }
+  else { if (fin) set('tEnd', fin[1] || fin[2]); if (st) set('tStart', st[1]); }
+  if (out.tStart && out.tEnd) out.dtype = 'between'; else if (out.tEnd) out.dtype = 'finish'; else if (out.tStart) out.dtype = 'start';
+  else if (/earl/.test(s)) out.dtype = 'early'; else if (/late/.test(s)) out.dtype = 'late';
+  return out;
+}
+function importRows(text, replace) {
+  const lines = String(text).split(/\r?\n/).map(l => l.split('\t')).filter(c => c.some(x => x.trim()));
+  const added = [];
+  lines.forEach(c => {
+    if (/roll|name/i.test(c.join(' ')) && !/\d{5,}/.test(c.join(' '))) return; // header
+    const [no, roll, name, rota, dtext, spec, wdays] = c.map(x => (x || '').trim());
+    if (!name && !roll) return;
+    const dr = newDriver(); Object.assign(dr, { no, roll, name });
+    const r = ROTAS.find(x => new RegExp('^' + x + '$', 'i').test(rota || '')); dr.rota = r || 'any';
+    Object.assign(dr, parseDutyText(dtext));
+    const sp = String(spec || ''); const hb = sp.match(/(\d+(?:[:.]\d{2})?)\s*(hour|hr|h)\w*\s*break/i); const mb = sp.match(/(\d+)\s*min\w*\s*break/i);
+    if (hb) { dr.special = 'break'; dr.sval = /[:.]/.test(hb[1]) ? hb[1].replace('.', ':') : hb[1] + ':00'; }
+    else if (mb) { dr.special = 'break'; dr.sval = fmt(+mb[1]); }
+    else { const rt = sp.match(/route\s*([\w ,]+)/i); if (rt) { dr.special = 'route'; dr.sval = rt[1].trim(); } }
+    const dayCols = c.slice(7, 14);
+    if (dayCols.length) DAYS.forEach(([d], i) => { dr.days[d] = !/^\s*rd\s*$/i.test(dayCols[i] || ''); });
+    dr.notes = [dtext, spec, wdays].filter(Boolean).join(' | ');
+    added.push(dr);
+  });
+  if (replace) drivers = added; else drivers = drivers.concat(added);
+  saveDrivers(); renderDrivers(); renderAssignResults();
+  return added.length;
+}
+
+function fillAsgSettings() {
+  $('a_target').value = fmt(asg.target); $('a_early').value = clock(asg.earlyEnd); $('a_late').value = clock(asg.lateStart);
+  $('a_valid').checked = asg.onlyValid; $('a_same').checked = asg.sameNumber; $('a_boards').value = asg.boards || '';
+  $('friBox').innerHTML = ROTAS.map(r => `<label class="rrow cbrow"><input type="checkbox" id="fri_${r}" data-r="${r}" ${(asg.friFromMT || []).includes(r) ? 'checked' : ''}> ${r}</label>`).join('');
+  $('rangeBody').innerHTML = ROTAS.map(r => `<tr><th scope="row">${r}</th>${GROUPS.map(([g]) => `<td><input type="text" id="rg_${r}_${g}" data-r="${r}" data-g="${g}" value="${esc((asg.ranges[r] || {})[g] || '')}" aria-label="${r} ${g} duty numbers"></td>`).join('')}</tr>`).join('');
+}
+function initAssign() {
+  fillAsgSettings(); renderDrivers();
+  $('a_target').onchange = e => { const v = parseHM(e.target.value); if (v != null) asg.target = v; e.target.value = fmt(asg.target); saveAsg(); renderAssignResults(); };
+  $('a_early').onchange = e => { const v = parseClock(e.target.value); if (v != null) asg.earlyEnd = v; e.target.value = clock(asg.earlyEnd); saveAsg(); renderAssignResults(); };
+  $('a_late').onchange = e => { const v = parseClock(e.target.value); if (v != null) asg.lateStart = v; e.target.value = clock(asg.lateStart); saveAsg(); renderAssignResults(); };
+  $('a_valid').onchange = e => { asg.onlyValid = e.target.checked; saveAsg(); renderAssignResults(); };
+  $('a_same').onchange = e => { asg.sameNumber = e.target.checked; saveAsg(); renderAssignResults(); };
+  $('rangeBody').addEventListener('change', e => { const t = e.target; if (!t.dataset.r) return; asg.ranges[t.dataset.r] = asg.ranges[t.dataset.r] || {}; asg.ranges[t.dataset.r][t.dataset.g] = t.value.trim(); saveAsg(); renderAssignResults(); });
+  $('a_boards').onchange = e => { asg.boards = e.target.value; saveAsg(); renderAssignResults(); };
+  $('friBox').addEventListener('change', e => { const r = e.target.dataset.r; if (!r) return; const set = new Set(asg.friFromMT || []); e.target.checked ? set.add(r) : set.delete(r); asg.friFromMT = [...set]; saveAsg(); renderAssignResults(); });
+  $('a_reset').onclick = () => { asg = JSON.parse(JSON.stringify(DEFAULT_ASG)); saveAsg(); fillAsgSettings(); renderAssignResults(); };
+  $('drvBody').addEventListener('input', onDriverEdit); $('drvBody').addEventListener('change', onDriverEdit);
+  $('drvBody').addEventListener('click', e => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.del) { drivers = drivers.filter(x => x.id !== t.dataset.del); saveDrivers(); renderDrivers(); renderAssignResults(); return; }
+    if (t.dataset.day) { const dr = drivers.find(x => x.id === t.dataset.id); dr.days[t.dataset.day] = !dr.days[t.dataset.day]; saveDrivers();
+      t.outerHTML = dayCells(dr).split('</button>').find(h => h.includes(`data-day="${t.dataset.day}"`)) + '</button>'; renderAssignResults(); }
+  });
+  const add = () => { const dr = newDriver(); dr.no = String(drivers.reduce((m, x) => Math.max(m, parseFloat(x.no) || 0), 0) + 1); drivers.push(dr); saveDrivers(); renderDrivers(); renderAssignResults(); const el = $(dr.id + '_name'); if (el) el.focus(); };
+  $('addDrv').onclick = add; $('addDrv2').onclick = add;
+  $('pasteBtn2').onclick = () => { $('pasteBox').open = true; $('pasteText').focus(); };
+  const imp = replace => { const n = importRows($('pasteText').value, replace); $('pasteMsg').textContent = n ? `Imported ${n} driver${n === 1 ? '' : 's'}. Check the duty type of each one, especially rows with several times in one cell.` : 'No driver rows found. Copy the rows from your sheet (columns No to saturday) and paste them here.'; if (n) $('pasteText').value = ''; };
+  $('pasteAdd').onclick = () => imp(false); $('pasteReplace').onclick = () => imp(true);
+  let clr = null; $('clearDrv').onclick = () => { const b = $('clearDrv');
+    if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Click again to remove all'; clr = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Remove all drivers'; }, 4000); return; }
+    clearTimeout(clr); b.classList.remove('armed'); b.textContent = 'Remove all drivers'; drivers = []; saveDrivers(); renderDrivers(); renderAssignResults(); };
+  $('asgBody').addEventListener('click', e => { const b = e.target.closest('.cellBtn'); if (b) openPicker(b); });
+  $('asgReset').onclick = () => { const job = jobs.find(j => j.id === jobId); if (!job) return; job.locks = {}; saveJobs(); renderAssignResults(); };
+  $('asgCopy').onclick = async () => { const tsv = assignTable().map(r => r.join('\t')).join('\n'); const b = $('asgCopy');
+    try { await navigator.clipboard.writeText(tsv); b.textContent = 'Copied. Paste into Google Sheets'; } catch (e) { b.textContent = 'Copy blocked'; }
+    setTimeout(() => b.textContent = 'Copy for Google Sheets', 2500); };
+  $('asgDl').onclick = () => { const job = jobs.find(j => j.id === jobId); if (!job) return;
+    const csv = assignTable().map(r => r.map(c => /[",\n]/.test(c) ? '"' + String(c).replace(/"/g, '""') + '"' : c).join(',')).join('\n');
+    saveFile(job.name + ' - driver assignment.csv', csv, 'text/csv'); };
+  // tabs
+  const showTab = t => { $('checkView').hidden = t !== 'check'; $('assignView').hidden = t !== 'assign';
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t)); if (t === 'assign') renderAssignResults(); };
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { if (location.hash !== '#' + b.dataset.tab) location.hash = b.dataset.tab; showTab(b.dataset.tab); });
+  window.addEventListener('hashchange', () => showTab(location.hash === '#assign' ? 'assign' : 'check'));
+  showTab(location.hash === '#assign' ? 'assign' : 'check');
+}
+
+selectJob(jobId); fillRules(); initAssign(); render();
 </script>
 </body>
 </html>
