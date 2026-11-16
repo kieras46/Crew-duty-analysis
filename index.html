@@ -1752,9 +1752,14 @@ function renderDutyList() {
     return `<tr class="${u ? 'taken' : ''} ${tg ? 'tagged' : ''}" data-no="${esc(x.no)}" tabindex="0"><td>${rotaTagMode ? `<input type="checkbox" class="tagCk" ${tg ? 'checked' : ''} aria-label="Tag ${esc(x.no)}" tabindex="-1"> ` : ''}<b>${esc(x.no)}</b></td><td><button type="button" class="tyBtn ${rotaFile.typeOver && rotaFile.typeOver[x.no] != null ? 'over' : ''}" data-ty="${esc(x.no)}" title="Change duty type">${typeLetter(x) || '·'}</button></td><td>${hhmmTxt(x.s)}</td><td>${hhmmTxt(x.e)}</td><td>${fmt(x.pay)}</td><td>${esc(where)}</td><td>${esc(x.code || '')}</td></tr>`; }).join('') || `<tr><td colspan="7" class="empty">No duties for these filters.</td></tr>`;
   $('rotaDutyCount').textContent = `${list.length} dut${list.length === 1 ? 'y' : 'ies'}`;
 }
+// a duty can be on one line only: take it off every other line (any sub rota) on that day
+function takeDuty(di, v, keep) { const from = []; if (!isDutyVal(v)) return from;
+  rotaFile.rotas.forEach(o => o.lines.forEach(l => { const c = l.cells[di]; if (c !== keep && !(keep instanceof Set && keep.has(c)) && c.v === v) { c.v = ''; from.push(`${o.code} line ${l.pre[5]}`); } }));
+  return from; }
 function setCell(v, label) {
   const r = curRota(); if (!r) return; const c = r.lines[rotaCur.li] && r.lines[rotaCur.li].cells[rotaCur.di]; if (!c || c.v === v) return;
-  pushUndo(label || `line ${r.lines[rotaCur.li].pre[5]} ${DAYS[rotaCur.di][1]}`); c.v = v; saveRota(); renderRota();
+  pushUndo(label || `line ${r.lines[rotaCur.li].pre[5]} ${DAYS[rotaCur.di][1]}`); const from = takeDuty(rotaCur.di, v, c); c.v = v; saveRota(); renderRota();
+  if (from.length) rotaMsg(`Duty ${v} was already on ${from.join(', ')} (${DAYS[rotaCur.di][2]}). It was removed from there and that day is now empty.`);
 }
 function editRotaCell() {
   const td = $('rotaGrid').querySelector('td.sel'); if (!td) return; const r = curRota(); const c = r.lines[rotaCur.li].cells[rotaCur.di];
@@ -1932,8 +1937,10 @@ function initRota() {
     drivers.slice().sort((a2, b2) => (parseFloat(a2.no) || 1e9) - (parseFloat(b2.no) || 1e9)).forEach(dr => { const Rr = lastAsg.res[dr.id] || {};
       r.lines.push({ pre: [dp, code, 'P', '', '', String(no++), '', ''], driver: [dr.no, dr.name || dr.roll].filter(Boolean).join(' '),
         cells: DAYS.map(([d]) => ({ v: !dr.days[d] ? RDc() : Rr[d] && Rr[d].du ? Rr[d].du.no : '', f: ['NO', 'NO'] })) }); });
+    const mine = new Set(); r.lines.forEach(l => l.cells.forEach(c => mine.add(c))); let moved = 0;
+    r.lines.forEach(l => l.cells.forEach((c, di) => { if (l.driver) moved += takeDuty(di, c.v, mine).length; }));
     rotaSel = code; rotaCur = { li: 0, di: 0 }; saveRota();
-    m.textContent = `Exported ${drivers.length} driver${drivers.length === 1 ? '' : 's'} to ${curJob().name}, sub rota ${code}, lines ${first}–${no - 1}. Days without a duty are left empty.`; $('exOpen').hidden = false; };
+    m.textContent = (moved ? `${moved} dut${moved === 1 ? 'y was' : 'ies were'} already on other rotas and ${moved === 1 ? 'was' : 'were'} removed from there. ` : '') + `Exported ${drivers.length} driver${drivers.length === 1 ? '' : 's'} to ${curJob().name}, sub rota ${code}, lines ${first}–${no - 1}. Days without a duty are left empty.`; $('exOpen').hidden = false; };
   $('exOpen').onclick = () => { closeDialog('expDlg'); location.hash = 'rota'; };
   const move = (dl, dd) => { const r = curRota(); if (!r) return; rotaCur.li = Math.min(r.lines.length - 1, Math.max(0, rotaCur.li + dl)); rotaCur.di = Math.min(6, Math.max(0, rotaCur.di + dd)); renderRota(true); };
   $('rotaIn').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return;
@@ -1959,10 +1966,9 @@ function initRota() {
     if (rotaSwap) { const r = curRota(); const a = r.lines[rotaSwap.li].cells[rotaSwap.di], b = r.lines[li].cells[di];
       if (a !== b) { pushUndo('swap days'); [a.v, b.v] = [b.v, a.v]; saveRota(); rotaMsg(`Swapped line ${r.lines[rotaSwap.li].pre[5]} ${DAYS[rotaSwap.di][1]} with line ${r.lines[li].pre[5]} ${DAYS[di][1]}.`); }
       rotaSwap = null; }
-    rotaCur = { li, di }; renderRota(); $('rotaGridBox').focus({ preventScroll: true }); });
+    rotaCur = { li, di }; renderRota(); $('rotaGridBox').focus({ preventScroll: true }); if (e.detail >= 2) editRotaCell(); });
   $('rotaGrid').addEventListener('change', e => { const s2 = e.target.closest('.wtSel'); if (!s2) return; const r = curRota(); const l = r.lines[+s2.dataset.li]; rotaCur.li = +s2.dataset.li;
     pushUndo(`week type of line ${l.pre[5]}`); l.wt = s2.value; saveRota(); renderRota(); });
-  $('rotaGrid').addEventListener('dblclick', e => { if (e.target.closest('td[data-li]')) editRotaCell(); });
   $('rotaGridBox').addEventListener('keydown', e => {
     if (e.target !== $('rotaGridBox')) return; const k = e.key;
     if (k === 'ArrowDown') { e.preventDefault(); move(1, 0); } else if (k === 'ArrowUp') { e.preventDefault(); move(-1, 0); }
