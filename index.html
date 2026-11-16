@@ -491,17 +491,19 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
   </dialog>
 
   <div id="rotaView" class="view" hidden>
-    <input type="file" id="rotaIn" accept=".rif,.RIF,.txt,text/plain" hidden>
+    <input type="file" id="rotaIn" accept=".rif,.RIF,.ord,.ORD,.txt,text/plain" multiple hidden>
+    <input type="file" id="ordDir" webkitdirectory multiple hidden>
     <input type="file" id="difIn" accept=".dif,.DIF,.txt,text/plain" multiple hidden>
     <div class="rjBar">
       <div class="rjHead"><h2>Rota jobs</h2><input type="text" id="rjName" aria-label="Rota job name" hidden>
         <div class="hbtns"><button type="button" class="btn" id="rjNew">New job</button><button type="button" class="btn" id="rjCopy">Copy job</button><button type="button" class="btn danger" id="rjDel">Delete job</button></div></div>
       <div class="jobs" id="rjList"></div>
-      <p class="note">Opening a rota (.RIF) makes a new job. To try new duties on the same rota: Copy job, rename it, then Load duties (.DIF).</p>
+      <p class="note">Opening an OmniROTA folder or a rota file makes a new job. To try new duties on the same rota: Copy job, rename it, then Load duties (.DIF).</p>
     </div>
     <div class="omniTop">
       <div class="omniFiles">
-        <button type="button" class="btn primary" id="rotaLoad">Open rota (.RIF)</button>
+        <button type="button" class="btn primary" id="ordLoad">Open OmniROTA folder</button>
+        <button type="button" class="btn" id="rotaLoad">Open rota file (.RIF / .ORD)</button>
         <button type="button" class="btn" id="difLoad">Load duties (.DIF)</button>
         <button type="button" class="btn" id="rotaNewBtn">New sub rota</button>
         <button type="button" class="btn" id="rotaMainBtn" disabled>Main rota settings</button>
@@ -516,7 +518,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
     </div>
     <p class="status" id="rotaStatus" aria-live="polite"></p>
     <p class="note" id="rotaNoJob">Load the duties: a .DIF duty file from the rota program (best), or a job with duty PDFs.</p>
-    <div id="rotaEmpty" class="emptyBox"><h3>No rota open</h3><p>Export the rota (.RIF) and its duties (.DIF) from OmniROTA and open them here. They are read in your browser only.</p><button type="button" class="btn primary" id="rotaLoad2">Open rota (.RIF)</button></div>
+    <div id="rotaEmpty" class="emptyBox"><h3>No rota open</h3><p>Choose the OmniROTA folder that holds the rota's .ORD file: the rota, its duties and settings are read from it. You can also open a .RIF export and load a .DIF duty file. Files are read in your browser only.</p><button type="button" class="btn primary" id="rotaLoad2">Open rota file (.RIF / .ORD)</button></div>
     <div id="rotaMain" hidden>
       <div class="omniSum"><span id="rotaSum"></span><span class="note" id="rotaSrcInfo"></span><button type="button" class="linkBtn" id="difClear">Remove duty file</button></div>
       <div class="omni">
@@ -604,8 +606,8 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
     </dialog>
 
     <dialog id="balDlg" class="dlg" aria-labelledby="balT"><h3 id="balT">Balance weeks: <span id="bal_rota"></span></h3>
-      <p class="note">Keeps every RD and SP and moves the duties between lines so each week is within the minimum and maximum week value, with the minimum daily rest. Nothing changes if it cannot do better. Undo puts it back.</p>
-      <label class="cbrow"><input type="checkbox" id="bal_free"> Also use duties of this rota's numbers that are on no rota</label>
+      <p class="note">Keeps every RD and never touches weeks that are SP on every working day. Duties and the other SP days move between lines to get the lowest make up time: no week above the minimum while another is below it, no week over the maximum, and the minimum daily rest kept. Nothing changes if it cannot do better. Undo puts it back.</p>
+      <label class="cbrow"><input type="checkbox" id="bal_wbs"> West Brom Special: where possible, an early-finish duty before rest days and a later-start duty after rest days</label>
       <p class="status" id="bal_msg"></p>
       <div class="dBtns"><button type="button" class="btn primary" id="balRun">Balance weeks</button><button type="button" class="btn" data-close="balDlg">Cancel</button></div>
     </dialog>
@@ -633,7 +635,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
     </dialog>
 
     <dialog id="fillDlg" class="dlg" aria-labelledby="flT"><h3 id="flT">Auto-fill: <span id="fl_rota"></span></h3>
-      <p class="note">Puts duties that are on no rota into the empty days of this rota, keeping the minimum daily rest and giving longer duties to the lines with the shortest weeks.</p>
+      <p class="note">Puts duties that are on no rota into the empty days of this rota, keeping the minimum daily rest and giving longer duties to the lines with the shortest weeks. If no empty day fits, the duty replaces an SP day. Weeks that are SP on every working day are never changed.</p>
       <div class="dGrid"><label for="fl_subset">Use unassigned duties of</label><select id="fl_subset"></select></div>
       <p class="status" id="fl_msg" aria-live="polite"></p>
       <div id="flAsk" class="askBox" hidden><p id="fl_ask"></p><div class="dBtns"><button type="button" class="btn primary" id="flSP">Yes, enter SP</button><button type="button" class="btn" id="flLeave">No, leave empty</button></div></div>
@@ -1388,7 +1390,7 @@ function initAssign() {
 // RIF format: depot,rota,,,,,,,ROTATING(YES/NO),E ,,,   (sub rota header)
 //             depot,rota,P,,,LINE,,,SUN,f,f,MON,f,f,TUE,f,f,WED,f,f,THU,f,f,FRI,f,f,SAT,f,f
 let rotaFile = null; // { name, depot, set:{...}, rotas: [{ code, header, cfg:{...}, lines:[{ pre:[8], cells:[{v,f:[a,b]}] }] }] }
-let rotaSel = null, rotaUseFree = true, rotaCur = { li: 0, di: 0 }, rotaSwap = null, rotaListMode = 'all', rotaSubset = '';
+let rotaSel = null, rotaWbs = false, rotaCur = { li: 0, di: 0 }, rotaSwap = null, rotaListMode = 'all', rotaSubset = '';
 const ROTA_CODE_NAME = { WB: 'WB', SOHO: 'Soho', BW: 'Bearwood', OLD: 'Oldbury' };
 // rota jobs: each job keeps one rota file with its duties and settings
 let rotaJobs = [], rotaJobId = null;
@@ -1398,9 +1400,9 @@ try { const old = localStorage.getItem('dutyRotaFile'); if (old && !rotaJobs.len
 const curJob = () => rotaJobs.find(j => j.id === rotaJobId);
 // duty files are stored compactly: one entry per duty with the days it runs (Mon–Thu duties are not repeated four times)
 function packDif(dif) { const m = new Map(); DAYS.forEach(([d], di) => (dif[d] || []).forEach(du => { const k = [du.no, du.pay, du.s, du.e].join('|'); const e = m.get(k);
-    if (e) e[7] += di; else m.set(k, [du.no, du.pay, du.s, du.e, du.maxRelief, du.cls || '', du.code || '', String(di)]); }));
+    if (e) e[7] += di; else m.set(k, [du.no, du.pay, du.s, du.e, du.maxRelief, du.cls || '', du.code || '', String(di), du.ty == null ? null : du.ty]); }));
   return { _p: 1, l: [...m.values()] }; }
-function unpackDif(p) { const out = {}; p.l.forEach(([no, pay, s, e, mr, cls, code, days]) => { const du = { no, num: parseInt(String(no).replace(/^\D+/, ''), 10), pay, s, e, maxRelief: mr, routes: [], valid: true, cls, code, src: 'DIF' };
+function unpackDif(p) { const out = {}; p.l.forEach(([no, pay, s, e, mr, cls, code, days, ty]) => { const du = { no, num: parseInt(String(no).replace(/^\D+/, ''), 10), pay, s, e, maxRelief: mr, routes: [], valid: true, cls, code, src: 'DIF' }; if (ty != null) du.ty = ty;
     String(days).split('').forEach(i => { const d = DAYS[+i][0]; (out[d] = out[d] || []).push(du); }); }); return out; }
 function difReplacer(k, v) { return k === 'dif' && v && !v._p ? packDif(v) : v; }
 function pickJob(id) { const j = rotaJobs.find(x => x.id === id) || rotaJobs[rotaJobs.length - 1] || null; rotaJobId = j ? j.id : null; rotaFile = j ? fixFile(j.file) : null; if (j) j.file = rotaFile; rotaSel = j ? j.sel : null; rotaCur = { li: 0, di: 0 }; rotaSubset = ''; }
@@ -1456,6 +1458,40 @@ function writeRif(f) {
   return rows.join('\r\n') + '\r\n';
 }
 
+// ---- OmniROTA data file (.ORD): the whole rota with its duties and settings ----
+// header · per line: no,name,roll,total + 7 × (duty,index) · duty table · day names · sub rotas (first,last,name,startNo,count,SP,RD,min,max,short+moves,rest)
+function csvRow(l) { const out = []; let cur = '', q = false; for (let i = 0; i < l.length; i++) { const ch = l[i]; if (ch === '"') q = !q; else if (ch === ',' && !q) { out.push(cur); cur = ''; } else cur += ch; } out.push(cur); return out; }
+function parseOrd(text, name) {
+  const rows = String(text).replace(/\r/g, '').split('\n').filter(l => l.length).map(csvRow); const H = rows[0] || [];
+  const nL = parseInt(H[0], 10), nD = parseInt(H[1], 10), nR = parseInt(H[2], 10);
+  if (!(nL >= 0) || !(nD >= 0) || !(nR > 0) || rows.length < 1 + nL * 8 + nD + nR) throw new Error('bad');
+  const hm = v => { const x = parseInt(v, 10); return x >= 0 ? Math.floor(x / 100) * 60 + x % 100 : null; };
+  const sp = (H[4] || 'SP').trim() || 'SP', rd = (H[5] || 'RD').trim() || 'RD', depot = (H[9] || 'WB').trim() || 'WB';
+  const dm = (H[8] || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const lines = []; let p = 1;
+  const refs = new Set();
+  for (let i = 0; i < nL; i++) { const h = rows[p++]; const cells = []; for (let d = 0; d < 7; d++) { const c = rows[p++]; refs.add(parseInt(c[1], 10)); cells.push({ v: (c[0] || '').trim().toUpperCase(), f: ['NO', 'NO'] }); }
+    lines.push({ name: [(h[1] || '').trim(), (h[2] || '').trim()].filter(Boolean).join(' '), cells }); }
+  const DCH = { $: 'sun', M: 'mon', T: 'tue', W: 'wed', H: 'thu', F: 'fri', S: 'sat' }; const dif = {};
+  // some duties have a schooldays and a school-holidays version (field 15 = 1 or 2): keep the version the rota lines use
+  const vCnt = {}; for (let i = 0; i < nD; i++) { const v = parseInt(rows[p + i][14], 10) || 0; if (v && refs.has(i + 1)) vCnt[v] = (vCnt[v] || 0) + 1; }
+  const useVar = Object.keys(vCnt).sort((a, b) => vCnt[b] - vCnt[a])[0] || '1'; let skipped = 0;
+  for (let i = 0; i < nD; i++) { const c = rows[p++]; const no = (c[0] || '').trim().toUpperCase(); if (!no) continue;
+    const vr = parseInt(c[14], 10) || 0; if (vr && String(vr) !== useVar && !refs.has(i + 1)) { skipped++; continue; }
+    const s0 = hm(c[3]); let e0 = hm(c[5]); if (s0 != null && e0 != null && e0 < s0) e0 += 1440;
+    const mOn = parseInt(c[7], 10) || 0, mOff = parseInt(c[9], 10) || 0; let rel = null; if (mOn && mOff) { rel = hm(c[7]) - hm(c[9]); if (rel < 0) rel += 1440; }
+    const ty = (c[11] || '').trim().toUpperCase();
+    const du = { no, num: parseInt(no.replace(/^\D+/, ''), 10), pay: hm(c[1]), s: s0, e: e0, maxRelief: rel, routes: (c[19] || '').trim().split(/\s+/).filter(Boolean), valid: true, cls: ty === 'S' ? 'split' : '', code: (c[12] || '').trim(), ty, src: 'ORD' };
+    (c[13] || '').trim().split('').forEach(ch => { const d = DCH[ch]; if (d) (dif[d] = dif[d] || []).push(du); }); }
+  p += 7;
+  const rotas = [];
+  for (let i = 0; i < nR; i++) { const c = rows[p++]; const first = parseInt(c[0], 10), last = parseInt(c[1], 10), code = (c[2] || '').trim().toUpperCase(), start = parseInt(c[3], 10) || 1;
+    const sm = c[9] || ''; const mv = sm.trim().slice(-1).toUpperCase(); const moves = mv === 'S' ? 'static' : mv === 'U' ? 'up' : 'down';
+    const cfg = { min: hm(c[7]), max: hm(c[8]), sp: hm(c[5]), rd: hm(c[6]), rest: hm(c[10]), moves, short: sm.slice(0, -1).trim(), startWeek: 1, splitEvery: /^SCH/i.test(code) ? 0 : 3 };
+    rotas.push({ code, header: [depot, code, '', '', '', '', '', '', moves === 'static' ? 'NO' : 'YES', 'E ', '', '', ''], cfg,
+      lines: lines.slice(first - 1, last).map((l, k) => { const o = { pre: [depot, code, 'P', '', '', String(start + k), '', ''], cells: l.cells }; if (l.name) o.driver = l.name; return o; }) }); }
+  return fixFile({ variants: skipped, name: ((H[11] || '').trim() || name.replace(/\.ord$/i, '')) + '.RIF', depot, set: { startDate: dm ? `${dm[3]}-${dm[2]}-${dm[1]}` : '', rdCode: rd, spCode: sp }, rotas, dif });
+}
 // ---- duty file (.DIF) from the rota program ----
 // D,depot,duty,MM/DD/YYYY,,NO,paycode,depot,DU,D  /  L,piece,T,board,signOn,depart,from,arrive,to,signOff  /  V,0,1,value(h.mm)
 function parseDif(text) {
@@ -1506,7 +1542,9 @@ function rotaSrc() {
 const WTYPES = [['any', 'Any'], ['mix', 'Mix'], ['early', 'Early'], ['mid', 'Midday'], ['lm', 'L/M'], ['late', 'Late']];
 const WT_SHORT = { any: 'Any', mix: 'Mix', early: 'Early', mid: 'Midday', lm: 'L/M', late: 'Late' };
 // Any: no limit · Mix: E, M, no type · Early: E · Midday: M, no type · L/M: L, M (never S) · Late: L. Splits (S) also follow the split rule.
-function typeOK(wt, du) { if (!du || !wt || wt === 'any') return true; const t = baseType(du); if (t === 'S') return wt !== 'lm'; // splits never on L/M weeks
+// a full SP week: every working day of the line is SP. These weeks are never changed by Auto-fill or Balance weeks.
+const fullSP = l => l.cells.some(c => isSP(c.v)) && l.cells.every(c => isSP(c.v) || isRD(c.v));
+function typeOK(wt, du) { if (!du || du.sp || !wt || wt === 'any') return true; const t = baseType(du); if (t === 'S') return wt !== 'lm'; // splits never on L/M weeks
   return wt === 'mix' ? (t === 'E' || t === 'M' || t === '') : wt === 'early' ? t === 'E' : wt === 'late' ? t === 'L' : wt === 'lm' ? (t === 'L' || t === 'M') : wt === 'mid' ? (t === 'M' || t === '') : true; }
 // split rule: at most one S duty in any run of N consecutive weeks (lines in rota order); N = 0 means no limit
 function neighbours(r, li, k) { const n = r.lines.length; const out = []; for (let s = 1; s < k; s++) { [li - s, li + s].forEach(x => { if (r.cfg.moves === 'static') { if (x >= 0 && x < n) out.push(x); } else if (n > 1) out.push(((x % n) + n) % n); }); } return [...new Set(out)].filter(x => x !== li); }
@@ -1518,6 +1556,7 @@ function inClock(m, from, to) { if (from == null && to == null) return true; if 
   if (from != null && to != null && to < from) return m >= from || m < to; return (from == null || m >= from) && (to == null || m < to); }
 function autoType(du) {
   if (!du) return ''; const S = rotaFile.set;
+  if (du.ty != null) return du.ty; // type set in OmniROTA (from the .ORD file)
   for (const c of customTypes()) { const hasRule = [c.onFrom, c.onTo, c.offFrom, c.offTo].some(x => x != null); if (hasRule && inClock(du.s, c.onFrom, c.onTo) && inClock(du.e, c.offFrom, c.offTo)) return c.code; }
   if (du.cls === 'split') return 'S';
   if (du.e != null && du.e < S.earlyOff) return 'E';
@@ -1588,10 +1627,12 @@ function autoFill(r, src, opts) {
   DAYS.forEach(([d], di) => { const set = new Map();
     if (!opts.fresh) L.forEach(l => { const v = l.cells[di].v; const du = look(d, v); if (du) set.set(v, du); });
     if ((opts.useFree || opts.fresh) && name) src.day(d, name).forEach(du => { const v = du.no; if (!used[d].has(v) && !set.has(v)) set.set(v, du); });
-    pool[d] = [...set.entries()].map(([v, du]) => ({ v, du })); });
-  const work = L.map(l => l.cells.map(c => !isRD(c.v) && !isSP(c.v) || (opts.fresh && isSP(c.v))));
+    pool[d] = [...set.entries()].map(([v, du]) => ({ v, du }));
+    // SP days of ordinary weeks can move between lines too (full SP weeks stay as they are)
+    if (!opts.fresh) L.forEach(l => { if (isSP(l.cells[di].v) && !fullSP(l)) pool[d].push({ v: SPc(), du: { pay: cfg.sp, s: null, e: null, sp: true } }); }); });
+  const work = L.map(l => { const full = fullSP(l); return l.cells.map(c => !isRD(c.v) && !isSP(c.v) || (isSP(c.v) && (opts.fresh || !full))); });
   const pick = L.map(() => Array(7).fill(null));
-  const fixedPay = L.map(l => l.cells.reduce((s, c) => s + (isSP(c.v) && !opts.fresh ? cfg.sp : isRD(c.v) && rotaFile.set.includeRd ? cfg.rd : 0), 0));
+  const fixedPay = L.map((l, li) => l.cells.reduce((s, c, di) => s + (isSP(c.v) && !work[li][di] ? cfg.sp : isRD(c.v) && rotaFile.set.includeRd ? cfg.rd : 0), 0));
   const nWork = work.map(w => w.filter(Boolean).length);
   const duOf = (li, di) => li == null ? null : pick[li][di] ? pick[li][di].du : null;
   const bad = (a, b) => restFail(a, b, cfg) != null;
@@ -1608,7 +1649,7 @@ function autoFill(r, src, opts) {
     const lines = L.map((_, li) => li).filter(li => work[li][di]);
     const done = li => order.slice(0, step).filter(x => work[li][x]).length;
     lines.sort((a, b) => ((T * (done(b) + 1) / Math.max(1, nWork[b])) - total(b)) - ((T * (done(a) + 1) / Math.max(1, nWork[a])) - total(a)));
-    const avail = pool[d].slice().sort((a, b) => b.du.pay - a.du.pay);
+    const avail = pool[d].slice().sort((a, b) => (a.du.sp ? 1 : 0) - (b.du.sp ? 1 : 0) || b.du.pay - a.du.pay); // real duties first, SP last
     lines.forEach(li => { const sOK = p => baseType(p.du) !== 'S' || splitFree(r, li, sCnt);
       let k = avail.findIndex(p => restOK(li, di, p.du) && typeOK(L[li].wt, p.du) && sOK(p)); if (k < 0) k = avail.findIndex(p => restOK(li, di, p.du) && sOK(p)); if (k < 0) k = avail.findIndex(p => restOK(li, di, p.du));
       if (k >= 0) { pick[li][di] = avail[k]; avail.splice(k, 1); } });
@@ -1617,24 +1658,41 @@ function autoFill(r, src, opts) {
   // first get as many weeks as possible inside min–max, then keep the rest as close as possible
   // week type first, then weeks inside min–max, then as even as possible
   const mis = li => { const wt = L[li].wt; if (!wt || wt === 'any') return 0; return pick[li].reduce((n, p) => n + (p && !typeOK(wt, p.du) ? 1 : 0), 0); };
-  const cost = li => { const t = total(li); const out = t < cfg.min ? cfg.min - t : t > cfg.max ? t - cfg.max : 0; return mis(li) * 3e5 + splitPen(r, li, sCnt) * 2e5 + (out > 0 ? 1e5 + out * 40 : 0) + (t - T) * (t - T) * 0.05; };
-  for (let pass = 0; pass < 12; pass++) { let better = 0;
+  // West Brom Special: prefer an early finish on the day before rest days and a later start on the day after
+  const rdNext = (li, di) => di < 6 ? isRD(L[li].cells[di + 1].v) : (nextLine(r, li) != null && isRD(L[nextLine(r, li)].cells[0].v));
+  const rdPrev = (li, di) => di > 0 ? isRD(L[li].cells[di - 1].v) : (prevLine(r, li) != null && isRD(L[prevLine(r, li)].cells[6].v));
+  let useW = false; // switched on for a second pass, once every day has its duty
+  const wbsPen = li => { if (!useW) return 0; let p = 0; pick[li].forEach((x, di) => { if (!x || x.du.sp || x.du.s == null) return;
+      if (rdNext(li, di)) p += Math.max(0, x.du.e - 720); if (rdPrev(li, di)) p += Math.max(0, 900 - x.du.s); }); return p * 2.5; };
+  // goal: lowest make up time (hours missing under the minimum, summed over the weeks), no week over the maximum, then weeks as even as possible.
+  // Make up is lowest when no week is above the minimum while another is below it, so every minute under the minimum costs the same.
+  const act = L.map((_, li) => li).filter(li => nWork[li] > 0); const mean = act.length ? act.reduce((t, li) => t + total(li), 0) / act.length : T;
+  const T2 = Math.min(cfg.max, mean);
+  const cost = li => { const t = total(li); const under = Math.max(0, cfg.min - t), over = Math.max(0, t - cfg.max);
+    const holes = pick[li].reduce((n, p, di) => n + (work[li][di] && !p ? 1 : 0), 0);
+    return holes * 5e5 + mis(li) * 3e5 + splitPen(r, li, sCnt) * 2e5 + (over > 0 ? 1e5 + over * 400 : 0) + under * 200 + (t - T2) * (t - T2) * 0.05 + wbsPen(li); };
+  // a split duty also changes the split-rule cost of the neighbouring weeks, so those weeks are counted too
+  const isSd = p => !!p && !p.du.sp && baseType(p.du) === 'S';
+  const zone = (i, j, pi, pj) => (isSd(pi) || isSd(pj)) && (cfg.splitEvery || 0) > 1 ? [...new Set([i, j, ...neighbours(r, i, cfg.splitEvery), ...(j == null ? [] : neighbours(r, j, cfg.splitEvery))])].filter(x => x != null) : (j == null ? [i] : [i, j]);
+  const sumCost = set => set.reduce((t, x) => t + cost(x), 0);
+  const improve = () => { for (let pass = 0; pass < 400; pass++) { let better = 0;
     for (let di = 0; di < 7; di++) {
       const lines = L.map((_, li) => li).filter(li => work[li][di]);
-      for (let a = 0; a < lines.length; a++) for (let b = a + 1; b < lines.length; b++) {
-        const i = lines[a], j = lines[b], pi = pick[i][di], pj = pick[j][di]; if (!pi && !pj) continue;
-        const before = cost(i) + cost(j);
-        pick[i][di] = pj; pick[j][di] = pi;
-        const ok = (!pj || restOK(i, di, pj.du)) && (!pi || restOK(j, di, pi.du));
-        if (ok && cost(i) + cost(j) < before - 1) better++; else { pick[i][di] = pi; pick[j][di] = pj; }
-      }
+      // worst weeks first; each takes the swap that helps most
+      lines.slice().sort((a, b) => cost(b) - cost(a)).forEach(i => { const pi = pick[i][di]; let bj = -1, bg = 1;
+        lines.forEach(j => { if (j === i) return; const pj = pick[j][di]; if (!pi && !pj) return; if (pi && pj && pi.du.pay === pj.du.pay && pi.du.s === pj.du.s && pi.du.e === pj.du.e && !useW) return;
+          const set = zone(i, j, pi, pj); const before = sumCost(set); pick[i][di] = pj; pick[j][di] = pi;
+          if ((!pj || restOK(i, di, pj.du)) && (!pi || restOK(j, di, pi.du))) { const g = before - sumCost(set); if (g > bg) { bg = g; bj = j; } }
+          pick[i][di] = pi; pick[j][di] = pj; });
+        if (bj >= 0) { const pj = pick[bj][di]; pick[i][di] = pj; pick[bj][di] = pi; better++; } });
       const left = pool[DAYS[di][0]].left || [];
-      lines.forEach(i => { const pi = pick[i][di]; let best = -1, bc = cost(i);
-        left.forEach((p, k) => { pick[i][di] = p; if (restOK(i, di, p.du) && cost(i) < bc - 1) { bc = cost(i); best = k; } });
+      lines.forEach(i => { const pi = pick[i][di]; let best = -1, bg = 1;
+        left.forEach((p, k) => { const set = zone(i, null, pi, p); const before = sumCost(set); pick[i][di] = p; if (restOK(i, di, p.du)) { const g = before - sumCost(set); if (g > bg) { bg = g; best = k; } } pick[i][di] = pi; });
         pick[i][di] = pi;
         if (best >= 0) { const p = left[best]; left.splice(best, 1); if (pi) left.push(pi); pick[i][di] = p; better++; } });
     }
-    if (!better) break; }
+    if (!better) break; } };
+  improve();
   for (let di = 0; di < 7; di++) { const left = pool[DAYS[di][0]].left || []; if (!left.length) continue;
     const lines = L.map((_, li) => li).filter(li => work[li][di]);
     lines.filter(i => !pick[i][di]).forEach(i => {
@@ -1644,17 +1702,32 @@ function autoFill(r, src, opts) {
           pick[j][di] = p; pick[i][di] = q;
           if (restOK(i, di, q.du) && restOK(j, di, p.du)) { left.splice(k, 1); return; }
           pick[j][di] = q; pick[i][di] = null; }
+        // three-way: left duty → line m, m's duty → line j, j's duty → the empty day
+        for (const j of lines) { const q = pick[j][di]; if (!q || j === i) continue;
+          for (const m of lines) { const q2 = pick[m][di]; if (!q2 || m === i || m === j) continue;
+            pick[m][di] = p; pick[j][di] = q2; pick[i][di] = q;
+            if (restOK(i, di, q.du) && restOK(j, di, q2.du) && restOK(m, di, p.du)) { left.splice(k, 1); return; }
+            pick[m][di] = q2; pick[j][di] = q; pick[i][di] = null; } }
       } });
   }
   const score = () => { let sq = 0, empty = 0; L.forEach((l, li) => { sq += cost(li); pick[li].forEach((p, di) => { if (work[li][di] && !p) empty++; }); }); return empty * 1e12 + sq; };
+  improve(); // the repair may have unbalanced some weeks
+  // West Brom Special: second pass, swapping duties between lines (never leaves a day empty)
+  if (opts.wbs) { useW = true;
+    for (let pass = 0; pass < 60; pass++) { let better = 0;
+      for (let di = 0; di < 7; di++) { const lines = L.map((_, li) => li).filter(li => work[li][di] && pick[li][di]);
+        for (let a = 0; a < lines.length; a++) for (let b = a + 1; b < lines.length; b++) { const i = lines[a], j = lines[b], pi = pick[i][di], pj = pick[j][di];
+          const set = zone(i, j, pi, pj); const before = sumCost(set); pick[i][di] = pj; pick[j][di] = pi;
+          if (restOK(i, di, pj.du) && restOK(j, di, pi.du) && sumCost(set) < before - 1) better++; else { pick[i][di] = pi; pick[j][di] = pj; } } }
+      if (!better) break; } }
   if (!opts.fresh) {
     const newScore = score(); const keep = pick.map(x => x.slice());
-    L.forEach((l, li) => l.cells.forEach((c, di) => { const du = work[li][di] ? look(DAYS[di][0], c.v) : null; pick[li][di] = du ? { v: c.v, du } : null; }));
-    if (score() <= newScore) return { unchanged: true };
+    L.forEach((l, li) => l.cells.forEach((c, di) => { const du = work[li][di] ? (isSP(c.v) ? { pay: cfg.sp, s: null, e: null, sp: true } : look(DAYS[di][0], c.v)) : null; pick[li][di] = du ? { v: c.v, du } : null; }));
+    const oldScore = score(); if (oldScore <= newScore) return { unchanged: true, oldScore, newScore };
     keep.forEach((x, li) => pick[li] = x);
   }
-  let spare = 0; L.forEach((l, li) => l.cells.forEach((c, di) => { if (!work[li][di]) return; const p = pick[li][di]; if (p) c.v = p.v; else { c.v = SPc(); spare++; } }));
-  const left = DAYS.map(([d]) => (pool[d].left || []).length).reduce((a, b) => a + b, 0);
+  let spare = 0; L.forEach((l, li) => l.cells.forEach((c, di) => { if (!work[li][di]) return; const p = pick[li][di]; if (p) c.v = p.v; else { c.v = opts.fresh ? SPc() : ''; spare++; } }));
+  const left = DAYS.map(([d]) => (pool[d].left || []).filter(p => !p.du.sp).length).reduce((a, b) => a + b, 0);
   return { spare, left };
 }
 
@@ -1865,7 +1938,7 @@ function doSwap(mode) {
 
 // ---- Auto-fill: put unassigned duties in empty days ----
 function fillEmpty(r, src, subset) {
-  const look = src.look, cfg = r.cfg, L = r.lines; let placed = 0, left = 0;
+  const look = src.look, cfg = r.cfg, L = r.lines; let placed = 0, left = 0, overSp = 0;
   const used = {}; DAYS.forEach(([d]) => used[d] = new Set());
   rotaFile.rotas.forEach(o => o.lines.forEach(l => l.cells.forEach((c, di) => { if (isDutyVal(c.v)) { used[DAYS[di][0]].add(c.v); if (di === 5) used.fri.add(c.v.replace(/^F/, '')); } })));
   const dutyAt = (li, di) => li == null ? null : look(DAYS[di][0], L[li].cells[di].v);
@@ -1880,14 +1953,25 @@ function fillEmpty(r, src, subset) {
     const sCnt = li => L[li].cells.reduce((n, c, k) => n + (baseType(dutyAt(li, k)) === 'S' ? 1 : 0), 0);
     pool.forEach(du => { const isS = baseType(du) === 'S';
       const empt = L.map((_, li) => li).filter(li => !L[li].cells[di].v && restOK(li, di, du) && typeOK(L[li].wt, du) && (!isS || splitFree(r, li, sCnt)));
-      if (!empt.length) { left++; return; }
-      empt.sort((a, b) => total(a) - total(b)); const li = empt[0];
-      L[li].cells[di].v = du.no; used[d].add(du.no); placed++; });
+      let onSp = false, cand = empt;
+      if (!cand.length) { onSp = true; cand = L.map((_, li) => li).filter(li => isSP(L[li].cells[di].v) && !fullSP(L[li]) && restOK(li, di, du) && typeOK(L[li].wt, du) && (!isS || splitFree(r, li, sCnt))); }
+      if (!cand.length) { left++; return; }
+      cand.sort((a, b) => total(a) - total(b)); const li = cand[0];
+      L[li].cells[di].v = du.no; used[d].add(du.no); placed++; if (onSp) overSp++; });
   });
   const empty = L.reduce((t, l) => t + l.cells.filter(c => !c.v).length, 0);
-  return { placed, left, empty };
+  return { placed, left, empty, overSp };
 }
 // lines for a week-type pattern: a list like "2, 7, 12-15", or every N lines from a start line
+// make up time of a sub rota now, and the lowest it can be with the hours on the rota
+function makeUpOf(r) { const a = rotaA && rotaA.res[r.code]; if (!a) return null; const tot = a.lines.map(x => x.total);
+  return { now: tot.reduce((t, x) => t + Math.max(0, r.cfg.min - x), 0), best: Math.max(0, tot.length * r.cfg.min - tot.reduce((t, x) => t + x, 0)) }; }
+// average sign-off before rest days and sign-on after rest days
+function rdTimes(r, src) { let eS = 0, eN = 0, sS = 0, sN = 0; const L = r.lines;
+  L.forEach((l, li) => l.cells.forEach((c, di) => { const du = src.look(DAYS[di][0], c.v); if (!du || du.s == null) return;
+    const nx = di < 6 ? l.cells[di + 1].v : (nextLine(r, li) != null ? L[nextLine(r, li)].cells[0].v : ''); const pv = di > 0 ? l.cells[di - 1].v : (prevLine(r, li) != null ? L[prevLine(r, li)].cells[6].v : '');
+    if (isRD(nx)) { eS += du.e; eN++; } if (isRD(pv)) { sS += du.s; sN++; } }));
+  return { off: eN ? Math.round(eS / eN) : null, on: sN ? Math.round(sS / sN) : null }; }
 function patternLines(r) {
   const nums = r.lines.map(l => parseInt(l.pre[5], 10)); const pick = new Set();
   const list = $('wp_list').value.trim();
@@ -1943,13 +2027,24 @@ function initRota() {
     m.textContent = (moved ? `${moved} dut${moved === 1 ? 'y was' : 'ies were'} already on other rotas and ${moved === 1 ? 'was' : 'were'} removed from there. ` : '') + `Exported ${drivers.length} driver${drivers.length === 1 ? '' : 's'} to ${curJob().name}, sub rota ${code}, lines ${first}–${no - 1}. Days without a duty are left empty.`; $('exOpen').hidden = false; };
   $('exOpen').onclick = () => { closeDialog('expDlg'); location.hash = 'rota'; };
   const move = (dl, dd) => { const r = curRota(); if (!r) return; rotaCur.li = Math.min(r.lines.length - 1, Math.max(0, rotaCur.li + dl)); rotaCur.di = Math.min(6, Math.max(0, rotaCur.di + dd)); renderRota(true); };
-  $('rotaIn').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const openOrd = async files => { const ords = [...files].filter(f => /\.ord$/i.test(f.name));
+    if (!ords.length) { rotaMsg('No OmniROTA data file found. The folder must contain the .ORD file of the rota.', true); return; }
+    const done = [], bad = [];
+    for (const f of ords) { try { const parsed = parseOrd(await f.text(), f.name); const j = curJob();
+        if (j && !j.file && !done.length) { j.file = parsed; j.name = f.name.replace(/\.ord$/i, '') + ' · ' + new Date().toLocaleDateString('en-GB'); pickJob(j.id); } else newRotaJob(f.name.replace(/\.ord$/i, '') + ' · ' + new Date().toLocaleDateString('en-GB'), parsed);
+        rotaSel = parsed.rotas[0].code; saveRota(); done.push(`${f.name} (${parsed.rotas.length} sub rotas, ${parsed.rotas.reduce((t, r) => t + r.lines.length, 0)} lines, duties for ${DAYS.filter(([d]) => parsed.dif[d]).length} days${parsed.variants ? `, ${parsed.variants} school-variation duty versions not used by the rota left out` : ''})`);
+      } catch (err) { bad.push(f.name); } }
+    rotaMsg((done.length ? `New rota job from OmniROTA: ${done.join('; ')}.` : '') + (bad.length ? ` Could not read ${bad.join(', ')}.` : ''), !done.length); renderRota(); };
+  $('ordDir').addEventListener('change', e => { const fs = e.target.files; openOrd(fs); e.target.value = ''; });
+  $('ordLoad').onclick = () => $('ordDir').click();
+  $('rotaIn').addEventListener('change', async e => { const all = [...e.target.files]; const f = all[0]; e.target.value = ''; if (!f) return;
+    if (all.some(x => /\.ord$/i.test(x.name))) { openOrd(all); return; }
     try { const parsed = parseRif(await f.text(), f.name); if (!parsed.rotas.length) throw new Error('none');
       const j = curJob();
       if (j && !j.file) { j.file = parsed; pickJob(j.id); } else newRotaJob(f.name.replace(/\.rif$/i, '') + ' · ' + new Date().toLocaleDateString('en-GB'), parsed);
       rotaSel = parsed.rotas[0].code; saveRota();
       rotaMsg(`New rota job: ${f.name}, ${parsed.rotas.length} sub rotas, ${parsed.rotas.reduce((s, r) => s + r.lines.length, 0)} lines.`); renderRota();
-    } catch (err) { rotaMsg('No rota lines found. Choose a .RIF file exported from the rota program.', true); } });
+    } catch (err) { rotaMsg('No rota lines found. Choose a .RIF export or the OmniROTA .ORD file.', true); } });
   $('rotaLoad').onclick = $('rotaLoad2').onclick = () => $('rotaIn').click();
   $('difLoad').onclick = () => $('difIn').click();
   $('difIn').addEventListener('change', async e => { const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return;
@@ -2035,20 +2130,24 @@ function initRota() {
     const before = r.lines.reduce((t, l) => t + l.cells.filter(c => !c.v).length, 0);
     const snap = { label: 'auto-fill ' + r.code, snap: snapshot() }; const out = fillEmpty(r, src, $('fl_subset').value);
     if (out.placed) { undoStack.push(snap); updateUndo(); saveRota(); renderRota(); }
-    let t = !before ? `There are no empty days in ${r.code}. Clear a day first (Clear) to make room.` : `Placed ${out.placed} unassigned dut${out.placed === 1 ? 'y' : 'ies'} in empty days.`;
-    if (out.left) t += ` ${out.left} unassigned dut${out.left === 1 ? 'y does' : 'ies do'} not fit any empty day (no empty day or rest under ${fmt(r.cfg.rest)}).`;
+    let t = !before ? `There are no empty days in ${r.code}. Clear a day first (Clear) to make room.` : `Placed ${out.placed} unassigned dut${out.placed === 1 ? 'y' : 'ies'}` + (out.overSp ? ` (${out.placed - out.overSp} in empty days, ${out.overSp} in place of ${SPc()})` : ' in empty days') + '.';
+    if (!before && out.placed) t = `Placed ${out.placed} unassigned dut${out.placed === 1 ? 'y' : 'ies'} in place of ${SPc()} (there were no empty days).`;
+    if (out.left) t += ` ${out.left} unassigned dut${out.left === 1 ? 'y does' : 'ies do'} not fit any empty or ${SPc()} day (rest under ${fmt(r.cfg.rest)}, week type, or only full ${SPc()} weeks left).`;
     $('fl_msg').textContent = t; $('flRun').hidden = true;
     if (out.empty) { $('fl_ask').textContent = `${out.empty} empty day${out.empty === 1 ? ' is' : 's are'} left with no duty to put in. Enter ${SPc()} in ${out.empty === 1 ? 'it' : 'them'}?`; $('flAsk').hidden = false; }
     else rotaMsg(t); };
   $('flSP').onclick = () => { const r = curRota(); pushUndo('fill empty days with ' + SPc()); let k = 0; r.lines.forEach(l => l.cells.forEach(c => { if (!c.v) { c.v = SPc(); k++; } }));
     saveRota(); renderRota(); closeDialog('fillDlg'); rotaMsg(`${$('fl_msg').textContent} Entered ${SPc()} on ${k} empty day${k === 1 ? '' : 's'}.`); };
   $('flLeave').onclick = () => { closeDialog('fillDlg'); rotaMsg($('fl_msg').textContent + ' Empty days were left empty.'); };
-  $('rbBal').onclick = () => { $('bal_free').checked = rotaUseFree; $('bal_msg').textContent = ''; $('bal_rota').textContent = rotaSel; showDialog('balDlg'); };
-  $('balRun').onclick = () => { const src = rotaSrc(); const r = curRota(); if (!src.ok || !r) return; rotaUseFree = $('bal_free').checked;
-    const snap = { label: 'balance weeks ' + r.code, snap: snapshot() }; const out = autoFill(r, src, { useFree: rotaUseFree });
+  $('rbBal').onclick = () => { $('bal_wbs').checked = rotaWbs; $('bal_msg').textContent = ''; $('bal_rota').textContent = rotaSel; showDialog('balDlg'); };
+  $('balRun').onclick = () => { const src = rotaSrc(); const r = curRota(); if (!src.ok || !r) return; rotaWbs = $('bal_wbs').checked; const before = rdTimes(r, src); const muBefore = makeUpOf(r) || { now: 0 };
+    const snap = { label: 'balance weeks ' + r.code, snap: snapshot() }; const out = autoFill(r, src, { useFree: false, wbs: rotaWbs }); const after = rdTimes(r, src);
+    const wbsTxt = rotaWbs && !out.unchanged && after.off != null ? ` West Brom Special: before rest days duties now finish at ${clock(after.off)} on average (was ${clock(before.off)}), after rest days they start at ${clock(after.on)} (was ${clock(before.on)}).` : '';
     closeDialog('balDlg');
     if (out.unchanged) rotaMsg(`${r.code} is already as even as Balance Weeks can make it, so nothing was changed.`);
-    else { undoStack.push(snap); updateUndo(); saveRota(); rotaMsg(`Balanced ${r.code}.` + (out.spare ? ` ${out.spare} working days had no duty left and became ${SPc()}.` : '') + (out.left ? ` ${out.left} duties could not be placed.` : '')); }
+    else { undoStack.push(snap); updateUndo(); saveRota(); rotaA = analyseRota(src); const mu = makeUpOf(r);
+      const muTxt = mu ? ` Make up time is now ${fmt(mu.now)} (was ${fmt(muBefore.now)}); the lowest possible with these duties is ${fmt(mu.best)}.` : '';
+      rotaMsg(`Balanced ${r.code}.` + muTxt + wbsTxt + (out.spare ? ` ${out.spare} day${out.spare === 1 ? ' has' : 's have'} no duty and stayed empty: use Auto-fill or enter ${SPc()}.` : '') + (out.left ? ` ${out.left} duties could not be placed.` : '')); }
     renderRota(); };
   $('rbStats').onclick = () => { $('statBody').innerHTML = rotaStats(); $('statTitle').textContent = 'Rota statistics: ' + rotaSel; showDialog('statDlg'); };
   // settings dialogs
