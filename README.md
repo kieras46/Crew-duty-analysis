@@ -63,6 +63,8 @@ Works like OmniROTA. Export the rota (`.RIF`) and its duties (`.DIF`) from OmniR
 - **Sub rota settings**: name, short code, start week, minimum and maximum week value, stand-by pay for SP and rest days, minimum daily rest, and whether the rota moves up, down or is static.
 - **Main rota settings**: depot code, start date, rest day and stand-by codes, filename, E/M/L type times, and whether rest day pay counts in the weekly total.
 - **New sub rota** builds lines from the free duties of WB, Soho, Bearwood or Oldbury.
+- **Save for OmniROTA (.ORD)** writes the whole rota back as an OmniROTA data file named after the original with ` ROCR` added (e.g. `WB GARAGE 131226 ROCR.ORD`): all sub rotas and lines, their settings, and the duty table from the original file with any duty types you changed. It is available for rotas opened from an OmniROTA folder. Open it in OmniROTA on a copy first.
+- In **Balance weeks**, *Only these lines* (e.g. `1-10, 15, 22`) balances just those weeks among themselves and leaves the rest untouched.
 - **Save RIF** writes the file in the same format for importing back into OmniROTA. Keys: arrows, Enter to edit, R, S, Delete, Ctrl+Z.
 
 ## Rules checked (defaults, editable under **Rules**)
