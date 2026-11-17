@@ -120,6 +120,9 @@ tr.sel, tr.isbad.sel { background: var(--accent-soft) }
 @media (max-width: 700px) { .rcol.wide2 { grid-column: auto } }
 .rtab { overflow-x: auto }
 .rangeT { min-width: 0; width: 100% }
+.rangeT .rotaName { font-family: inherit; font-weight: 600; min-width: 90px }
+.asgJobL { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin-right: auto; margin-left: 14px }
+.asgJobL select { max-width: 340px; font-size: 13px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg) }
 .rangeT th, .rangeT td { padding: 3px 4px; border: 0; position: static; cursor: default }
 .rangeT input { width: 100%; min-width: 86px; font-family: var(--mono); font-size: 12.5px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg) }
 .asgBlock { display: grid; gap: 10px }
@@ -168,6 +171,18 @@ td.tot b { display: block; font-size: 15px }
 td.tot small { font-size: 12px; font-weight: 600 } .okc { color: var(--ok) } .overc { color: var(--bad) }
 .tabs .tabEnd { margin-left: auto; display: flex; align-items: center; gap: 10px; padding-bottom: 4px }
 .tabs .tabEnd button { border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg); padding: 6px 12px; font-size: 13px; font-weight: 500; margin: 0 }
+.tabs .tabEnd .garSel { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted) }
+.tabs .tabEnd .garSel select { font-size: 13px; font-weight: 600; padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg) }
+.fdPanel { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 12px 14px; margin: 0 0 14px }
+.fdPanel h3 { margin: 0 0 4px; font-size: 15px }
+.fdGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 8px }
+.fdGrid label { display: grid; gap: 4px; font-size: 13px; font-weight: 600 }
+.fdGrid input { width: 100%; box-sizing: border-box; font-family: ui-monospace, Menlo, monospace }
+.fdGrid small { font-weight: 400; color: var(--muted) }
+@media (max-width: 700px) { .fdGrid { grid-template-columns: 1fr 1fr } }
+.garList { width: 100%; border-collapse: collapse; margin: 8px 0 }
+.garList td { padding: 5px 4px; border-bottom: 1px solid var(--line) }
+.garList input { width: 100% }
 .tabs .tabEnd button:disabled { color: var(--muted); cursor: default; opacity: .6 }
 .tabs .tabEnd button:not(:disabled):hover { border-color: var(--accent) }
 tr.gap td:nth-child(2) { box-shadow: inset 3px 0 0 var(--bad) }
@@ -405,7 +420,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
   </section>
 
 
-  <nav class="tabs" id="tabs" aria-label="Views"><button type="button" data-tab="check" class="on">Duty check</button><button type="button" data-tab="assign">Driver assignment</button><button type="button" data-tab="rota">Rota creator</button><span class="tabEnd"><span class="note" id="undoMsg" aria-live="polite"></span><button type="button" id="undoBtn" class="undo" disabled>Undo</button></span></nav>
+  <nav class="tabs" id="tabs" aria-label="Views"><button type="button" data-tab="check" class="on">Duty check</button><button type="button" data-tab="assign">Driver assignment</button><button type="button" data-tab="rota">Rota creator</button><span class="tabEnd"><label class="garSel" for="garSel">Garage <select id="garSel"></select></label><button type="button" id="garBtn">Garages…</button><span class="note" id="undoMsg" aria-live="polite"></span><button type="button" id="undoBtn" class="undo" disabled>Undo</button></span></nav>
 
   <div id="checkView" class="view">
   <section id="emptySec" class="emptyBox">
@@ -435,12 +450,22 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
         <div class="rrow">Straight through max <input type="text" id="r_straightOnBusMax"></div>
         <div class="rrow">All others, max per piece <input type="text" id="r_onBusMax"></div>
         <label class="rrow" style="justify-content:flex-start;gap:8px"><input type="checkbox" id="r_joinShortBreaks"> Join pieces when the break is shorter than relief min</label></div>
-      <div class="rcol"><h3>Identifying 4 Day</h3>
-        <div class="rrow" style="display:grid">Duty numbers (regex, comma-separated)<input type="text" class="wide" id="r_fourDayPattern"></div>
-        <p class="note" style="margin:0">A duty with no relief is straight through. Any other duty with compass over the standard max (Mon–Sat) is a split.</p></div>
+      <div class="rcol"><h3>Identifying the type</h3>
+        <p class="note" style="margin:0">4 Day duties are set by number in the <b>4 Day duties</b> panel. A duty with no relief is straight through. Any other duty with compass over the standard max (Mon–Sat) is a split.</p></div>
     </div>
     <div class="rfoot"><span class="note">Relief is the longest break in the duty (with 3 pieces, the short break is just a bus changeover).</span><button class="btn" id="resetRules" type="button">Restore defaults</button></div>
   </details>
+
+  <section class="fdPanel" id="fdPanel" aria-labelledby="fdT">
+    <h3 id="fdT">4 Day duties <small class="note" id="fdGar"></small></h3>
+    <p class="note" style="margin:0">Duty numbers or ranges for each PDF, comma-separated, e.g. <code>2401-2499, 2510</code>. Keep the letter for Friday duties: <code>F2401-F2499</code>. Used by Duty check, Driver assignment and the Rota creator.</p>
+    <div class="fdGrid">
+      <label for="r_fd_mt">Mon–Thu <input type="text" id="r_fd_mt" spellcheck="false"><small id="fdn_mt"></small></label>
+      <label for="r_fd_fri">Friday <input type="text" id="r_fd_fri" spellcheck="false"><small id="fdn_fri"></small></label>
+      <label for="r_fd_sat">Saturday <input type="text" id="r_fd_sat" spellcheck="false"><small id="fdn_sat"></small></label>
+      <label for="r_fd_sun">Sunday <input type="text" id="r_fd_sun" spellcheck="false"><small id="fdn_sun"></small></label>
+    </div>
+  </section>
 
   <section id="jobSec" hidden>
     <div class="jobHead">
@@ -495,7 +520,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
           <div id="friBox"></div>
           <p class="note" style="margin:0">For these rotas, Friday is planned from the Mon–Thu PDF (the same duties run on Friday).</p></div>
         <div class="rcol wide2"><h3>Rota duty numbers <em>ranges, comma-separated</em></h3>
-          <div class="rtab"><table class="rangeT"><thead><tr><th></th><th>Mon–Thu</th><th>Fri (F…)</th><th>Sat</th><th>Sun</th></tr></thead><tbody id="rangeBody"></tbody></table></div></div>
+          <div class="rtab"><table class="rangeT"><thead><tr><th>Rota</th><th>Mon–Thu</th><th>Fri (F…)</th><th>Sat</th><th>Sun</th><th></th></tr></thead><tbody id="rangeBody"></tbody></table></div></div>
       </div>
       <div class="rfoot"><span class="note">Settings are saved in this browser.</span><button class="btn" id="a_reset" type="button">Restore defaults</button></div>
     </details>
@@ -518,11 +543,11 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
     </section>
 
     <section class="asgBlock">
-      <div class="blockHead"><h2>Assignment</h2>
+      <div class="blockHead"><h2>Assignment</h2><label class="asgJobL" for="asgJobSel">Duties from job <select id="asgJobSel"></select></label>
         <div class="hbtns"><button type="button" class="btn primary" id="asgExport">Export to rota</button><button type="button" class="btn" id="asgGs">Export to Google Sheets</button><button type="button" class="btn" id="asgReset">Clear manual changes</button></div></div>
       <p class="note" id="asgNoJob">Load a job with duty PDFs first (New job: choose PDFs), then the drivers are assigned automatically.</p>
       <div id="asgOut" hidden>
-        <p class="note">Job: <b id="asgJobName"></b>. Click a duty to change it; your choice is kept (marked fixed) and the other drivers are re-planned around it.</p>
+        <p class="note">Click a duty to change it; your choice is kept (marked fixed) and the other drivers are re-planned around it.</p>
         <ul class="asgNotes" id="asgNotes" hidden></ul>
         <div class="asgSum" id="asgSum"></div>
         <div class="tablebox"><table class="asgT">
@@ -532,6 +557,14 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
     </section>
   </div>
 
+  <dialog id="garDlg" class="dlg" aria-labelledby="garT"><h3 id="garT">Garages</h3>
+    <p class="note">Each garage keeps its own duty rules and 4 Day numbers, driver assignment settings (rotas and their duty numbers), driver list and sub rota duty numbers. Jobs and rota jobs are listed under the garage they were made in.</p>
+    <table class="garList"><tbody id="garBody"></tbody></table>
+    <div class="dGrid"><label for="gar_new">New garage</label><input type="text" id="gar_new" placeholder="e.g. Walsall">
+      <label for="gar_copy">Start with</label><select id="gar_copy"><option value="">Default rules, no rotas, no drivers</option></select></div>
+    <p class="note" id="garMsg" aria-live="polite"></p>
+    <div class="dBtns"><button type="button" class="btn primary" id="garAdd">Add garage</button><button type="button" class="btn" data-close="garDlg">Close</button></div>
+  </dialog>
   <dialog id="gsDlg" class="dlg xwide" aria-labelledby="gsT"><h3 id="gsT">Export to Google Sheets</h3>
     <p class="note">One row per driver: number, roll number, name, rota, the requests, and the duty given on each day (RD on rest days, empty where no duty was found), with the weekly pay and the difference to the target.</p>
     <label class="cbrow"><input type="checkbox" id="gs_req" checked> Include the requests (duty type, special condition, working days, notes)</label>
@@ -805,23 +838,34 @@ const DEFAULT_RULES = {
   sunNormal: { compassMax: 420, reliefMin: 38 },
   sunFourDay: { compassMin: 480, reliefMin: 38 },
   straightOnBusMax: 320, onBusMax: 300,
-  fourDayPattern: '^F?24\\d\\d$, ^54\\d\\d$, ^79\\d$',
+  fourDayNums: { mt: '2401-2499', fri: 'F2401-F2499', sat: '5401-5499', sun: '790-799' },
   joinShortBreaks: false,
 };
 
 function isSundayLabel(l) { return /sun/i.test(l); }
 
-function classify(d, sunday, rules, override) {
+// duty number lists like "2401-2499, F2401-F2420, 791": a letter prefix must match, the number must be in range
+function inNumList(no, spec) {
+  const m = String(no || '').trim().match(/^([A-Za-z]*)(\d+)$/); const pre = m ? m[1].toUpperCase() : '', n = m ? +m[2] : NaN;
+  return String(spec || '').split(/[\s,;]+/).filter(Boolean).some(t => {
+    if (/[\\^$*()[\]|?]/.test(t)) { try { return new RegExp(t, 'i').test(no); } catch (e) { return false; } } // old regex patterns still work
+    const r = t.match(/^([A-Za-z]*)(\d+)(?:-([A-Za-z]*)(\d+))?$/); if (!r || !m) return false;
+    if (r[1].toUpperCase() !== pre || (r[3] && r[3].toUpperCase() !== pre)) return false;
+    const a = +r[2], b = r[4] ? +r[4] : a; return n >= Math.min(a, b) && n <= Math.max(a, b); });
+}
+// is this duty a 4 Day duty? g = 'mt' | 'fri' | 'sat' | 'sun'; without g every group is tried
+function is4DayFor(no, g, rules) { const L = rules.fourDayNums || {}; return g ? inNumList(no, L[g]) : ['mt', 'fri', 'sat', 'sun'].some(k => inNumList(no, L[k])); }
+
+function classify(d, sunday, rules, override, g) {
   if (override && override !== 'auto') return override;
-  const pats = rules.fourDayPattern.split(',').map(s => s.trim()).filter(Boolean);
-  if (pats.some(p => { try { return new RegExp(p, 'i').test(d.duty); } catch { return false; } })) return 'fourDay';
+  if (is4DayFor(d.duty, g || (sunday ? 'sun' : null), rules)) return 'fourDay';
   if (!d.reliefs.length) return 'straight';
   if (!sunday && d.totals.compass > rules.normal.compassMax) return 'split';
   return 'normal';
 }
 
-function checkDuty(d, sunday, rules, override) {
-  const type = classify(d, sunday, rules, override);
+function checkDuty(d, sunday, rules, override, g) {
+  const type = classify(d, sunday, rules, override, g);
   const c = d.totals.compass, maxRel = d.reliefs.length ? Math.max(...d.reliefs) : null;
   const issues = [];
   const R = sunday ? { normal: rules.sunNormal, fourDay: rules.sunFourDay } : { normal: rules.normal, fourDay: rules.fourDay, split: rules.split };
@@ -845,13 +889,18 @@ function checkDuty(d, sunday, rules, override) {
   return { type, compass: c, maxRelief: maxRel, maxOnBus: Math.max(...spells), issues };
 }
 
-if (typeof module !== 'undefined') module.exports = { parseLines, checkDuty, DEFAULT_RULES, isSundayLabel, fmt };
+if (typeof module !== 'undefined') module.exports = { parseLines, checkDuty, DEFAULT_RULES, isSundayLabel, fmt, inNumList, is4DayFor };
 
 const TYPE_LABEL = { normal: 'Standard', split: 'Split', fourDay: '4 Day', straight: 'Straight' };
 let jobs = [], jobId = null, files = [], active = 0, view = 'bad', typeFilter = '', sortKey = null, sortDir = 1;
 let overrides = {};
 let rules = JSON.parse(JSON.stringify(DEFAULT_RULES));
-try { const s = localStorage.getItem('dutyRules'); if (s) rules = Object.assign(rules, JSON.parse(s)); } catch (e) {}
+try { const s = localStorage.getItem('dutyRules'); if (s) rules = fixRules(JSON.parse(s)); } catch (e) {}
+function fixRules(o) { // merge saved rules with the defaults; turn the old 4 Day regex into number lists
+  const r = JSON.parse(JSON.stringify(DEFAULT_RULES)); o = o || {};
+  Object.keys(o).forEach(k => { r[k] = (r[k] && typeof r[k] === 'object' && o[k] && typeof o[k] === 'object') ? Object.assign(r[k], o[k]) : o[k]; });
+  if (!o.fourDayNums && o.fourDayPattern != null) { if (o.fourDayPattern.replace(/\s/g, '') !== '^F?24\\d\\d$,^54\\d\\d$,^79\\d$') r.fourDayNums = { mt: o.fourDayPattern, fri: o.fourDayPattern, sat: o.fourDayPattern, sun: o.fourDayPattern }; }
+  delete r.fourDayPattern; return r; }
 try { const s = localStorage.getItem('dutyOverrides'); if (s) overrides = JSON.parse(s); } catch (e) {}
 try { const s = localStorage.getItem('dutyJobs'); if (s) jobs = JSON.parse(s) || []; } catch (e) { jobs = []; }
 try { jobId = localStorage.getItem('dutyActiveJob'); } catch (e) {}
@@ -859,7 +908,9 @@ function saveJobs() {
   try { localStorage.setItem('dutyJobs', JSON.stringify(jobs)); localStorage.setItem('dutyActiveJob', jobId || ''); return true; }
   catch (e) { const st = $('status'); st.textContent = 'This browser has run out of space to save jobs. Delete an older job and upload again.'; st.classList.add('err'); return false; }
 }
-function selectJob(id) { if (window.selected) clearSel(); const j = jobs.find(j => j.id === id) || jobs[0]; jobId = j ? j.id : null; files = j ? j.files : []; active = 0; try { localStorage.setItem('dutyActiveJob', jobId || ''); } catch (e) {} }
+const garOf = j => (j && j.garage) || 'g1';
+const garJobs = () => jobs.filter(j => garOf(j) === (window.profSel || 'g1'));
+function selectJob(id) { if (window.selected) clearSel(); const gj = garJobs(); const j = gj.find(j => j.id === id) || gj.slice().sort((a, b) => b.created - a.created)[0]; jobId = j ? j.id : null; files = j ? j.files : []; active = 0; try { localStorage.setItem('dutyActiveJob', jobId || ''); } catch (e) {} }
 const stamp = d => d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 const $ = id => document.getElementById(id);
 const parseHM = s => { const m = String(s).trim().match(/^(\d{1,2}):(\d{2})$/); return m ? (+m[1]) * 60 + (+m[2]) : null; };
@@ -867,12 +918,13 @@ const parseHM = s => { const m = String(s).trim().match(/^(\d{1,2}):(\d{2})$/); 
 const RULE_FIELDS = [['normal','compassMax'],['normal','reliefMin'],['split','compassMin'],['split','compassMax'],['split','reliefMin'],['fourDay','compassMin'],['fourDay','reliefMin'],['sunNormal','compassMax'],['sunNormal','reliefMin'],['sunFourDay','compassMin'],['sunFourDay','reliefMin'],[null,'straightOnBusMax'],[null,'onBusMax']];
 function fillRules() {
   RULE_FIELDS.forEach(([g, k]) => { const el = $('r_' + (g ? g + '_' : '') + k); el.value = fmt(g ? rules[g][k] : rules[k]); });
-  $('r_fourDayPattern').value = rules.fourDayPattern; $('r_joinShortBreaks').checked = rules.joinShortBreaks;
+  ['mt', 'fri', 'sat', 'sun'].forEach(g => $('r_fd_' + g).value = (rules.fourDayNums || {})[g] || ''); $('r_joinShortBreaks').checked = rules.joinShortBreaks;
 }
-function saveRules() { try { localStorage.setItem('dutyRules', JSON.stringify(rules)); } catch (e) {} }
+function saveRules() { try { localStorage.setItem('dutyRules', JSON.stringify(rules)); } catch (e) {} if (typeof storeProfile === 'function') storeProfile(); }
 RULE_FIELDS.forEach(([g, k]) => { const el = $('r_' + (g ? g + '_' : '') + k);
   el.addEventListener('change', () => { const v = parseHM(el.value); if (v == null) { el.value = fmt(g ? rules[g][k] : rules[k]); return; } pushUndo('duty check rule'); if (g) rules[g][k] = v; else rules[k] = v; el.value = fmt(v); saveRules(); render(); }); });
-$('r_fourDayPattern').addEventListener('change', e => { pushUndo('4 Day numbers'); rules.fourDayPattern = e.target.value; saveRules(); render(); });
+['mt', 'fri', 'sat', 'sun'].forEach(g => $('r_fd_' + g).addEventListener('change', e => { const v = e.target.value.trim().replace(/\s*([,;])\s*/g, ', ').replace(/\s*-\s*/g, '-');
+  pushUndo('4 Day numbers'); rules.fourDayNums = Object.assign({}, rules.fourDayNums, { [g]: v }); e.target.value = v; saveRules(); render(); if (typeof renderRota === 'function' && typeof refresh4Day === 'function') refresh4Day(); }));
 $('r_joinShortBreaks').addEventListener('change', e => { pushUndo('duty check rule'); rules.joinShortBreaks = e.target.checked; saveRules(); render(); });
 $('resetRules').addEventListener('click', () => { pushUndo('restore rule defaults'); rules = JSON.parse(JSON.stringify(DEFAULT_RULES)); saveRules(); fillRules(); render(); });
 function saveFile(name, text, type, plain) {
@@ -885,10 +937,11 @@ $('dlCsv').addEventListener('click', () => {
   saveFile(j.name + ' - errors.csv', errorCsv().csv, 'text/csv');
 });
 
-function evaluate(f) {
-  const sunday = isSundayLabel(f.dayLabel);
-  return f.duties.map(d => { const key = jobId + '|' + f.name + '|' + d.duty; const r = checkDuty(d, sunday, rules, overrides[key]);
-    return { d, key, manual: !!overrides[key] && overrides[key] !== 'auto', ...r, pay: d.totals.pay, nIssues: r.issues.length, sunday }; });
+function fileGroup(f) { const ds = daysOfLabel(f.dayLabel); return ds.length ? groupOfDays(ds) : isSundayLabel(f.dayLabel) ? 'sun' : null; }
+function evaluate(f, jid) {
+  const sunday = isSundayLabel(f.dayLabel), g = fileGroup(f); jid = jid || jobId;
+  return f.duties.map(d => { const key = jid + '|' + f.name + '|' + d.duty; const r = checkDuty(d, sunday, rules, overrides[key], g);
+    return { d, key, manual: !!overrides[key] && overrides[key] !== 'auto', ...r, pay: d.totals.pay, nIssues: r.issues.length, sunday, g }; });
 }
 
 function renderFiles(all) {
@@ -902,12 +955,19 @@ function renderFiles(all) {
   document.querySelectorAll('.fcard').forEach(b => b.onclick = () => { active = +b.dataset.i; clearSel(); render(); });
 }
 
+function render4Day() { // how many duties of the selected job each 4 Day list matches
+  const job = jobs.find(j => j.id === jobId) && garJobs().find(j => j.id === jobId);
+  ['mt', 'fri', 'sat', 'sun'].forEach(g => { const el = $('fdn_' + g); if (!job) { el.textContent = ''; return; }
+    const fs = job.files.filter(f => fileGroup(f) === g); if (!fs.length) { el.textContent = 'No PDF for these days in this job'; return; }
+    const hit = []; fs.forEach(f => f.duties.forEach(d => { if (is4DayFor(d.duty, g, rules)) hit.push(d.duty); }));
+    el.textContent = hit.length ? `${hit.length} in this job: ${hit.slice(0, 6).join(', ')}${hit.length > 6 ? ' …' : ''}` : 'None in this job'; });
+}
 function cellTime(v, limitBad) { return `<span class="${limitBad ? 'over' : ''}">${fmt(v)}</span>`; }
 
 function renderJobs() {
-  $('jobsSec').hidden = !jobs.length;
-  $('jobs').innerHTML = jobs.slice().sort((a, b) => b.created - a.created).map(j => {
-    const bad = j.files.reduce((n, f) => n + evaluate(f).filter(x => x.nIssues).length, 0);
+  const gj = garJobs(); $('jobsSec').hidden = !gj.length;
+  $('jobs').innerHTML = gj.sort((a, b) => b.created - a.created).map(j => {
+    const bad = j.files.reduce((n, f) => n + evaluate(f, j.id).filter(x => x.nIssues).length, 0);
     const n = j.files.reduce((n, f) => n + f.duties.length, 0);
     return `<button type="button" class="job ${j.id === jobId ? 'active' : ''}" data-id="${esc(j.id)}"><b>${esc(j.name)}</b>
       <small>${j.files.length} file${j.files.length === 1 ? '' : 's'} · ${n} duties · <span class="${bad ? 'e' : 'g'}">${bad} with errors</span></small></button>`; }).join('');
@@ -915,7 +975,9 @@ function renderJobs() {
 }
 
 function render() {
+  if (!garJobs().find(j => j.id === jobId) && garJobs().length) selectJob(null);
   if (jobId && !jobs.find(j => j.id === jobId)) selectJob(null);
+  render4Day();
   const job = jobs.find(j => j.id === jobId);
   const evalFiles = f => evaluate(f);
   renderJobs();
@@ -938,7 +1000,7 @@ function render() {
       <td class="ck"><input type="checkbox" class="rowck" data-key="${esc(r.key)}" ${selected.has(r.key) ? 'checked' : ''} aria-label="Select duty ${esc(r.d.duty)}"></td>
       <td class="mono"><b>${esc(r.d.duty)}</b></td>
       <td><select data-key="${esc(r.key)}" class="${r.manual ? 'manual' : ''}" aria-label="Duty type ${esc(r.d.duty)}">
-        <option value="auto">Auto: ${TYPE_LABEL[checkDuty(r.d, r.sunday, rules, 'auto').type]}</option>
+        <option value="auto">Auto: ${TYPE_LABEL[checkDuty(r.d, r.sunday, rules, 'auto', r.g).type]}</option>
         ${Object.entries(TYPE_LABEL).map(([k, l]) => `<option value="${k}" ${r.manual && r.type === k ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
       <td class="mono">${cellTime(r.compass, /Compass/.test(iss))}</td>
       <td class="mono">${r.maxRelief == null ? '<span style="color:var(--muted)">none</span>' : cellTime(r.maxRelief, /Relief/.test(iss))}</td>
@@ -1021,7 +1083,7 @@ async function loadFiles(list, mode) {
     else {
       const comm = [...new Set(out.map(f => f.commencing).filter(Boolean))].join(', ');
       const now = new Date();
-      jobs.push({ id: 'j' + now.getTime(), name: (comm ? 'Commencing ' + comm : 'Duties') + ' · checked ' + stamp(now), created: now.getTime(), files: out });
+      jobs.push({ garage: window.profSel || 'g1', id: 'j' + now.getTime(), name: (comm ? 'Commencing ' + comm : 'Duties') + ' · checked ' + stamp(now), created: now.getTime(), files: out });
       jobId = 'j' + now.getTime();
     }
     selectJob(jobId); saveJobs();
@@ -1070,7 +1132,8 @@ $('dlCsv').addEventListener('click', () => {
 });
 // ================= Driver assignment module =================
 const DAYS = [['sun', 'Sun', 'Sunday'], ['mon', 'Mon', 'Monday'], ['tue', 'Tue', 'Tuesday'], ['wed', 'Wed', 'Wednesday'], ['thu', 'Thu', 'Thursday'], ['fri', 'Fri', 'Friday'], ['sat', 'Sat', 'Saturday']];
-const ROTAS = ['WB', 'Soho', 'Bearwood', 'Oldbury'];
+let ROTAS = ['WB', 'Soho', 'Bearwood', 'Oldbury'];
+const syncRotas = () => { ROTAS = Object.keys(asg.ranges || {}); };
 const GROUPS = [['mt', 'Mon–Thu'], ['fri', 'Fri'], ['sat', 'Sat'], ['sun', 'Sun']];
 const DTYPES = [['any', 'Any'], ['early', 'Early'], ['late', 'Late'], ['finish', 'Finish before'], ['start', 'Start after'], ['between', 'Start after + finish before']];
 const SPECIALS = [['none', 'None'], ['break', 'Minimum break'], ['route', 'Specific route']];
@@ -1089,8 +1152,11 @@ let asg = JSON.parse(JSON.stringify(DEFAULT_ASG));
 let drivers = [];
 try { const s = localStorage.getItem('dutyAssignSettings2'); if (s) { const o = JSON.parse(s); asg = Object.assign(asg, o, { ranges: Object.assign({}, asg.ranges, o.ranges || {}) }); } } catch (e) {}
 try { const s = localStorage.getItem('dutyDrivers'); if (s) drivers = JSON.parse(s) || []; } catch (e) { drivers = []; }
-const saveAsg = () => { try { localStorage.setItem('dutyAssignSettings2', JSON.stringify(asg)); } catch (e) {} };
-const saveDrivers = () => { try { localStorage.setItem('dutyDrivers', JSON.stringify(drivers)); } catch (e) {} };
+const saveAsg = () => { try { localStorage.setItem('dutyAssignSettings2', JSON.stringify(asg)); } catch (e) {} if (typeof storeProfile === 'function') storeProfile(); };
+const saveDrivers = () => { try { localStorage.setItem('dutyDrivers', JSON.stringify(drivers)); } catch (e) {} if (typeof storeProfile === 'function') storeProfile(); };
+// which duty check job the driver assignment uses (chosen in the Assignment section; defaults to the job selected in Duty check)
+let asgJobId = null; try { asgJobId = localStorage.getItem('dutyAsgJob'); } catch (e) {}
+function asgJob() { const gj = garJobs(); return gj.find(j => j.id === asgJobId) || gj.find(j => j.id === jobId) || null; }
 const newDriver = () => ({ id: 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), no: '', roll: '', name: '', rota: 'any', dtype: 'any', tStart: '', tEnd: '', special: 'none', sval: '', days: { sun: false, mon: true, tue: true, wed: true, thu: true, fri: true, sat: false }, notes: '' });
 
 const hhmm = s => { if (!s || !/^\d{3,4}$/.test(s)) return null; const v = +s; return Math.floor(v / 100) * 60 + v % 100; };
@@ -1118,7 +1184,7 @@ function jobInfo(job) {
   const fileDuties = job.files.map((f, fi) => {
     const ds = daysOfLabel(f.dayLabel); const g = groupOfDays(ds);
     ds.forEach(d => { if (dayFile[d] == null) dayFile[d] = fi; else warn.push(`${f.name} also covers ${d}; using the first file.`); });
-    const ev = evaluate(f);
+    const ev = evaluate(f, job.id);
     return f.duties.map((d, i) => {
       const p0 = d.pieces[0] || {}, pl = d.pieces[d.pieces.length - 1] || {};
       if (p0.bookOn === undefined) oldData = true;
@@ -1244,7 +1310,7 @@ function undo() {
   drivers = o.drivers; asg = o.asg; overrides = o.overrides; rules = o.rules; { const j = rotaJobs.find(x => x.id === o.rotaJobId); if (j) { rotaJobId = j.id; if (o.rotaFile && j.file && j.file.ord) o.rotaFile.ord = j.file.ord; o.rotaFile = fixFile(o.rotaFile); j.file = o.rotaFile; rotaFile = o.rotaFile; rotaSel = o.rotaSel; } else pickJob(rotaJobId); } saveRota();
   o.locks.forEach(([id, l]) => { const j = jobs.find(x => x.id === id); if (j) j.locks = l; });
   saveDrivers(); saveAsg(); saveRules(); saveJobs(); try { localStorage.setItem('dutyOverrides', JSON.stringify(overrides)); } catch (e) {}
-  editKey = null; fillRules(); fillAsgSettings(); renderDrivers(); render(); renderAssignResults(); renderRota(); updateUndo();
+  editKey = null; syncRotas(); fillRules(); fillAsgSettings(); renderDrivers(); render(); renderAssignResults(); renderRota(); updateUndo();
   const st = $('undoMsg'); st.textContent = 'Undone: ' + last.label; clearTimeout(undo.t); undo.t = setTimeout(() => st.textContent = '', 3000);
 }
 let editKey = null; // one undo step per edited field
@@ -1292,12 +1358,13 @@ function cellHtml(c, dr, d) {
   return `<button type="button" class="cellBtn miss ${c.locked ? 'locked' : ''}" data-id="${dr.id}" data-day="${d}" title="${esc(c.reason || '')}"><b>—</b><small>${esc(c.reason || 'Not assigned')}</small></button>`;
 }
 let lastAsg = null;
+function renderAsgJobSel() { const s = $('asgJobSel'); const gj = garJobs().sort((a, b) => b.created - a.created); const j = asgJob();
+  s.innerHTML = gj.map(x => `<option value="${esc(x.id)}" ${j && x.id === j.id ? 'selected' : ''}>${esc(x.name)}${x.id === jobId ? ' (open in Duty check)' : ''}</option>`).join('') || '<option value="">No jobs yet</option>'; s.disabled = !gj.length; }
 function renderAssignResults() {
   if ($('assignView').hidden) return;
-  const job = jobs.find(j => j.id === jobId);
-  $('asgNoJob').hidden = !!job; $('asgOut').hidden = !job || !drivers.length;
+  const job = asgJob();
+  renderAsgJobSel(); $('asgNoJob').hidden = !!job; $('asgOut').hidden = !job || !drivers.length;
   if (!job) return;
-  $('asgJobName').textContent = job.name;
   if (!drivers.length) return;
   const { res, info } = lastAsg = assignAll(job);
   const missingDays = DAYS.filter(([d]) => info.dayFile[d] == null).map(([, , l]) => l);
@@ -1321,7 +1388,7 @@ function renderAssignResults() {
 
 // cell picker
 function openPicker(btn) {
-  const job = jobs.find(j => j.id === jobId); if (!job || !lastAsg) return;
+  const job = asgJob(); if (!job || !lastAsg) return;
   const dr = drivers.find(x => x.id === btn.dataset.id), d = btn.dataset.day; const pool = dayPool(lastAsg.info, d, { rota: 'any' }); if (!pool.length) return;
   const cur = lastAsg.res[dr.id][d]; const curNo = cur && cur.du ? cur.du.no : '';
   const taken = new Set(); drivers.forEach(o => { if (o.id !== dr.id) { const c = lastAsg.res[o.id][d]; if (c && c.du) taken.add(c.du.no); } });
@@ -1426,7 +1493,7 @@ function fillAsgSettings() {
   $('a_target').value = fmt(asg.target); $('a_rest').value = fmt(asg.minRest); $('a_early').value = clock(asg.earlyEnd); $('a_late').value = clock(asg.lateStart);
   $('a_valid').checked = asg.onlyValid; $('a_same').checked = asg.sameNumber;
   $('friBox').innerHTML = ROTAS.map(r => `<label class="rrow cbrow"><input type="checkbox" id="fri_${r}" data-r="${r}" ${(asg.friFromMT || []).includes(r) ? 'checked' : ''}> ${r}</label>`).join('');
-  $('rangeBody').innerHTML = ROTAS.map(r => `<tr><th scope="row">${r}</th>${GROUPS.map(([g]) => `<td><input type="text" id="rg_${r}_${g}" data-r="${r}" data-g="${g}" value="${esc((asg.ranges[r] || {})[g] || '')}" aria-label="${r} ${g} duty numbers"></td>`).join('')}</tr>`).join('');
+  $('rangeBody').innerHTML = ROTAS.map(r => `<tr><th scope="row"><input type="text" class="rotaName" data-rn="${esc(r)}" value="${esc(r)}" aria-label="Rota name ${esc(r)}"></th>${GROUPS.map(([g]) => `<td><input type="text" id="rg_${r}_${g}" data-r="${r}" data-g="${g}" value="${esc((asg.ranges[r] || {})[g] || '')}" aria-label="${r} ${g} duty numbers"></td>`).join('')}<td><button type="button" class="x" data-rdel="${esc(r)}" aria-label="Remove rota ${esc(r)}" title="Remove rota">×</button></td></tr>`).join('') + `<tr><td colspan="6"><button type="button" class="btn" id="rotaAdd">Add rota</button></td></tr>`;
 }
 function initAssign() {
   fillAsgSettings(); renderDrivers();
@@ -1436,9 +1503,20 @@ function initAssign() {
   $('a_valid').onchange = e => { pushUndo('assignment setting'); asg.onlyValid = e.target.checked; saveAsg(); renderAssignResults(); };
   $('a_rest').onchange = e => { pushUndo('assignment setting'); const v = parseHM(e.target.value); if (v != null) asg.minRest = v; e.target.value = fmt(asg.minRest); saveAsg(); renderAssignResults(); };
   $('a_same').onchange = e => { pushUndo('assignment setting'); asg.sameNumber = e.target.checked; saveAsg(); renderAssignResults(); };
-  $('rangeBody').addEventListener('change', e => { const t = e.target; if (!t.dataset.r) return; pushUndo('rota numbers'); asg.ranges[t.dataset.r] = asg.ranges[t.dataset.r] || {}; asg.ranges[t.dataset.r][t.dataset.g] = t.value.trim(); saveAsg(); renderAssignResults(); });
+  $('rangeBody').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+    if (b.id === 'rotaAdd') { let n = 'Rota ' + (ROTAS.length + 1); while (asg.ranges[n]) n += '+'; pushUndo('add rota'); asg.ranges[n] = { mt: '', fri: '', sat: '', sun: '' }; syncRotas(); saveAsg(); fillAsgSettings(); renderDrivers(); renderAssignResults();
+      const ins = document.querySelectorAll('#rangeBody .rotaName'); const el = ins[ins.length - 1]; if (el) { el.focus(); el.select(); } return; }
+    if (b.dataset.rdel) { const r = b.dataset.rdel; pushUndo('remove rota ' + r); delete asg.ranges[r]; asg.friFromMT = (asg.friFromMT || []).filter(x => x !== r); drivers.forEach(d => { if (d.rota === r) d.rota = 'any'; });
+      syncRotas(); saveAsg(); saveDrivers(); fillAsgSettings(); renderDrivers(); renderAssignResults(); } });
+  $('rangeBody').addEventListener('change', e => { const t = e.target;
+    if (t.dataset.rn != null) { const old = t.dataset.rn, nw = t.value.trim().replace(/[<>"&]/g, '');
+      if (!nw || nw === old || asg.ranges[nw]) { t.value = old; return; }
+      pushUndo('rename rota ' + old); const o = {}; Object.keys(asg.ranges).forEach(k => o[k === old ? nw : k] = asg.ranges[k]); asg.ranges = o;
+      asg.friFromMT = (asg.friFromMT || []).map(x => x === old ? nw : x); drivers.forEach(d => { if (d.rota === old) d.rota = nw; });
+      syncRotas(); saveAsg(); saveDrivers(); fillAsgSettings(); renderDrivers(); renderAssignResults(); return; }
+    if (!t.dataset.r) return; pushUndo('rota numbers'); asg.ranges[t.dataset.r] = asg.ranges[t.dataset.r] || {}; asg.ranges[t.dataset.r][t.dataset.g] = t.value.trim(); saveAsg(); renderAssignResults(); });
   $('friBox').addEventListener('change', e => { const r = e.target.dataset.r; if (!r) return; pushUndo('Friday setting'); const set = new Set(asg.friFromMT || []); e.target.checked ? set.add(r) : set.delete(r); asg.friFromMT = [...set]; saveAsg(); renderAssignResults(); });
-  $('a_reset').onclick = () => { pushUndo('restore assignment defaults'); asg = JSON.parse(JSON.stringify(DEFAULT_ASG)); saveAsg(); fillAsgSettings(); renderAssignResults(); };
+  $('a_reset').onclick = () => { pushUndo('restore assignment defaults'); const keep = (window.profSel || 'g1') === 'g1' ? {} : { ranges: asg.ranges, friFromMT: asg.friFromMT, boards: asg.boards }; asg = Object.assign(JSON.parse(JSON.stringify(DEFAULT_ASG)), keep); syncRotas(); saveAsg(); renderDrivers(); fillAsgSettings(); renderAssignResults(); };
   $('drvBody').addEventListener('input', onDriverEdit); $('drvBody').addEventListener('change', onDriverEdit);
   $('drvBody').addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
@@ -1454,8 +1532,9 @@ function initAssign() {
   let clr = null; $('clearDrv').onclick = () => { const b = $('clearDrv');
     if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Click again to remove all'; clr = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Remove all drivers'; }, 4000); return; }
     clearTimeout(clr); b.classList.remove('armed'); b.textContent = 'Remove all drivers'; pushUndo('remove all drivers'); drivers = []; saveDrivers(); renderDrivers(); renderAssignResults(); };
+  $('asgJobSel').onchange = e => { asgJobId = e.target.value; try { localStorage.setItem('dutyAsgJob', asgJobId); } catch (x) {} renderAssignResults(); };
   $('asgBody').addEventListener('click', e => { const b = e.target.closest('.cellBtn'); if (b) openPicker(b); });
-  $('asgReset').onclick = () => { const job = jobs.find(j => j.id === jobId); if (!job) return; pushUndo('clear manual changes'); job.locks = {}; saveJobs(); renderAssignResults(); };
+  $('asgReset').onclick = () => { const job = asgJob(); if (!job) return; pushUndo('clear manual changes'); job.locks = {}; saveJobs(); renderAssignResults(); };
   const gsOpts = () => ({ req: $('gs_req').checked, times: $('gs_times').checked });
   const gsPreview = () => { const rows = assignTable(gsOpts()); $('gs_prev').innerHTML = `<table class="gsT"><thead><tr>${rows[0].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.slice(1, 6).map(r => `<tr>${r.map(v => `<td>${esc(v && typeof v === 'object' ? v.keep : v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
     $('gs_count').textContent = `${rows.length - 1} driver${rows.length === 2 ? '' : 's'}, ${rows[0].length} columns${rows.length > 6 ? ' (first 5 shown)' : ''}.`; };
@@ -1464,7 +1543,7 @@ function initAssign() {
   $('gsCopy').onclick = async () => { const tsv = toTsv(assignTable(gsOpts()));
     try { await navigator.clipboard.writeText(tsv); $('gs_msg').textContent = 'Copied. In Google Sheets click cell A1 and paste (Ctrl+V).'; }
     catch (e) { $('gs_msg').textContent = 'This browser blocked copying. Use Download CSV, or select the table below and copy it.'; } };
-  $('gsDl').onclick = () => { const job = jobs.find(j => j.id === jobId); saveFile(((job && job.name) || 'Drivers') + ' - driver assignment.csv', toCsv(assignTable(gsOpts())), 'text/csv');
+  $('gsDl').onclick = () => { const job = asgJob(); saveFile(((job && job.name) || 'Drivers') + ' - driver assignment.csv', toCsv(assignTable(gsOpts())), 'text/csv');
     $('gs_msg').textContent = 'Saved. In Google Sheets: File → Import → Upload, choose the file, then “Replace current sheet” or “Insert new sheet”.'; };
   $('undoBtn').onclick = undo;
   document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { e.preventDefault(); undo(); } });
@@ -1490,6 +1569,7 @@ try { const s = localStorage.getItem('dutyRotaJobs'); if (s) rotaJobs = JSON.par
 try { rotaJobId = localStorage.getItem('dutyRotaJobSel'); } catch (e) {}
 try { const old = localStorage.getItem('dutyRotaFile'); if (old && !rotaJobs.length) { const f = JSON.parse(old); if (f) rotaJobs.push({ id: 'r' + Date.now(), name: (f.name || 'Rota') + ' (saved)', created: Date.now(), file: f, sel: localStorage.getItem('dutyRotaSel') }); } } catch (e) {}
 const curJob = () => rotaJobs.find(j => j.id === rotaJobId);
+const garRotaJobs = () => rotaJobs.filter(j => ((j.garage) || 'g1') === (window.profSel || 'g1'));
 // duty files are stored compactly: one entry per duty with the days it runs (Mon–Thu duties are not repeated four times)
 function packDif(dif) { const m = new Map(); DAYS.forEach(([d], di) => (dif[d] || []).forEach(du => { const k = [du.no, du.pay, du.s, du.e].join('|'); const e = m.get(k);
     if (e) e[7] += di; else m.set(k, [du.no, du.pay, du.s, du.e, du.maxRelief, du.cls || '', du.code || '', String(di), du.ty == null ? null : du.ty, du.pay0 == null ? null : du.pay0, du.pc || null]); }));
@@ -1497,11 +1577,11 @@ function packDif(dif) { const m = new Map(); DAYS.forEach(([d], di) => (dif[d] |
 function unpackDif(p) { const out = {}; p.l.forEach(([no, pay, s, e, mr, cls, code, days, ty, pay0, pc]) => { const du = { no, num: parseInt(String(no).replace(/^\D+/, ''), 10), pay, s, e, maxRelief: mr, routes: [], valid: true, cls, code, src: 'DIF' }; if (ty != null) du.ty = ty; if (pay0 != null) du.pay0 = pay0; if (pc) du.pc = pc;
     String(days).split('').forEach(i => { const d = DAYS[+i][0]; (out[d] = out[d] || []).push(du); }); }); return out; }
 function difReplacer(k, v) { return k === 'dif' && v && !v._p ? packDif(v) : v; }
-function pickJob(id) { const j = rotaJobs.find(x => x.id === id) || rotaJobs[rotaJobs.length - 1] || null; rotaJobId = j ? j.id : null; rotaFile = j ? fixFile(j.file) : null; if (j) j.file = rotaFile; rotaSel = j ? j.sel : null; rotaCur = { li: 0, di: 0 }; rotaSubset = ''; }
+function pickJob(id) { const gr = garRotaJobs(); const j = gr.find(x => x.id === id) || gr[gr.length - 1] || null; rotaJobId = j ? j.id : null; rotaFile = j ? fixFile(j.file) : null; if (j) j.file = rotaFile; rotaSel = j ? j.sel : null; rotaCur = { li: 0, di: 0 }; rotaSubset = ''; }
 const saveRota = () => { const j = curJob(); if (j) { j.file = rotaFile; j.sel = rotaSel; }
   try { localStorage.setItem('dutyRotaJobs', JSON.stringify(rotaJobs, difReplacer)); localStorage.setItem('dutyRotaJobSel', rotaJobId || ''); localStorage.removeItem('dutyRotaFile'); }
   catch (e) { rotaMsg('This browser has run out of space to save rota jobs. Delete an older rota job.', true); } };
-function newRotaJob(name, file) { const id = 'r' + Date.now() + Math.random().toString(36).slice(2, 5); rotaJobs.push({ id, name, created: Date.now(), file, sel: file && file.rotas[0] ? file.rotas[0].code : null }); pickJob(id); return curJob(); }
+function newRotaJob(name, file) { const id = 'r' + Date.now() + Math.random().toString(36).slice(2, 5); rotaJobs.push({ garage: window.profSel || 'g1', id, name, created: Date.now(), file, sel: file && file.rotas[0] ? file.rotas[0].code : null }); pickJob(id); return curJob(); }
 function rotaMsg(t, err) { const st = $('rotaStatus'); if (!st) return; st.textContent = t || ''; st.classList.toggle('err', !!err); }
 
 const DEF_SET = { startDate: '', rdCode: 'RD', spCode: 'SP', includeRd: false, earlyOff: 900, lateOff: 1321, midOff: 1170, customTypes: [] };
@@ -1510,7 +1590,9 @@ function fixFile(f) { // fill in settings for files saved by older versions
   if (!f) return f; f.set = Object.assign({}, DEF_SET, f.set || {}); if (f.dif && f.dif._p) f.dif = unpackDif(f.dif);
   if (f.dif) Object.values(f.dif).forEach(l => l.forEach(du => { if (du.pay0 != null && !du.exact) du.pay = sun4Pay(du.pay0); }));
   f.ranges = f.ranges || {};
-  f.rotas.forEach(r => { if (!f.ranges[r.code]) { const n = ROTA_CODE_NAME[r.code]; f.ranges[r.code] = Object.assign({ mt: '', fri: '', sat: '', sun: '' }, n && asg.ranges[n] ? asg.ranges[n] : {}); } });
+  f.rotas.forEach(r => { if (!f.ranges[r.code]) { const sr = typeof curProfile === 'function' && curProfile() ? (curProfile().subRanges || {})[r.code] : null;
+    const n = ((window.profSel || 'g1') === 'g1' && ROTA_CODE_NAME[r.code]) || Object.keys(asg.ranges || {}).find(k => k.toUpperCase().replace(/[^A-Z0-9]/g, '') === r.code);
+    f.ranges[r.code] = Object.assign({ mt: '', fri: '', sat: '', sun: '' }, sr || (n && asg.ranges[n] ? asg.ranges[n] : {})); } });
   f.rotas.forEach(r => { r.cfg = Object.assign(defCfg(r), r.cfg || {}); if (r.target != null && !(r.cfg && r.cfg._t)) { r.cfg.min = r.target; r.cfg.max = r.target + 60; r.cfg._t = 1; } delete r.rotating; delete r.target; });
   return f;
 }
@@ -1551,7 +1633,7 @@ function writeRif(f) {
   return rows.join('\r\n') + '\r\n';
 }
 
-const is4Day = no => String(rules.fourDayPattern || '').split(',').map(x => x.trim()).filter(Boolean).some(p => { try { return new RegExp(p, 'i').test(no); } catch (e) { return false; } });
+const is4Day = no => is4DayFor(no, 'sun', rules); // Sunday 4 Day numbers from the 4 Day duties panel
 function sun4Factor() { return asg.sun4Factor > 0 ? asg.sun4Factor : 1.16; }
 function sun4Pay(v) { return Math.round(v * sun4Factor()); }
 // ---- OmniROTA data file (.ORD): the whole rota with its duties and settings ----
@@ -1875,8 +1957,9 @@ function buildRota(src, o) {
 // ---------- UI ----------
 let rotaA = null;
 function rotaJobInfo() { const job = jobs.find(j => j.id === jobId); return job ? jobInfo(job) : null; }
+function fillNrRange() { $('nr_range').innerHTML = ROTAS.map(r => `<option>${esc(r)}</option>`).join(''); }
 function renderRjobs() {
-  $('rjList').innerHTML = rotaJobs.slice().sort((a, b) => b.created - a.created).map(j => { const f = j.file; const n = f ? f.rotas.length : 0;
+  $('rjList').innerHTML = garRotaJobs().sort((a, b) => b.created - a.created).map(j => { const f = j.file; const n = f ? f.rotas.length : 0;
     return `<button type="button" class="job ${j.id === rotaJobId ? 'active' : ''}" data-rj="${esc(j.id)}"><b>${esc(j.name)}</b><small>${f ? `${esc(f.name)} · ${n} sub rota${n === 1 ? '' : 's'}${f.dif ? ' · duties loaded' : ''}` : 'empty: open a rota'}</small></button>`; }).join('') || '<span class="note">No rota jobs yet. Opening a rota creates one.</span>';
   const j = curJob(); $('rjName').hidden = !j; $('rjCopy').disabled = !j || !j.file; $('rjDel').disabled = !j; if (j && document.activeElement !== $('rjName')) $('rjName').value = j.name;
 }
@@ -2216,8 +2299,8 @@ function initRota() {
     $('ex_sub').innerHTML = subs.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('') + '<option value="__new">New sub rota…</option>';
     if (!subs.length) $('ex_sub').value = '__new'; $('ex_newWrap').hidden = $('ex_sub').value !== '__new'; };
   $('asgExport').onclick = () => { if (!lastAsg || !drivers.length) { $('ex_msg').textContent = ''; }
-    $('ex_job').innerHTML = rotaJobs.slice().sort((a, b) => b.created - a.created).map(j => `<option value="${esc(j.id)}" ${j.id === rotaJobId ? 'selected' : ''}>${esc(j.name)}</option>`).join('') + '<option value="__new">New rota job</option>';
-    if (!rotaJobs.length) $('ex_job').value = '__new'; exFill(); $('ex_msg').textContent = ''; $('exOpen').hidden = true; showDialog('expDlg'); };
+    $('ex_job').innerHTML = garRotaJobs().sort((a, b) => b.created - a.created).map(j => `<option value="${esc(j.id)}" ${j.id === rotaJobId ? 'selected' : ''}>${esc(j.name)}</option>`).join('') + '<option value="__new">New rota job</option>';
+    if (!garRotaJobs().length) $('ex_job').value = '__new'; exFill(); $('ex_msg').textContent = ''; $('exOpen').hidden = true; showDialog('expDlg'); };
   $('ex_job').onchange = exFill; $('ex_sub').onchange = () => { $('ex_newWrap').hidden = $('ex_sub').value !== '__new'; };
   $('exRun').onclick = () => { const m = $('ex_msg');
     if (!lastAsg || !drivers.length) { m.textContent = 'There is nothing to export yet: add drivers and choose a job with duty PDFs.'; return; }
@@ -2407,6 +2490,7 @@ function initRota() {
     Object.assign(r.cfg, vals, { splitEvery: se, short: $('sr_short').value.trim(), startWeek: parseInt($('sr_week').value, 10) || 1, moves: (document.querySelector('input[name="sr_moves"]:checked') || {}).value || 'down' });
     rotaFile.ranges = rotaFile.ranges || {}; rotaFile.ranges[r.code] = { mt: $('sr_rg_mt').value.trim(), fri: $('sr_rg_fri').value.trim(), sat: $('sr_rg_sat').value.trim(), sun: $('sr_rg_sun').value.trim() };
     if (code !== r.code) { rotaFile.ranges[code] = rotaFile.ranges[r.code]; delete rotaFile.ranges[r.code]; r.code = code; rotaSel = code; }
+    if (typeof curProfile === 'function' && curProfile()) { const pr = curProfile(); pr.subRanges = pr.subRanges || {}; pr.subRanges[code] = rotaFile.ranges[code]; storeProfile(); } // remembered for this garage's next rota
     saveRota(); closeDialog('subDlg'); renderRota(); };
   $('ctAdd').onclick = () => { const cur = readCtypes().list; cur.push({ code: '', name: '', as: '' }); renderCtypes(cur); const ins = document.querySelectorAll('#ctBody .ctCode'); if (ins.length) ins[ins.length - 1].focus(); };
   $('ctBody').addEventListener('click', e => { const b = e.target.closest('[data-ctdel]'); if (!b) return; const keep = readCtypes().list.filter((c, i) => String(i) !== b.dataset.ctdel); renderCtypes(keep); });
@@ -2436,7 +2520,7 @@ function initRota() {
   $('rotaDl').onclick = () => { if (rotaFile) saveFile(rotaFile.name.replace(/\.rif$/i, '') + '.RIF', writeRif(rotaFile), 'text/plain', true); };
   $('rotaCopy').onclick = async () => { const b = $('rotaCopy'); try { await navigator.clipboard.writeText(writeRif(rotaFile)); b.textContent = 'Copied'; } catch (e) { b.textContent = 'Copy blocked'; } setTimeout(() => b.textContent = 'Copy RIF text', 2500); };
   // new sub rota
-  $('nr_range').innerHTML = ROTAS.map(r => `<option>${r}</option>`).join('');
+  fillNrRange();
   $('rotaNewBtn').onclick = () => { $('nrMsg').textContent = ''; showDialog('newDlg'); };
   $('nrBuild').onclick = () => { const src = rotaSrc(); const st = $('nrMsg');
     if (!src.ok) { st.textContent = 'Load duties first: a job with duty PDFs, or a .DIF duty file.'; return; }
@@ -2455,7 +2539,91 @@ function initRota() {
     rotaMsg(`Created ${code} with ${r.lines.length} lines, average week ${fmt(Math.round(tots.reduce((a, b) => a + b, 0) / tots.length))}.` + (out.left ? ` ${out.left} duties could not be placed.` : '')); };
 }
 
-selectJob(jobId); fillRules(); initAssign(); initRota(); render();
+// ================= Garage profiles =================
+// Each garage keeps its own duty rules (with 4 Day numbers), assignment settings (rotas and duty numbers), drivers and sub rota duty numbers.
+// Jobs and rota jobs carry the garage id; jobs from before profiles belong to the first garage.
+var profSel = 'g1';
+let profiles = [];
+const clone = o => JSON.parse(JSON.stringify(o));
+const curProfile = () => profiles.find(p => p.id === profSel);
+function storeProfile() {
+  const p = curProfile(); if (!p) return;
+  p.rules = clone(rules); p.asg = clone(asg); p.drivers = clone(drivers);
+  try { localStorage.setItem('dutyProfiles', JSON.stringify(profiles)); localStorage.setItem('dutyProfileSel', profSel); } catch (e) {}
+}
+function profAsg(o) { // a new garage has no rotas of its own until they are added
+  const a = Object.assign(clone(DEFAULT_ASG), { ranges: {}, friFromMT: [], boards: '' }, o || {});
+  a.ranges = (o && o.ranges) ? o.ranges : {}; return a;
+}
+function loadProfile(p) {
+  rules = fixRules(p.rules || {}); asg = p.id === 'g1' && !p.asg ? asg : profAsg(p.asg); drivers = clone(p.drivers || []);
+  syncRotas();
+}
+function initProfiles() {
+  try { const s = localStorage.getItem('dutyProfiles'); if (s) profiles = JSON.parse(s) || []; } catch (e) { profiles = []; }
+  try { profSel = localStorage.getItem('dutyProfileSel') || 'g1'; } catch (e) {}
+  if (!profiles.length) { // first run: the settings used so far become the first garage
+    profiles = [{ id: 'g1', name: 'West Bromwich', rules: clone(rules), asg: clone(asg), drivers: clone(drivers), subRanges: {} }];
+    profSel = 'g1';
+  }
+  if (!curProfile()) profSel = profiles[0].id;
+  loadProfile(curProfile()); storeProfile();
+  if (garRotaJobs().every(j => j.id !== rotaJobId)) pickJob(null);
+  renderGarages();
+  $('garSel').onchange = e => switchGarage(e.target.value);
+  $('garBtn').onclick = () => { $('garMsg').textContent = ''; $('gar_new').value = ''; renderGarDlg(); showDialog('garDlg'); };
+  $('garAdd').onclick = () => {
+    const name = $('gar_new').value.trim(); const m = $('garMsg');
+    if (!name) { m.textContent = 'Write the name of the garage.'; return; }
+    if (profiles.some(p => p.name.toLowerCase() === name.toLowerCase())) { m.textContent = `${name} already exists.`; return; }
+    storeProfile();
+    const src = profiles.find(p => p.id === $('gar_copy').value);
+    const p = { id: 'g' + Date.now().toString(36), name, subRanges: {}, drivers: [] };
+    if (src) { // copy the duty rules and the assignment settings, not the drivers or 4 Day numbers
+      p.rules = clone(src.rules || {}); p.rules.fourDayNums = { mt: '', fri: '', sat: '', sun: '' };
+      p.asg = clone(src.asg || {}); p.asg.ranges = {}; p.asg.friFromMT = []; p.asg.boards = '';
+    } else { p.rules = Object.assign(clone(DEFAULT_RULES), { fourDayNums: { mt: '', fri: '', sat: '', sun: '' } }); p.asg = profAsg(); }
+    profiles.push(p); switchGarage(p.id); renderGarDlg();
+    m.textContent = `Added ${name} and switched to it. Set its 4 Day numbers in Duty check and its rotas under Driver assignment → Assignment settings.`;
+  };
+  $('garBody').addEventListener('change', e => { const t = e.target; if (!t.dataset.gname) return; const p = profiles.find(x => x.id === t.dataset.gname);
+    const v = t.value.trim(); if (!v || profiles.some(x => x !== p && x.name.toLowerCase() === v.toLowerCase())) { t.value = p.name; return; }
+    p.name = v; storeProfile(); try { localStorage.setItem('dutyProfiles', JSON.stringify(profiles)); } catch (x) {} renderGarages(); });
+  let armT = null;
+  $('garBody').addEventListener('click', e => { const b = e.target.closest('[data-gdel]'); if (!b) return; const p = profiles.find(x => x.id === b.dataset.gdel); const m = $('garMsg');
+    if (profiles.length < 2) { m.textContent = 'There must be at least one garage.'; return; }
+    const nJ = jobs.filter(j => garOf(j) === p.id).length, nR = rotaJobs.filter(j => (j.garage || 'g1') === p.id).length;
+    if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Click again'; m.textContent = `Deleting ${p.name} also deletes its ${nJ} job${nJ === 1 ? '' : 's'}, ${nR} rota job${nR === 1 ? '' : 's'} and its drivers.`;
+      clearTimeout(armT); armT = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Delete'; }, 4000); return; }
+    clearTimeout(armT);
+    jobs = jobs.filter(j => garOf(j) !== p.id); rotaJobs = rotaJobs.filter(j => (j.garage || 'g1') !== p.id);
+    profiles = profiles.filter(x => x !== p); if (profSel === p.id) { profSel = profiles[0].id; loadProfile(profiles[0]); }
+    try { localStorage.setItem('dutyProfiles', JSON.stringify(profiles)); } catch (x) {}
+    saveJobs(); saveRota(); afterSwitch(); renderGarDlg(); m.textContent = `Deleted ${p.name}.`; });
+}
+function renderGarages() {
+  $('garSel').innerHTML = profiles.map(p => `<option value="${esc(p.id)}" ${p.id === profSel ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+  const p = curProfile(); $('fdGar').textContent = p ? '· ' + p.name : '';
+}
+function renderGarDlg() {
+  $('garBody').innerHTML = profiles.map(p => { const nJ = jobs.filter(j => garOf(j) === p.id).length, nR = rotaJobs.filter(j => (j.garage || 'g1') === p.id).length;
+    return `<tr><td><input type="text" data-gname="${esc(p.id)}" value="${esc(p.name)}" aria-label="Garage name"></td><td class="note">${nJ} job${nJ === 1 ? '' : 's'} · ${nR} rota job${nR === 1 ? '' : 's'} · ${(p.drivers || []).length} drivers${p.id === profSel ? ' · <b>in use</b>' : ''}</td>
+      <td><button type="button" class="btn danger" data-gdel="${esc(p.id)}">Delete</button></td></tr>`; }).join('');
+  $('gar_copy').innerHTML = '<option value="">Default rules, no rotas, no drivers</option>' + profiles.map(p => `<option value="${esc(p.id)}">Rules and settings of ${esc(p.name)}</option>`).join('');
+}
+function switchGarage(id) {
+  if (id === profSel || !profiles.find(p => p.id === id)) return;
+  storeProfile(); profSel = id; loadProfile(curProfile());
+  try { localStorage.setItem('dutyRules', JSON.stringify(rules)); localStorage.setItem('dutyAssignSettings2', JSON.stringify(asg)); localStorage.setItem('dutyDrivers', JSON.stringify(drivers)); } catch (e) {}
+  storeProfile(); afterSwitch();
+}
+function afterSwitch() {
+  undoStack.length = 0; updateUndo(); lastAsg = null; asgJobId = null;
+  selectJob(null); saveJobs(); pickJob(null); saveRota();
+  renderGarages(); fillRules(); fillAsgSettings(); renderDrivers(); fillNrRange(); render(); renderAssignResults(); renderRota();
+}
+
+initProfiles(); selectJob(jobId); fillRules(); initAssign(); initRota(); render();
 </script>
 </body>
 </html>
