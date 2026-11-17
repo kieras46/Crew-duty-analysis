@@ -173,6 +173,11 @@ td.tot small { font-size: 12px; font-weight: 600 } .okc { color: var(--ok) } .ov
 .tabs .tabEnd button { border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg); padding: 6px 12px; font-size: 13px; font-weight: 500; margin: 0 }
 .tabs .tabEnd .garSel { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted) }
 .tabs .tabEnd .garSel select { font-size: 13px; font-weight: 600; padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg) }
+.opH { margin: 12px 0 6px; font-size: 13px }
+.opList { display: grid; gap: 6px; max-height: 40vh; overflow: auto }
+.opRow { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 13px }
+.opRow:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent) }
+.opRow small { display: block; color: var(--muted); margin-top: 2px }
 .fdPanel { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 12px 14px; margin: 0 0 14px }
 .fdPanel h3 { margin: 0 0 4px; font-size: 15px }
 .fdGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 8px }
@@ -406,10 +411,10 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
   </header>
 
   <div class="drop" id="drop">
-    <input type="file" id="fileIn" accept="application/pdf" multiple hidden>
-    <input type="file" id="fileAdd" accept="application/pdf" multiple hidden>
-    <button type="button" class="btn primary" id="newJobBtn">New job: choose PDFs</button>
-    <span class="dropText"><b>or drag PDF files here</b><br><small id="status" class="status">Each upload creates a new job. Jobs are saved in this browser, so you can come back to earlier analyses.</small></span>
+    <input type="file" id="fileIn" accept="application/pdf,.pdf,.dcl,.DCL" multiple hidden>
+    <input type="file" id="fileAdd" accept="application/pdf,.pdf,.dcl,.DCL" multiple hidden>
+    <button type="button" class="btn primary" id="newJobBtn">New job: choose PDFs or DCL</button>
+    <span class="dropText"><b>or drag PDF or .DCL duty files here</b><br><small id="status" class="status">Each upload creates a new job. Jobs are saved in this browser, so you can come back to earlier analyses.</small></span>
     <button type="button" class="btn" id="addBtn" hidden>Add PDFs to this job</button>
   </div>
 
@@ -587,7 +592,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
   </dialog>
 
   <div id="rotaView" class="view" hidden>
-    <input type="file" id="rotaIn" accept=".rif,.RIF,.ord,.ORD,.txt,text/plain" multiple hidden>
+    <input type="file" id="rotaIn" accept=".rif,.RIF,.ord,.ORD,.dcl,.DCL,.orl,.ORL,.txt,text/plain" multiple hidden>
     <input type="file" id="ordDir" webkitdirectory multiple hidden>
     <input type="file" id="difIn" accept=".dif,.DIF,.txt,text/plain" multiple hidden>
     <div class="rjBar" title="Opening an OmniROTA folder or a rota file makes a new job. To try new duties on the same rota: Copy job, rename it, then Load duties (.DIF).">
@@ -765,6 +770,12 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
       <div class="dBtns"><button type="button" class="btn primary" id="wpApply">Apply</button><button type="button" class="btn" data-close="wpDlg">Close</button></div>
     </dialog>
 
+    <dialog id="openDlg" class="dlg wide" aria-labelledby="opT"><h3 id="opT">Open OmniROTA rota</h3>
+      <p class="note">This folder has more than one rota or set of duty files. Choose what to open.</p>
+      <h4 class="opH">Rota (.ORD)</h4><div id="op_ords" class="opList"></div>
+      <div id="op_srcBox"><h4 class="opH">Duty pieces for the duty rule checks</h4><div id="op_srcs" class="opList"></div></div>
+      <div class="dBtns"><button type="button" class="btn primary" id="opOk">Open</button><button type="button" class="btn" data-close="openDlg">Cancel</button></div>
+    </dialog>
     <dialog id="statDlg" class="dlg wide" aria-labelledby="statTitle"><h3 id="statTitle">Rota statistics</h3><div id="statBody"></div>
       <div class="dBtns"><button type="button" class="btn" data-close="statDlg">Close</button></div></dialog>
 
@@ -889,7 +900,43 @@ function checkDuty(d, sunday, rules, override, g) {
   return { type, compass: c, maxRelief: maxRel, maxOnBus: Math.max(...spells), issues };
 }
 
-if (typeof module !== 'undefined') module.exports = { parseLines, checkDuty, DEFAULT_RULES, isSundayLabel, fmt, inNumList, is4DayFor };
+// ---- OmniROTA / scheduling .DCL duty files: one row per piece ----
+// duty, days ($ Sun, M T W H Mon–Thu, F Fri, S Sat), version (0, or 1/2 for duties with two versions), sign on, board,
+// depart, from, route, arrive, to, 0, sign off, -, value (h:mm), depot
+function csvCells(l) { const out = []; let i = 0; l = String(l);
+  while (i <= l.length) { if (l[i] === '"') { const j = l.indexOf('"', i + 1); out.push(l.slice(i + 1, j < 0 ? l.length : j)); i = (j < 0 ? l.length : j) + 2; }
+    else { const j = l.indexOf(',', i); out.push(l.slice(i, j < 0 ? l.length : j)); i = (j < 0 ? l.length : j) + 1; } if (i > l.length) break; }
+  return out; }
+const DCL_DAY = { $: 'Sunday', M: 'Monday', T: 'Tuesday', W: 'Wednesday', H: 'Thursday', F: 'Friday', S: 'Saturday' };
+function dclDayLabel(code) { const ns = String(code).trim().split('').map(c => DCL_DAY[c]).filter(Boolean); return ns.length > 2 ? ns[0] + ' to ' + ns[ns.length - 1] : ns.join(' and '); }
+function parseDcl(text, name) {
+  const t4 = x => { x = String(x || '').trim(); return /^\d{4}$/.test(x) ? +x.slice(0, 2) * 60 + +x.slice(2) : null; };
+  const hhmm = x => { x = String(x || '').trim(); return /^\d{4}$/.test(x) ? x : ''; };
+  const board = b => { b = String(b || '').trim(); return b.length > 2 ? b.slice(0, -2) + '/' + b.slice(-2) : b; };
+  const groups = new Map(); let bad = 0;
+  String(text || '').replace(/\r/g, '').split('\n').filter(l => l.trim()).forEach(l => { const c = csvCells(l);
+    if (c.length < 14 || !/^[A-Za-z]?\d+$/.test(c[0].trim())) { bad++; return; }
+    const k = c[0].trim().toUpperCase() + '|' + c[1].trim() + '|' + (parseInt(c[2], 10) || 0);
+    (groups.get(k) || groups.set(k, []).get(k)).push(c); });
+  const files = new Map(); // one entry per days code; duties with two versions: version 2 (schooldays) in the main list, version 1 in its own list
+  groups.forEach((rows, k) => { const [no, days, v] = k.split('|'); const ver = +v;
+    const pieces = []; let prevEnd = null, prevDep = null;
+    rows.forEach((c, i) => { const dep = t4(c[5]); let arr = t4(c[8]); const on = t4(c[3]); const off = t4(c[c.length >= 15 ? 11 : 10]);
+      let onBus = dep != null && arr != null ? arr - dep : 0; if (onBus < 0) onBus += 1440;
+      let relief = null; if (i) { const st = on != null ? on : dep; if (st != null && prevEnd != null) { relief = st - prevEnd; if (relief < 0) relief += 1440; } }
+      pieces.push({ board: board(c[4]), bookOn: hhmm(c[3]), from: c[6].trim(), on: hhmm(c[5]), off: hhmm(c[8]), to: c[9].trim(), bookOff: hhmm(c[c.length >= 15 ? 11 : 10]), onBus, relief, route: c[7].trim() });
+      prevEnd = off != null ? off : arr; prevDep = dep; });
+    const s = t4(rows[0][3]), e = t4(rows[rows.length - 1][rows[0].length >= 15 ? 11 : 10]); let compass = s != null && e != null ? e - s : 0; if (compass < 0) compass += 1440;
+    const pay = (() => { const m = String(rows[0][13] || '').trim().match(/^(\d+):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : 0; })();
+    const onBusTotal = pieces.reduce((t, p) => t + p.onBus, 0);
+    const d = { duty: no, pieces, reliefs: pieces.map(p => p.relief).filter(r => r != null), totals: { onBusTotal, dutyTotal: pay, compass, pay } };
+    const fk = days + '|' + (ver === 1 ? 1 : 0); if (!files.has(fk)) files.set(fk, { days, alt: ver === 1, duties: [] }); files.get(fk).duties.push(d); });
+  const base = String(name || 'duties').replace(/\.dcl$/i, '');
+  return { bad, files: [...files.values()].sort((a, b) => a.alt - b.alt).map(f => ({ name: base + '.DCL' + (f.alt ? ' · version 1' : ''),
+    dayLabel: f.alt ? 'Version 1 of ' + base + ' (duties with two versions)' : dclDayLabel(f.days), commencing: '', duties: f.duties, incomplete: [] })) };
+}
+
+if (typeof module !== 'undefined') module.exports = { parseLines, checkDuty, DEFAULT_RULES, isSundayLabel, fmt, inNumList, is4DayFor, parseDcl, csvCells };
 
 const TYPE_LABEL = { normal: 'Standard', split: 'Split', fourDay: '4 Day', straight: 'Straight' };
 let jobs = [], jobId = null, files = [], active = 0, view = 'bad', typeFilter = '', sortKey = null, sortDir = 1;
@@ -1067,11 +1114,15 @@ async function pdfLines(buf) {
 }
 async function loadFiles(list, mode) {
   const st = $('status'); st.classList.remove('err');
-  const pdfs = [...list].filter(f => /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
-  if (!pdfs.length) { st.textContent = 'That isn’t a PDF. Choose a .pdf crew duty summary.'; st.classList.add('err'); return; }
-  if (!window.pdfjsLib) { st.textContent = 'The PDF reader didn’t load. Refresh the page and try again.'; st.classList.add('err'); return; }
-  st.textContent = 'Reading ' + pdfs.length + ' file(s)…';
+  const pdfs = [...list].filter(f => /\.pdf$/i.test(f.name) || f.type === 'application/pdf'), dcls = [...list].filter(f => /\.dcl$/i.test(f.name));
+  if (!pdfs.length && !dcls.length) { st.textContent = 'That isn’t a PDF or .DCL file. Choose a .pdf crew duty summary or the .DCL duty files.'; st.classList.add('err'); return; }
+  if (pdfs.length && !window.pdfjsLib) { st.textContent = 'The PDF reader didn’t load. Refresh the page and try again.'; st.classList.add('err'); return; }
+  st.textContent = 'Reading ' + (pdfs.length + dcls.length) + ' file(s)…';
   const out = [], failed = [];
+  for (const f of dcls) { // duty files: one row per piece; duties with two versions give a second list
+    try { const r = parseDcl(await f.text(), f.name); if (!r.files.length) failed.push(f.name);
+      r.files.forEach(x => out.push({ name: x.name, dayLabel: x.dayLabel, commencing: '', src: 'DCL', duties: x.duties.map(d => ({ duty: d.duty, reliefs: d.reliefs, totals: d.totals, pieces: d.pieces.map(p => ({ b: p.board, bookOn: p.bookOn, bookOff: p.bookOff, onBus: p.onBus, relief: p.relief })) })), incomplete: [] })); }
+    catch (e) { failed.push(f.name); } }
   for (const f of pdfs) {
     try { const r = parseLines(await pdfLines(await f.arrayBuffer()));
       if (!r.duties.length) failed.push(f.name); else out.push({ name: f.name, dayLabel: r.dayLabel, commencing: r.commencing, duties: r.duties.map(d => ({ duty: d.duty, reliefs: d.reliefs, totals: d.totals, pieces: d.pieces.map(p => ({ b: p.board, bookOn: p.bookOn, bookOff: p.bookOff, onBus: p.onBus, relief: p.relief })) })), incomplete: r.incomplete });
@@ -1083,7 +1134,8 @@ async function loadFiles(list, mode) {
     else {
       const comm = [...new Set(out.map(f => f.commencing).filter(Boolean))].join(', ');
       const now = new Date();
-      jobs.push({ garage: window.profSel || 'g1', id: 'j' + now.getTime(), name: (comm ? 'Commencing ' + comm : 'Duties') + ' · checked ' + stamp(now), created: now.getTime(), files: out });
+      const dclRef = !comm && out.every(f => f.src === 'DCL') ? [...new Set(out.map(f => f.name.replace(/\.DCL.*$/i, '').replace(/^(.{2})(SU|SA|MH|FO|MF|FR|MT)/i, '$1')))].join(', ') : '';
+      jobs.push({ garage: window.profSel || 'g1', id: 'j' + now.getTime(), name: (comm ? 'Commencing ' + comm : dclRef ? 'Duty files ' + dclRef : 'Duties') + ' · checked ' + stamp(now), created: now.getTime(), files: out });
       jobId = 'j' + now.getTime();
     }
     selectJob(jobId); saveJobs();
@@ -1640,9 +1692,10 @@ function sun4Pay(v) { return Math.round(v * sun4Factor()); }
 // header · per line: no,name,roll,total + 7 × (duty,index) · duty table · day names · sub rotas (first,last,name,startNo,count,SP,RD,min,max,short+moves,rest)
 function csvRow(l) { const out = []; let cur = '', q = false; for (let i = 0; i < l.length; i++) { const ch = l[i]; if (ch === '"') q = !q; else if (ch === ',' && !q) { out.push(cur); cur = ''; } else cur += ch; } out.push(cur); return out; }
 // .ORL: one row per piece — duty, days, school version, sign on, board, depart, from, route, arrive, to, sign off, -, value
+// .DCL (duty files) have the same rows with an extra 0 before the sign off, and the depot at the end
 function parseOrl(text) { const m = new Map(); const t4 = x => { x = String(x || '').trim(); return /^\d{4}$/.test(x) ? +x.slice(0, 2) * 60 + +x.slice(2) : null; };
   String(text || '').replace(/\r/g, '').split('\n').filter(Boolean).forEach(l => { const c = csvRow(l); if (c.length < 11) return;
-    const k = c[0].trim().toUpperCase() + '|' + c[1].trim() + '|' + (parseInt(c[2], 10) || 0); (m.get(k) || m.set(k, []).get(k)).push([t4(c[5]), t4(c[8]), t4(c[3]), t4(c[10])]); });
+    const k = c[0].trim().toUpperCase() + '|' + c[1].trim() + '|' + (parseInt(c[2], 10) || 0); (m.get(k) || m.set(k, []).get(k)).push([t4(c[5]), t4(c[8]), t4(c[3]), t4(c[c.length >= 15 ? 11 : 10])]); });
   return m; }
 function parseOrd(text, name, orlText) { const orl = orlText ? parseOrl(orlText) : null;
   const raw = String(text).replace(/\r/g, '').split('\n').filter(l => l.length); const rows = raw.map(csvRow); const H = rows[0] || [];
@@ -2326,13 +2379,30 @@ function initRota() {
     m.textContent = (moved ? `${moved} dut${moved === 1 ? 'y was' : 'ies were'} already on other rotas and ${moved === 1 ? 'was' : 'were'} removed from there. ` : '') + `Exported ${drivers.length} driver${drivers.length === 1 ? '' : 's'} to ${curJob().name}, sub rota ${code}, lines ${first}–${no - 1}. Days without a duty are left empty.`; $('exOpen').hidden = false; };
   $('exOpen').onclick = () => { closeDialog('expDlg'); location.hash = 'rota'; };
   const move = (dl, dd) => { const r = curRota(); if (!r) return; rotaCur.li = Math.min(r.lines.length - 1, Math.max(0, rotaCur.li + dl)); rotaCur.di = Math.min(6, Math.max(0, rotaCur.di + dd)); renderRota(true); };
-  const openOrd = async files => { const ords = [...files].filter(f => /\.ord$/i.test(f.name));
+  // Open OmniROTA folder: find the .ORD rota files and the duty files (.DCL, or the rota's own .ORL) in the folder.
+  // With more than one rota, or more than one set of duty files, ask which to open.
+  const dclSetKey = n => n.replace(/\.dcl$/i, '').toUpperCase().replace(/^(.{2})(SU|SA|MH|FO|MF|FR|MT|MO)/, '$1');
+  const openOrd = async files => { files = [...files]; const ords = files.filter(f => /\.ord$/i.test(f.name));
     if (!ords.length) { rotaMsg('No OmniROTA data file found. The folder must contain the .ORD file of the rota.', true); return; }
-    const done = [], bad = [];
-    for (const f of ords) { try { const base = f.name.replace(/\.ord$/i, '').toLowerCase(); const orlF = [...files].find(x => x.name.toLowerCase() === base + '.orl');
-        const parsed = parseOrd(await f.text(), f.name, orlF ? await orlF.text() : null); const j = curJob();
+    const sets = new Map(); files.filter(f => /\.dcl$/i.test(f.name)).forEach(f => { const k = dclSetKey(f.name); (sets.get(k) || sets.set(k, []).get(k)).push(f); });
+    const info = []; for (const f of ords) { const H = csvRow((await f.slice(0, 400).text()).split(/\r?\n/)[0] || ''); info.push({ f, title: (H[11] || '').trim() || f.name, date: (H[8] || '').trim(), lines: parseInt(H[0], 10) || 0, subs: parseInt(H[2], 10) || 0, mod: f.lastModified }); }
+    const srcs = [...sets.entries()].map(([k, fs]) => ({ k: 'dcl:' + k, label: `${fs.length} duty file${fs.length === 1 ? '' : 's'} (.DCL): ${fs.map(x => x.name).sort().join(', ')}`, fs }));
+    if (ords.length < 2 && srcs.length < 2) { await openOrdWith(info[0], srcs[0] || null, files); return; }
+    info.sort((a, b) => b.mod - a.mod);
+    $('op_ords').innerHTML = info.map((o, i) => `<label class="opRow"><input type="radio" name="op_ord" value="${i}" ${i ? '' : 'checked'}><span><b>${esc(o.f.name)}</b><small>${esc(o.title)}${o.date ? ' · starts ' + esc(o.date) : ''} · ${o.subs} sub rota${o.subs === 1 ? '' : 's'}, ${o.lines} lines · saved ${new Date(o.mod).toLocaleDateString('en-GB')}</small></span></label>`).join('');
+    $('op_srcs').innerHTML = srcs.map((s, i) => `<label class="opRow"><input type="radio" name="op_src" value="${i}" ${i ? '' : 'checked'}><span>${esc(s.label)}</span></label>`).join('')
+      + `<label class="opRow"><input type="radio" name="op_src" value="-1" ${srcs.length ? '' : 'checked'}><span>No .DCL files: use the rota's own .ORL file if there is one</span></label>`;
+    $('op_srcBox').hidden = !srcs.length;
+    $('opOk').onclick = async () => { const oi = +(document.querySelector('input[name="op_ord"]:checked') || {}).value || 0; const si = +((document.querySelector('input[name="op_src"]:checked') || {}).value ?? -1);
+      closeDialog('openDlg'); await openOrdWith(info[oi], si >= 0 ? srcs[si] : null, files); };
+    showDialog('openDlg'); };
+  const openOrdWith = async (o, src, files) => { const done = [], bad = [];
+    for (const f of [o.f]) { try { const base = f.name.replace(/\.ord$/i, '').toLowerCase(); const orlF = src ? null : files.find(x => x.name.toLowerCase() === base + '.orl');
+        let pcText = null, pcNote = ''; if (src) { pcText = (await Promise.all(src.fs.map(x => x.text()))).join('\n'); pcNote = `, duty pieces from ${src.fs.length} .DCL file${src.fs.length === 1 ? '' : 's'}`; } else if (orlF) { pcText = await orlF.text(); pcNote = ', duty pieces from ' + orlF.name; }
+        const parsed = parseOrd(await f.text(), f.name, pcText); const j = curJob();
+        if (pcText) { let n = 0, all = 0; Object.values(parsed.dif).forEach(l => l.forEach(du => { all++; if (du.pc) n++; })); pcNote += ` (${n} of ${all} duties found)`; }
         if (j && !j.file && !done.length) { j.file = parsed; j.name = f.name.replace(/\.ord$/i, '') + ' · ' + new Date().toLocaleDateString('en-GB'); pickJob(j.id); } else newRotaJob(f.name.replace(/\.ord$/i, '') + ' · ' + new Date().toLocaleDateString('en-GB'), parsed);
-        rotaSel = parsed.rotas[0].code; saveRota(); done.push(`${f.name} (${parsed.rotas.length} sub rotas, ${parsed.rotas.reduce((t, r) => t + r.lines.length, 0)} lines, duties for ${DAYS.filter(([d]) => parsed.dif[d]).length} days${parsed.variants ? `, ${parsed.variants} school-variation duty versions not used by the rota left out` : ''})`);
+        rotaSel = parsed.rotas[0].code; saveRota(); done.push(`${f.name} (${parsed.rotas.length} sub rotas, ${parsed.rotas.reduce((t, r) => t + r.lines.length, 0)} lines, duties for ${DAYS.filter(([d]) => parsed.dif[d]).length} days${parsed.variants ? `, ${parsed.variants} school-variation duty versions not used by the rota left out` : ''}${pcNote})`);
       } catch (err) { bad.push(f.name); } }
     rotaMsg((done.length ? `New rota job from OmniROTA: ${done.join('; ')}.` : '') + (bad.length ? ` Could not read ${bad.join(', ')}.` : ''), !done.length); renderRota(); };
   $('ordDir').addEventListener('change', e => { const fs = e.target.files; openOrd(fs); e.target.value = ''; });
