@@ -311,6 +311,12 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .swJ { display: flex; gap: 4px } .swJ input { width: 70px; font-family: var(--mono); border: 1px solid var(--line); border-radius: 5px; padding: 5px; background: var(--bg); color: var(--fg) }
 .askBox { border: 1px solid var(--warn); border-radius: 6px; padding: 8px 12px; margin-top: 8px } .askBox p { margin: 0 }
 .statT { min-width: 0 }
+.gsPrev { margin-top: 10px; max-height: 260px; overflow: auto } .gsT { min-width: 0; width: max-content; font-size: 12px } .gsT th, .gsT td { padding: 3px 8px; white-space: nowrap; position: static; cursor: default; border-bottom: 1px solid var(--line) } .gsT th { text-transform: none; letter-spacing: 0; font-size: 11.5px }
+.checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 6px 14px; margin-bottom: 12px }
+.gck { display: flex; gap: 8px; align-items: flex-start; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); font-size: 13px }
+.gck > b { font-size: 15px; line-height: 1.2 } .gck.ok { background: var(--ok-soft) } .gck.ok > b { color: var(--ok) } .gck.bad { background: var(--bad-soft) } .gck.bad > b { color: var(--bad) }
+.ckT { font-weight: 700 } .gck details { margin-top: 4px } .gck summary { cursor: pointer; color: var(--accent); font-size: 12.5px }
+.gck ul { margin: 4px 0 0; padding-left: 16px; max-height: 180px; overflow: auto; font-family: var(--mono); font-size: 12px }
 .gT { min-width: 1060px; font-variant-numeric: tabular-nums } .gT th, .gT td { white-space: nowrap; text-align: right; font-family: var(--mono); font-size: 12.5px }
 .gT thead th { font-family: var(--sans); font-size: 11px; text-align: right; white-space: normal; vertical-align: bottom }
 .gT tbody th, .gT tfoot th, .gT thead th:first-child { text-align: left } .gT .e { color: var(--bad); font-weight: 600 }
@@ -513,7 +519,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 
     <section class="asgBlock">
       <div class="blockHead"><h2>Assignment</h2>
-        <div class="hbtns"><button type="button" class="btn primary" id="asgExport">Export to rota</button><button type="button" class="btn" id="asgCopy">Copy for Google Sheets</button><button type="button" class="btn" id="asgDl">Download CSV</button><button type="button" class="btn" id="asgReset">Clear manual changes</button></div></div>
+        <div class="hbtns"><button type="button" class="btn primary" id="asgExport">Export to rota</button><button type="button" class="btn" id="asgGs">Export to Google Sheets</button><button type="button" class="btn" id="asgReset">Clear manual changes</button></div></div>
       <p class="note" id="asgNoJob">Load a job with duty PDFs first (New job: choose PDFs), then the drivers are assigned automatically.</p>
       <div id="asgOut" hidden>
         <p class="note">Job: <b id="asgJobName"></b>. Click a duty to change it; your choice is kept (marked fixed) and the other drivers are re-planned around it.</p>
@@ -525,6 +531,15 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
       </div>
     </section>
   </div>
+
+  <dialog id="gsDlg" class="dlg xwide" aria-labelledby="gsT"><h3 id="gsT">Export to Google Sheets</h3>
+    <p class="note">One row per driver: number, roll number, name, rota, the requests, and the duty given on each day (RD on rest days, empty where no duty was found), with the weekly pay and the difference to the target.</p>
+    <label class="cbrow"><input type="checkbox" id="gs_req" checked> Include the requests (duty type, special condition, working days, notes)</label>
+    <label class="cbrow"><input type="checkbox" id="gs_times"> Show sign-on, sign-off and pay with each duty (e.g. 214 · 04:59–12:47 · 7:32)</label>
+    <div class="tablebox gsPrev" id="gs_prev"></div><p class="note" id="gs_count"></p>
+    <p class="status" id="gs_msg" aria-live="polite"></p>
+    <div class="dBtns"><button type="button" class="btn primary" id="gsCopy">Copy table</button><button type="button" class="btn" id="gsDl">Download CSV</button><button type="button" class="btn" data-close="gsDlg">Close</button></div>
+  </dialog>
 
   <dialog id="expDlg" class="dlg" aria-labelledby="exT"><h3 id="exT">Export to rota</h3>
     <p class="note">Each driver becomes one rota line: the assigned duty on working days, RD on rest days, empty where no duty was found.</p>
@@ -1110,7 +1125,7 @@ function jobInfo(job) {
       const num = parseInt(String(d.duty).replace(/^\D+/, ''), 10);
       const rota = ROTAS.find(r => inRanges(num, (asg.ranges[r] || {})[g])) || '';
       return { no: d.duty, num, pay: d.totals.pay, s, e, maxRelief: d.reliefs.length ? Math.max(...d.reliefs) : null,
-        routes: d.pieces.map(p => String(p.b || '').split('/')[0]).filter(Boolean), valid: !ev[i].nIssues, cls: ev[i].type, fi, g, rota };
+        routes: d.pieces.map(p => String(p.b || '').split('/')[0]).filter(Boolean), valid: !ev[i].nIssues, iss: ev[i].issues, cls: ev[i].type, fi, g, rota };
     });
   });
   return { dayFile, fileDuties, warn, oldData };
@@ -1332,14 +1347,29 @@ function openPicker(btn) {
   sel.addEventListener('change', done); sel.addEventListener('blur', () => { if (document.body.contains(sel)) renderAssignResults(); });
 }
 
-function assignTable() {
-  const head = ['No', 'Roll number', 'Name', 'Rota', ...DAYS.map(([, , l]) => l.toLowerCase()), 'Weekly pay'];
+// requests in words, as they would be written in the sheet
+function dtypeText(dr) { switch (dr.dtype) {
+  case 'early': return `Early (finish by ${clock(asg.earlyEnd)})`; case 'late': return `Late (start from ${clock(asg.lateStart)})`;
+  case 'finish': return dr.tEnd ? `Finish before ${dr.tEnd}` : 'Finish before'; case 'start': return dr.tStart ? `Start after ${dr.tStart}` : 'Start after';
+  case 'between': return `Start after ${dr.tStart || '?'}, finish before ${dr.tEnd || '?'}`; default: return 'Any'; } }
+function specialText(dr) { return dr.special === 'break' ? `Minimum break ${dr.sval || '?'}` : dr.special === 'route' ? `Routes: ${dr.sval || '?'}` : ''; }
+// full table for Google Sheets: drivers, their requests and the duty given on each day
+function assignTable(o) { o = o || { req: true, times: false };
+  const head = ['No', 'Roll number', 'Name', 'Rota', ...(o.req ? ['Duty type / time', 'Special condition', 'Working days', 'Notes'] : []), ...DAYS.map(([, , l]) => l), 'Weekly pay', 'Difference to ' + fmt(asg.target), 'Days without a duty'];
   const rows = [head];
   if (lastAsg) drivers.slice().sort((a, b) => (parseFloat(a.no) || 1e9) - (parseFloat(b.no) || 1e9)).forEach(dr => { const R = lastAsg.res[dr.id] || {};
-    const tot = DAYS.reduce((n, [d]) => n + (R[d] && R[d].du ? R[d].du.pay : 0), 0);
-    rows.push([dr.no, dr.roll, dr.name, dr.rota === 'any' ? '' : dr.rota, ...DAYS.map(([d]) => !dr.days[d] ? 'RD' : R[d] && R[d].du ? R[d].du.no : ''), fmt(tot)]); });
+    const tot = DAYS.reduce((n, [d]) => n + (R[d] && R[d].du ? R[d].du.pay : 0), 0); const diff = tot - asg.target;
+    const miss = DAYS.filter(([d]) => dr.days[d] && !(R[d] && R[d].du)).map(([d, s]) => `${s}: ${(R[d] && R[d].reason) || 'no duty'}`).join('; ');
+    const cell = d => { if (!dr.days[d]) return 'RD'; const c = R[d]; if (!c || !c.du) return ''; const du = c.du;
+      return o.times ? `${du.no} · ${du.s != null ? clock(du.s) + '–' + clock(du.e) + ' · ' : ''}${fmt(du.pay)}` : { keep: du.no }; };
+    rows.push([dr.no, dr.roll, dr.name, dr.rota === 'any' ? 'Any' : dr.rota, ...(o.req ? [dtypeText(dr), specialText(dr), DAYS.filter(([d]) => dr.days[d]).map(([, s]) => s).join(' '), dr.notes || ''] : []),
+      ...DAYS.map(([d]) => cell(d)), fmt(tot), (diff > 0 ? '+' : diff < 0 ? '-' : '') + fmt(Math.abs(diff)), miss]); });
   return rows;
 }
+// duty numbers like 012 would lose their zeros in a sheet, so they go in as ="012"
+const sheetCell = (v, csv) => { if (v && typeof v === 'object') { const t = String(v.keep); return /^0\d/.test(t) ? `="${t}"` : t; } return String(v == null ? '' : v); };
+const toTsv = rows => rows.map(r => r.map(v => sheetCell(v).replace(/[\t\n]/g, ' ')).join('\t')).join('\n');
+const toCsv = rows => rows.map(r => r.map(v => { const t = sheetCell(v); return /[",\n;]/.test(t) || /^[=+\-]/.test(t) && !/^="/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }).join(',')).join('\r\n');
 
 // ---- paste from Google Sheets ----
 function pTime(tok, pmHint) {
@@ -1423,12 +1453,16 @@ function initAssign() {
     clearTimeout(clr); b.classList.remove('armed'); b.textContent = 'Remove all drivers'; pushUndo('remove all drivers'); drivers = []; saveDrivers(); renderDrivers(); renderAssignResults(); };
   $('asgBody').addEventListener('click', e => { const b = e.target.closest('.cellBtn'); if (b) openPicker(b); });
   $('asgReset').onclick = () => { const job = jobs.find(j => j.id === jobId); if (!job) return; pushUndo('clear manual changes'); job.locks = {}; saveJobs(); renderAssignResults(); };
-  $('asgCopy').onclick = async () => { const tsv = assignTable().map(r => r.join('\t')).join('\n'); const b = $('asgCopy');
-    try { await navigator.clipboard.writeText(tsv); b.textContent = 'Copied. Paste into Google Sheets'; } catch (e) { b.textContent = 'Copy blocked'; }
-    setTimeout(() => b.textContent = 'Copy for Google Sheets', 2500); };
-  $('asgDl').onclick = () => { const job = jobs.find(j => j.id === jobId); if (!job) return;
-    const csv = assignTable().map(r => r.map(c => /[",\n]/.test(c) ? '"' + String(c).replace(/"/g, '""') + '"' : c).join(',')).join('\n');
-    saveFile(job.name + ' - driver assignment.csv', csv, 'text/csv'); };
+  const gsOpts = () => ({ req: $('gs_req').checked, times: $('gs_times').checked });
+  const gsPreview = () => { const rows = assignTable(gsOpts()); $('gs_prev').innerHTML = `<table class="gsT"><thead><tr>${rows[0].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.slice(1, 6).map(r => `<tr>${r.map(v => `<td>${esc(v && typeof v === 'object' ? v.keep : v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    $('gs_count').textContent = `${rows.length - 1} driver${rows.length === 2 ? '' : 's'}, ${rows[0].length} columns${rows.length > 6 ? ' (first 5 shown)' : ''}.`; };
+  $('asgGs').onclick = () => { if (!lastAsg || !drivers.length) return; $('gs_msg').textContent = ''; gsPreview(); showDialog('gsDlg'); };
+  $('gs_req').onchange = gsPreview; $('gs_times').onchange = gsPreview;
+  $('gsCopy').onclick = async () => { const tsv = toTsv(assignTable(gsOpts()));
+    try { await navigator.clipboard.writeText(tsv); $('gs_msg').textContent = 'Copied. In Google Sheets click cell A1 and paste (Ctrl+V).'; }
+    catch (e) { $('gs_msg').textContent = 'This browser blocked copying. Use Download CSV, or select the table below and copy it.'; } };
+  $('gsDl').onclick = () => { const job = jobs.find(j => j.id === jobId); saveFile(((job && job.name) || 'Drivers') + ' - driver assignment.csv', toCsv(assignTable(gsOpts())), 'text/csv');
+    $('gs_msg').textContent = 'Saved. In Google Sheets: File → Import → Upload, choose the file, then “Replace current sheet” or “Insert new sheet”.'; };
   $('undoBtn').onclick = undo;
   document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { e.preventDefault(); undo(); } });
   updateUndo();
@@ -1455,9 +1489,9 @@ try { const old = localStorage.getItem('dutyRotaFile'); if (old && !rotaJobs.len
 const curJob = () => rotaJobs.find(j => j.id === rotaJobId);
 // duty files are stored compactly: one entry per duty with the days it runs (Mon–Thu duties are not repeated four times)
 function packDif(dif) { const m = new Map(); DAYS.forEach(([d], di) => (dif[d] || []).forEach(du => { const k = [du.no, du.pay, du.s, du.e].join('|'); const e = m.get(k);
-    if (e) e[7] += di; else m.set(k, [du.no, du.pay, du.s, du.e, du.maxRelief, du.cls || '', du.code || '', String(di), du.ty == null ? null : du.ty, du.pay0 == null ? null : du.pay0]); }));
+    if (e) e[7] += di; else m.set(k, [du.no, du.pay, du.s, du.e, du.maxRelief, du.cls || '', du.code || '', String(di), du.ty == null ? null : du.ty, du.pay0 == null ? null : du.pay0, du.pc || null]); }));
   return { _p: 1, l: [...m.values()] }; }
-function unpackDif(p) { const out = {}; p.l.forEach(([no, pay, s, e, mr, cls, code, days, ty, pay0]) => { const du = { no, num: parseInt(String(no).replace(/^\D+/, ''), 10), pay, s, e, maxRelief: mr, routes: [], valid: true, cls, code, src: 'DIF' }; if (ty != null) du.ty = ty; if (pay0 != null) du.pay0 = pay0;
+function unpackDif(p) { const out = {}; p.l.forEach(([no, pay, s, e, mr, cls, code, days, ty, pay0, pc]) => { const du = { no, num: parseInt(String(no).replace(/^\D+/, ''), 10), pay, s, e, maxRelief: mr, routes: [], valid: true, cls, code, src: 'DIF' }; if (ty != null) du.ty = ty; if (pay0 != null) du.pay0 = pay0; if (pc) du.pc = pc;
     String(days).split('').forEach(i => { const d = DAYS[+i][0]; (out[d] = out[d] || []).push(du); }); }); return out; }
 function difReplacer(k, v) { return k === 'dif' && v && !v._p ? packDif(v) : v; }
 function pickJob(id) { const j = rotaJobs.find(x => x.id === id) || rotaJobs[rotaJobs.length - 1] || null; rotaJobId = j ? j.id : null; rotaFile = j ? fixFile(j.file) : null; if (j) j.file = rotaFile; rotaSel = j ? j.sel : null; rotaCur = { li: 0, di: 0 }; rotaSubset = ''; }
@@ -1520,7 +1554,12 @@ function sun4Pay(v) { return Math.round(v * sun4Factor()); }
 // ---- OmniROTA data file (.ORD): the whole rota with its duties and settings ----
 // header · per line: no,name,roll,total + 7 × (duty,index) · duty table · day names · sub rotas (first,last,name,startNo,count,SP,RD,min,max,short+moves,rest)
 function csvRow(l) { const out = []; let cur = '', q = false; for (let i = 0; i < l.length; i++) { const ch = l[i]; if (ch === '"') q = !q; else if (ch === ',' && !q) { out.push(cur); cur = ''; } else cur += ch; } out.push(cur); return out; }
-function parseOrd(text, name) {
+// .ORL: one row per piece — duty, days, school version, sign on, board, depart, from, route, arrive, to, sign off, -, value
+function parseOrl(text) { const m = new Map(); const t4 = x => { x = String(x || '').trim(); return /^\d{4}$/.test(x) ? +x.slice(0, 2) * 60 + +x.slice(2) : null; };
+  String(text || '').replace(/\r/g, '').split('\n').filter(Boolean).forEach(l => { const c = csvRow(l); if (c.length < 11) return;
+    const k = c[0].trim().toUpperCase() + '|' + c[1].trim() + '|' + (parseInt(c[2], 10) || 0); (m.get(k) || m.set(k, []).get(k)).push([t4(c[5]), t4(c[8]), t4(c[3]), t4(c[10])]); });
+  return m; }
+function parseOrd(text, name, orlText) { const orl = orlText ? parseOrl(orlText) : null;
   const raw = String(text).replace(/\r/g, '').split('\n').filter(l => l.length); const rows = raw.map(csvRow); const H = rows[0] || [];
   const nL = parseInt(H[0], 10), nD = parseInt(H[1], 10), nR = parseInt(H[2], 10);
   if (!(nL >= 0) || !(nD >= 0) || !(nR > 0) || rows.length < 1 + nL * 8 + nD + nR) throw new Error('bad');
@@ -1541,6 +1580,7 @@ function parseOrd(text, name) {
     const mOn = parseInt(c[7], 10) || 0, mOff = parseInt(c[9], 10) || 0; let rel = null; if (mOn && mOff) { rel = hm(c[7]) - hm(c[9]); if (rel < 0) rel += 1440; }
     const ty = (c[11] || '').trim().toUpperCase();
     const du = { no, num: parseInt(no.replace(/^\D+/, ''), 10), pay: hm(c[1]), s: s0, e: e0, maxRelief: rel, routes: (c[19] || '').trim().split(/\s+/).filter(Boolean), valid: true, cls: ty === 'S' ? 'split' : '', code: (c[12] || '').trim(), ty, src: 'ORD' };
+    if (orl) { const pc = orl.get(no + '|' + (c[13] || '').trim() + '|' + (parseInt(c[14], 10) || 0)); if (pc) du.pc = pc; }
     // OmniROTA keeps only the duty value (time worked) for Sunday 4 Day duties: work out their pay value
     if ((c[13] || '').trim() === '$' && is4Day(no) && !/ROCR\s*$/i.test((H[11] || '').trim())) { du.pay0 = du.pay; du.pay = sun4Pay(du.pay0); }
     (c[13] || '').trim().split('').forEach(ch => { const d = DCH[ch]; if (d) (dif[d] = dif[d] || []).push(du); }); }
@@ -1564,7 +1604,7 @@ function parseDif(text) {
     const s = P[0].on || P[0].dep, last = P[P.length - 1]; let e = last.off || last.arr; if (e != null && s != null && e < s) e += 1440;
     const rel = []; for (let i = 1; i < P.length; i++) { let a = P[i - 1].off || P[i - 1].arr, b = P[i].on || P[i].dep; if (a != null && b != null) { if (b < a) b += 1440; rel.push(b - a); } }
     const mr = rel.length ? Math.max(...rel) : null;
-    const du = { no: cur.no, num: parseInt(cur.no.replace(/^\D+/, ''), 10), pay: cur.pay, s, e, maxRelief: mr, routes: [], valid: true, cls: mr != null && mr >= 120 ? 'split' : '', code: cur.code, src: 'DIF' };
+    const du = { no: cur.no, num: parseInt(cur.no.replace(/^\D+/, ''), 10), pay: cur.pay, s, e, maxRelief: mr, routes: [], valid: true, cls: mr != null && mr >= 120 ? 'split' : '', code: cur.code, src: 'DIF', pc: P.map(p => [p.dep, p.arr, p.on, p.off]) };
     cur.days.forEach(d => (out[d] = out[d] || []).push(du)); cur = null; };
   String(text).replace(/\r/g, '').split('\n').forEach(l => { const c = l.split(',');
     if (c[0] === 'D' && c.length >= 4) { close(); let days;
@@ -1844,6 +1884,38 @@ function fitRows() {
   d.split(' ').forEach(c => t.classList.add(c)); t.classList.add('fit');
   t.style.setProperty('--rowH', h + 'px'); t.style.setProperty('--fs', fs + 'px');
 }
+// duty rules (Duty check tab: compass, relief, time on bus) worked out from the duty's pieces
+function dutyRuleIssues(du, d) {
+  if (!du) return null; if (du.iss) return du.iss; const P = du.pc; if (!P || !P.length || du.s == null || du.e == null) return null;
+  const bus = P.map(p => p[0] != null && p[1] != null ? (p[1] - p[0] + 1440) % 1440 : 0);
+  const rel = []; for (let i = 1; i < P.length; i++) { const a = P[i - 1][3] != null ? P[i - 1][3] : P[i - 1][1], b = P[i][2] != null ? P[i][2] : P[i][0]; if (a != null && b != null) rel.push((b - a + 1440) % 1440); }
+  const pseudo = { duty: du.no, reliefs: rel, totals: { compass: du.e - du.s }, pieces: P.map((p, k) => ({ onBus: bus[k], relief: k ? rel[k - 1] : null })) };
+  return checkDuty(pseudo, d === 'sun', rules).issues;
+}
+const RTA_REST = 660; // 11:00 between finishing one day and starting the next
+function rotaChecks() {
+  const src = rotaSrc(); const out = { unalloc: [], dupl: [], rest: [], rule: [], ruleSkip: 0, unknown: [], empty: 0, total: 0 };
+  DAYS.forEach(([d, sh]) => { const used = rotaA.usedBy[d]; src.day(d).forEach(du => { out.total++; if (!used[du.no] && !(d === 'fri' && used['F' + du.no])) out.unalloc.push(`${sh} ${du.no}`); });
+    Object.entries(used).forEach(([no, u]) => { if (u.length > 1) out.dupl.push(`${sh} ${no}: ${u.map(x => x.code + ' ' + x.line).join(', ')}`); }); });
+  const seen = new Set();
+  rotaFile.rotas.forEach(r => { const D = r.lines.map(l => l.cells.map((c, di) => src.look(DAYS[di][0], c.v)));
+    r.lines.forEach((l, li) => { l.cells.forEach((c, di) => { if (!c.v) out.empty++; else if (isDutyVal(c.v) && !D[li][di]) out.unknown.push(`${r.code} ${l.pre[5]} ${DAYS[di][1]} ${c.v}`);
+        const du = D[li][di]; if (du) { const k = DAYS[di][0] + '|' + du.no; if (!seen.has(k)) { seen.add(k); const iss = dutyRuleIssues(du, DAYS[di][0]); if (iss == null) out.ruleSkip++; else if (iss.length) out.rule.push(`${DAYS[di][1]} ${du.no} (${r.code} ${l.pre[5]}): ${iss.join('; ')}`); } } });
+      for (let di = 0; di < 6; di++) { const rb = restBetween(D[li][di], D[li][di + 1]); if (rb != null && rb < RTA_REST) out.rest.push(`${r.code} line ${l.pre[5]} ${DAYS[di][1]}→${DAYS[di + 1][1]}: ${fmt(rb)} (${D[li][di].no} off ${clock(D[li][di].e)}, ${D[li][di + 1].no} on ${clock(D[li][di + 1].s)})`); }
+      const nl = nextLine(r, li); if (nl != null) { const rb = restBetween(D[li][6], D[nl][0]); if (rb != null && rb < RTA_REST) out.rest.push(`${r.code} line ${l.pre[5]} Sat→Sun of line ${r.lines[nl].pre[5]}: ${fmt(rb)}`); } }); });
+  return out;
+}
+function checksHtml() {
+  const c = rotaChecks(); const row = (ok, title, txt, list) => `<div class="gck ${ok ? 'ok' : 'bad'}"><b>${ok ? '✓' : '✗'}</b><div><span class="ckT">${title}</span> <span>${txt}</span>${list && list.length ? `<details><summary>Show ${list.length}</summary><ul>${list.slice(0, 300).map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}</div></div>`;
+  return `<div class="checks">
+    ${row(!c.unalloc.length, 'All duties allocated', c.unalloc.length ? `${c.unalloc.length} of ${c.total} duties are on no rota line.` : `All ${c.total} duties are on a rota line.`, c.unalloc)}
+    ${row(!c.dupl.length, 'No duty used twice', c.dupl.length ? `${c.dupl.length} duties are on more than one line on the same day.` : 'Every duty is on one line only.', c.dupl)}
+    ${row(!c.rest.length, 'RTA: 11:00 rest between days', c.rest.length ? `${c.rest.length} place${c.rest.length === 1 ? '' : 's'} with less than 11:00 between finishing one day and starting the next (also Saturday → next line's Sunday).` : 'Every line has at least 11:00 between days, also from Saturday to the next line\'s Sunday.', c.rest)}
+    ${row(!c.rule.length && !c.ruleSkip, 'Duty rules (compass, relief, time on bus)', (c.rule.length ? `${c.rule.length} duties on the rota break the Duty check rules.` : 'No duty on the rota breaks the Duty check rules.') + (c.ruleSkip ? ` ${c.ruleSkip} duties could not be checked: open the OmniROTA folder with its .ORL file, or load the .DIF duty file.` : ''), c.rule)}
+    ${row(!c.unknown.length, 'All duties known', c.unknown.length ? `${c.unknown.length} duty numbers on the rota are not in the duty list.` : 'Every duty number on the rota is in the duty list.', c.unknown)}
+    ${row(!c.empty, 'No empty days', c.empty ? `${c.empty} working days have no duty and no SP.` : 'No day is left empty.', [])}
+  </div>`;
+}
 // ---- global statistics: every sub rota of the job ----
 function globalStats() {
   if (!rotaA) return ''; let T = { n: 0, short: 0, mu: 0, best: 0, long: 0, ex: 0, expd: 0, work: 0, rd: 0, sp: 0, inc: 0, pr: 0 };
@@ -1858,7 +1930,7 @@ function globalStats() {
       <td class="${e(short.length)}">${short.length}</td><td class="${e(mu)}">${fmt(mu)}</td><td>${fmt(best)}</td><td class="${e(long.length)}">${long.length}</td><td class="${e(ex)}">${fmt(ex)}</td>
       <td>${fmt(expd)}</td><td>${fmt(sum)}</td><td class="${sum < expd ? 'e' : ''}">${sum < expd ? '−' : '+'}${fmt(Math.abs(sum - expd))}</td><td>${fmt(sum + mu)}</td><td>${rd}</td><td>${sp}</td><td class="${e(inc)}">${inc}</td><td class="${e(pr)}">${pr}</td></tr>`; }).join('');
   const d = T.work - T.expd;
-  return `<p class="note">All ${rotaFile.rotas.length} sub rotas of ${esc(rotaFile.name)}. Click a sub rota to open it. "Lowest make up" is the least make up time possible with the hours on that rota.</p>
+  return checksHtml() + `<p class="note">All ${rotaFile.rotas.length} sub rotas of ${esc(rotaFile.name)}. Click a sub rota to open it. "Lowest make up" is the least make up time possible with the hours on that rota.</p>
     <div class="tablebox"><table class="statT gT"><thead><tr><th>Sub rota</th><th>Lines</th><th>Week min–max</th><th>Average week</th><th>Short weeks</th><th>Make up</th><th>Lowest make up</th><th>Long weeks</th><th>Excess hours</th><th>Expected hours</th><th>Hours worked</th><th>Excess (+/−)</th><th>Roster hours</th><th>RD</th><th>SP</th><th>Incom&shy;plete</th><th>Prob&shy;lems</th></tr></thead>
     <tbody>${rows}</tbody><tfoot><tr><th>Total</th><td>${T.n}</td><td></td><td>${T.n ? fmt(Math.round(T.work / T.n)) : ''}</td><td>${T.short}</td><td>${fmt(T.mu)}</td><td>${fmt(T.best)}</td><td>${T.long}</td><td>${fmt(T.ex)}</td><td>${fmt(T.expd)}</td><td>${fmt(T.work)}</td><td class="${d < 0 ? 'e' : ''}">${d < 0 ? '−' : '+'}${fmt(Math.abs(d))}</td><td>${fmt(T.work + T.mu)}</td><td>${T.rd}</td><td>${T.sp}</td><td>${T.inc}</td><td>${T.pr}</td></tr></tfoot></table></div>`;
 }
@@ -2162,7 +2234,8 @@ function initRota() {
   const openOrd = async files => { const ords = [...files].filter(f => /\.ord$/i.test(f.name));
     if (!ords.length) { rotaMsg('No OmniROTA data file found. The folder must contain the .ORD file of the rota.', true); return; }
     const done = [], bad = [];
-    for (const f of ords) { try { const parsed = parseOrd(await f.text(), f.name); const j = curJob();
+    for (const f of ords) { try { const base = f.name.replace(/\.ord$/i, '').toLowerCase(); const orlF = [...files].find(x => x.name.toLowerCase() === base + '.orl');
+        const parsed = parseOrd(await f.text(), f.name, orlF ? await orlF.text() : null); const j = curJob();
         if (j && !j.file && !done.length) { j.file = parsed; j.name = f.name.replace(/\.ord$/i, '') + ' · ' + new Date().toLocaleDateString('en-GB'); pickJob(j.id); } else newRotaJob(f.name.replace(/\.ord$/i, '') + ' · ' + new Date().toLocaleDateString('en-GB'), parsed);
         rotaSel = parsed.rotas[0].code; saveRota(); done.push(`${f.name} (${parsed.rotas.length} sub rotas, ${parsed.rotas.reduce((t, r) => t + r.lines.length, 0)} lines, duties for ${DAYS.filter(([d]) => parsed.dif[d]).length} days${parsed.variants ? `, ${parsed.variants} school-variation duty versions not used by the rota left out` : ''})`);
       } catch (err) { bad.push(f.name); } }
@@ -2187,6 +2260,7 @@ function initRota() {
     if (rotaFile.ord && rotaFile.dif) { // rota from OmniROTA: keep its duties and types, take the pay values from the duty file
       Object.entries(got).forEach(([d, list]) => { const cur = rotaFile.dif[d] = (rotaFile.dif[d] || []).slice(); const seen = new Set();
         list.forEach(nu => { const i = cur.findIndex(x => x.no === nu.no); if (i < 0) { cur.push(nu); added++; return; }
+          if (!cur[i].pc && nu.pc) cur[i] = Object.assign({}, cur[i], { pc: nu.pc });
           if (cur[i].pay !== nu.pay) { if (!seen.has(nu.no) && ex.length < 3) ex.push(`${nu.no} ${fmt(cur[i].pay)} → ${fmt(nu.pay)}`); const o = Object.assign({}, cur[i]); if (o.pay0 == null) o.pay0 = o.pay; o.pay = nu.pay; o.exact = 1; cur[i] = o; fixed++; }
           else if (cur[i].pay0 != null && !cur[i].exact) cur[i] = Object.assign({}, cur[i], { exact: 1 }); seen.add(nu.no); }); });
     } else rotaFile.dif = Object.assign({}, rotaFile.dif || {}, got);
