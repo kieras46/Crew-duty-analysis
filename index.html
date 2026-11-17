@@ -572,6 +572,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
         <button type="button" class="btn" id="rotaMainBtn" disabled>Main rota settings</button>
         <button type="button" class="btn" id="ordDl" disabled>Save for OmniROTA (.ORD)</button>
         <button type="button" class="btn" id="rotaDl" disabled>Save RIF</button>
+        <button type="button" class="btn" id="difDl" disabled title="Copy of the loaded .DIF without the day flags; duties that are the same on Mon–Thu and Friday are written once">Save DIF</button>
         <button type="button" class="btn" id="rotaCopy" disabled>Copy RIF text</button>
       </div>
       <div class="omniPick">
@@ -1363,13 +1364,15 @@ function assignTable(o) { o = o || { req: true, times: false };
     const cell = d => { if (!dr.days[d]) return 'RD'; const c = R[d]; if (!c || !c.du) return ''; const du = c.du;
       return o.times ? `${du.no} · ${du.s != null ? clock(du.s) + '–' + clock(du.e) + ' · ' : ''}${fmt(du.pay)}` : { keep: du.no }; };
     rows.push([dr.no, dr.roll, dr.name, dr.rota === 'any' ? 'Any' : dr.rota, ...(o.req ? [dtypeText(dr), specialText(dr), DAYS.filter(([d]) => dr.days[d]).map(([, s]) => s).join(' '), dr.notes || ''] : []),
-      ...DAYS.map(([d]) => cell(d)), fmt(tot), (diff > 0 ? '+' : diff < 0 ? '-' : '') + fmt(Math.abs(diff)), miss]); });
+      ...DAYS.map(([d]) => cell(d)), fmt(tot), (diff > 0 ? '+' : diff < 0 ? '-' : '±') + fmt(Math.abs(diff)), miss]); });
   return rows;
 }
 // duty numbers like 012 would lose their zeros in a sheet, so they go in as ="012"
-const sheetCell = (v, csv) => { if (v && typeof v === 'object') { const t = String(v.keep); return /^0\d/.test(t) ? `="${t}"` : t; } return String(v == null ? '' : v); };
+// text starting with + - = @ (e.g. a difference like +0:03) would be read as a formula, so it goes in as ="+0:03"
+const sheetCell = (v, csv) => { if (v && typeof v === 'object') { const t = String(v.keep); return /^0\d/.test(t) ? `="${t}"` : t; }
+  const t = String(v == null ? '' : v); return /^[=+\-@]/.test(t) ? `="${t.replace(/"/g, '""')}"` : t; };
 const toTsv = rows => rows.map(r => r.map(v => sheetCell(v).replace(/[\t\n]/g, ' ')).join('\t')).join('\n');
-const toCsv = rows => rows.map(r => r.map(v => { const t = sheetCell(v); return /[",\n;]/.test(t) || /^[=+\-]/.test(t) && !/^="/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }).join(',')).join('\r\n');
+const toCsv = rows => rows.map(r => r.map(v => { const t = sheetCell(v); return /[",\n;]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }).join(',')).join('\r\n');
 
 // ---- paste from Google Sheets ----
 function pTime(tok, pmHint) {
@@ -1593,6 +1596,15 @@ function parseOrd(text, name, orlText) { const orl = orlText ? parseOrl(orlText)
       lines: lines.slice(first - 1, last).map((l, k) => { const o = { pre: [depot, code, 'P', '', '', String(start + k), '', ''], cells: l.cells, t0: l.t0, s0: l.cells.map(c => c.v).join(',') }; if (l.name) o.driver = l.name; return o; }) }); }
   const d0 = 1 + nL * 8; const ord = { h: H, d: packTxt(raw.slice(d0, d0 + nD).join('\n')), n: raw.slice(d0 + nD, d0 + nD + 7), v: useVar };
   return fixFile({ ord, variants: skipped, name: ((H[11] || '').trim() || name.replace(/\.ord$/i, '')) + '.RIF', depot, set: { startDate: dm ? `${dm[3]}-${dm[2]}-${dm[1]}` : '', rdCode: rd, spCode: sp }, rotas, dif });
+}
+// copy of the loaded .DIF for saving: the day flags (,,,NO,YES,…) are taken off every D line, and a duty that is
+// identical on Mon–Thu and on Friday (same header, pieces and value) is written once
+function difStrip(text) {
+  const out = [], seen = new Set(); let rec = [], duties = 0, dropped = 0;
+  const flush = () => { if (!rec.length) return; const k = rec.join('\n'); if (seen.has(k)) dropped++; else { seen.add(k); out.push(...rec); duties++; } rec = []; };
+  String(text).split(/\r?\n/).forEach(l => { if (/^D,/.test(l)) { flush(); const c = l.split(','); rec = [c.length >= 20 ? c.slice(0, 10).join(',') : l]; } else if (l) { if (rec.length) rec.push(l); else out.push(l); } });
+  flush();
+  return { text: out.join('\r\n') + '\r\n', duties, dropped };
 }
 // ---- duty file (.DIF) from the rota program ----
 // D,depot,duty,MM/DD/YYYY,,NO,paycode,depot,DU,D  /  L,piece,T,board,signOn,depart,from,arrive,to,signOff  /  V,0,1,value(h.mm)
@@ -1939,7 +1951,7 @@ function renderRota(reveal) {
   const box0 = $('rotaGridBox'); const keepTop = box0 ? box0.scrollTop : 0, keepLeft = box0 ? box0.scrollLeft : 0;
   if ($('rotaView').hidden) return;
   const has = !!rotaFile && rotaFile.rotas.length; const src = rotaSrc(); const info = src.ok ? src : null;
-  $('rotaEmpty').hidden = has; $('rotaMain').hidden = !has; $('rotaDl').disabled = !has; $('ordDl').disabled = !has; $('rotaCopy').disabled = !has;
+  $('rotaEmpty').hidden = has; $('rotaMain').hidden = !has; $('rotaDl').disabled = !has; $('ordDl').disabled = !has; $('difDl').disabled = !(has && rotaFile.difOut); $('rotaCopy').disabled = !has;
   ['rotaSubBtn', 'rotaMainBtn'].forEach(id => $(id).disabled = !has);
   $('rotaNoJob').hidden = !!info;
   if (!has) { $('rotaFileName').textContent = '—'; $('rotaPick').innerHTML = ''; return; }
@@ -2254,7 +2266,7 @@ function initRota() {
   $('difLoad').onclick = () => $('difIn').click();
   $('difIn').addEventListener('change', async e => { const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return;
     if (!rotaFile) { rotaMsg('Load the rota (.RIF) first, then its duty file (.DIF).', true); return; }
-    const got = {}, bad = []; for (const f of fs) { const p = parseDif(await f.text()); Object.entries(p.days).forEach(([d, l]) => got[d] = (got[d] || []).concat(l)); bad.push(...p.bad); }
+    const got = {}, bad = [], raw = []; for (const f of fs) { const tx = await f.text(); raw.push(tx); const p = parseDif(tx); Object.entries(p.days).forEach(([d, l]) => got[d] = (got[d] || []).concat(l)); bad.push(...p.bad); }
     if (!Object.keys(got).length) { rotaMsg('No duties found. Choose a .DIF duty file exported from the rota program.', true); return; }
     pushUndo('load duty file'); let fixed = 0, added = 0; const ex = [];
     if (rotaFile.ord && rotaFile.dif) { // rota from OmniROTA: keep its duties and types, take the pay values from the duty file
@@ -2264,6 +2276,7 @@ function initRota() {
           if (cur[i].pay !== nu.pay) { if (!seen.has(nu.no) && ex.length < 3) ex.push(`${nu.no} ${fmt(cur[i].pay)} → ${fmt(nu.pay)}`); const o = Object.assign({}, cur[i]); if (o.pay0 == null) o.pay0 = o.pay; o.pay = nu.pay; o.exact = 1; cur[i] = o; fixed++; }
           else if (cur[i].pay0 != null && !cur[i].exact) cur[i] = Object.assign({}, cur[i], { exact: 1 }); seen.add(nu.no); }); });
     } else rotaFile.dif = Object.assign({}, rotaFile.dif || {}, got);
+    rotaFile.difOut = Object.assign({ name: fs[0].name }, difStrip(raw.join('\r\n')));
     saveRota();
     const days = DAYS.filter(([d]) => got[d]).map(([d, s]) => `${s} (${got[d].length})`).join(', ');
     rotaMsg((rotaFile.ord ? `Duty file checked against the OmniROTA duties for ${days}: ${fixed} pay value${fixed === 1 ? '' : 's'} updated${ex.length ? ' (' + ex.join(', ') + (fixed > ex.length ? ' …' : '') + ')' : ''}${added ? `, ${added} new duties added` : ''}.` : `Loaded duties for ${days}.`) + (bad.length ? ` Skipped incomplete duty record${bad.length > 1 ? 's' : ''}: ${bad.join(', ')}. The file may have been cut off; export it again.` : ''), bad.length > 0); renderRota(); });
@@ -2417,6 +2430,9 @@ function initRota() {
     const t = ordTitle(rotaFile); saveFile(t + '.ORD', writeOrd(rotaFile), 'text/plain', true);
     const emp = rotaFile.rotas.reduce((n, r) => n + r.lines.reduce((m, l) => m + l.cells.filter(c => !c.v).length, 0), 0);
     rotaMsg(`Saved ${t}.ORD for OmniROTA.` + (emp ? ` ${emp} empty day${emp === 1 ? '' : 's'} were written as empty.` : '') + ' Open it in OmniROTA on a copy first to check it.'); };
+  $('difDl').onclick = () => { const o = rotaFile && rotaFile.difOut; if (!o) { rotaMsg('Load the duty file (.DIF) into this job first.', true); return; }
+    saveFile(o.name, o.text, 'text/plain', true);
+    rotaMsg(`Saved ${o.name}: ${o.duties} duties, day flags taken off${o.dropped ? `, ${o.dropped} duties that were the same on Mon–Thu and Friday written once` : ''}.`); };
   $('rotaDl').onclick = () => { if (rotaFile) saveFile(rotaFile.name.replace(/\.rif$/i, '') + '.RIF', writeRif(rotaFile), 'text/plain', true); };
   $('rotaCopy').onclick = async () => { const b = $('rotaCopy'); try { await navigator.clipboard.writeText(writeRif(rotaFile)); b.textContent = 'Copied'; } catch (e) { b.textContent = 'Copy blocked'; } setTimeout(() => b.textContent = 'Copy RIF text', 2500); };
   // new sub rota
