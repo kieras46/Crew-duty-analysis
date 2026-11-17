@@ -207,7 +207,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .omniSum { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; font-size: 13px }
 .omniSum .e { color: var(--bad); font-weight: 600 } .omniSum .g { color: var(--ok) }
 .linkBtn { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; font-size: 12.5px; text-decoration: underline }
-.omni { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 10px; align-items: start }
+.omni { display: grid; grid-template-columns: minmax(0, 1fr) clamp(290px, 21vw, 400px); gap: 10px; align-items: start }
 @media (max-width: 1100px) { .omni { grid-template-columns: minmax(0, 1fr) } }
 .omniGrid { overflow: auto; max-height: calc(100vh - 230px); min-height: 420px; border: 1px solid var(--om-line); background: var(--surface) }
 .omniGrid:focus-visible { outline: 2px solid var(--accent) }
@@ -290,7 +290,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .moves small { flex-basis: 100%; color: var(--muted) }
 .dlg .cbrow { display: flex; gap: 8px; align-items: center; margin-top: 10px; font-size: 13.5px }
 .dBtns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px }
-.dlg.xwide { width: min(1180px, calc(100vw - 32px)) }
+.dlg.xwide { width: min(1340px, calc(100vw - 32px)) }
 .statCols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px 28px; margin-bottom: 10px }
 .statG { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; font-size: 13.5px; align-content: start }
 .statG b { font-family: var(--mono); background: var(--bg); border: 1px solid var(--line); padding: 2px 8px; border-radius: 3px; min-width: 76px; text-align: right }
@@ -311,7 +311,55 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .swJ { display: flex; gap: 4px } .swJ input { width: 70px; font-family: var(--mono); border: 1px solid var(--line); border-radius: 5px; padding: 5px; background: var(--bg); color: var(--fg) }
 .askBox { border: 1px solid var(--warn); border-radius: 6px; padding: 8px 12px; margin-top: 8px } .askBox p { margin: 0 }
 .statT { min-width: 0 }
-.rjBar { display: grid; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 12px }
+.gT { min-width: 1060px; font-variant-numeric: tabular-nums } .gT th, .gT td { white-space: nowrap; text-align: right; font-family: var(--mono); font-size: 12.5px }
+.gT thead th { font-family: var(--sans); font-size: 11px; text-align: right; white-space: normal; vertical-align: bottom }
+.gT tbody th, .gT tfoot th, .gT thead th:first-child { text-align: left } .gT .e { color: var(--bad); font-weight: 600 }
+.gT tbody tr { cursor: pointer } .gT tbody tr:hover, .gT tbody tr:focus { background: var(--accent-soft); outline: none }
+.gT tfoot td, .gT tfoot th { border-top: 2px solid var(--fg); font-weight: 700 }
+.rowsLbl { font-size: 12.5px; color: var(--muted); align-self: center } #rotaRows { font-size: 13px; border: 1px solid var(--om-line); border-radius: 3px; background: var(--surface); color: var(--fg); padding: 3px }
+.tipHint { font-size: 12.5px; color: var(--accent); align-self: center; cursor: help; padding: 0 4px }
+/* compact rows (Lines on screen) */
+.omT .v1 { display: none }
+.omT.fit tbody tr { height: var(--rowH) }
+.omT.fit td.oc, .omT.fit td.wk, .omT.fit tbody th.ln { padding: 0 5px; vertical-align: middle; line-height: 1.15; overflow: hidden }
+.omT.d2 .oc .r3, .omT.d3 .oc .r3 { display: none }
+.omT.d2 .v1, .omT.d3 .v1 { display: inline; color: var(--om-mag); font-weight: 600 }
+.omT.d2 td.oc { font-size: min(12.5px, var(--fs) + 1px) } .omT.d2 .oc .dno { font-size: min(13px, var(--fs) + 1px) }
+.omT.d3 td.oc { white-space: nowrap; font-size: var(--fs) } .omT.d3 .oc .dno, .omT.d3 .oc .rdx { font-size: inherit }
+.omT.d3 .oc .r1, .omT.d3 .oc .r2 { display: inline-flex; gap: 6px; vertical-align: middle } .omT.d3 .oc .r1 { margin-right: 8px }
+.omT.fit tbody th.ln small { display: none } .omT.fit tbody th.ln b { display: inline; font-size: 14px; margin-right: 4px }
+.omT.fit th.ln .wtSel { display: inline-block; width: auto; margin: 0; font-size: 10.5px; padding: 0 } .omT.d3 tbody th.ln b { font-size: var(--fs) }
+.omT.fit td.wk { white-space: nowrap; min-width: 118px } .omT.fit .wkh { width: 118px }
+.omT.fit td.oc { min-width: 0 }
+.omT.d3 th.ln .wtSel { font-size: 9.5px; max-height: calc(var(--rowH) - 2px); line-height: 1 }
+.omT.d4 .oc .r2 { display: none } .omT.d2 th.ln .wtSel { font-size: 10px }
+.omT.fit td.wk b { display: inline; font-size: 15px } .omT.fit td.wk small { display: inline; margin-left: 4px } .omT.fit td.wk i { display: none }
+.omT.d3 td.wk b, .omT.d3 td.wk small { font-size: var(--fs) }
+/* Rota creator fills one screen on wide displays */
+@media (min-width: 1100px) {
+  body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: none }
+  body.rotaMode .wrap { display: flex; flex-direction: column; gap: 8px; max-width: none; padding-block: 8px; height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) }
+  body.rotaMode .tabs button { padding: 6px 12px; font-size: 14px }
+  body.rotaMode #rotaView { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 0 }
+  body.rotaMode #rotaView .btn { padding: 4px 9px; font-size: 13px }
+  body.rotaMode #rotaView .fld { display: flex; align-items: center; gap: 6px } body.rotaMode #rotaView .fld b, body.rotaMode #rotaView .fld select { padding: 3px 8px }
+  body.rotaMode #rotaView .omniTop { align-items: center; gap: 8px }
+  body.rotaMode #rotaView .status:empty, body.rotaMode #rotaView #rotaNoJob[hidden] { display: none }
+  body.rotaMode #rotaView .status { margin: 0 }
+  body.rotaMode #rotaMain { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 0 }
+  body.rotaMode .omni { flex: 1 1 auto; min-height: 0; align-items: stretch; grid-template-rows: minmax(0, 1fr) }
+  body.rotaMode .omniGrid { max-height: none; min-height: 0; height: 100% }
+  body.rotaMode .omniSide { height: 100%; min-height: 0 }
+  body.rotaMode .omniBar { position: static; padding-block: 0 }
+  body.rotaMode .omniBar fieldset { padding: 0 6px 4px }
+  body.rotaMode .omniBar button { padding: 3px 10px }
+}
+.rjBar { display: flex; gap: 8px; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 6px; min-width: 0 }
+.rjLbl { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); white-space: nowrap }
+.rjChips { flex: 1 1 auto; flex-wrap: nowrap !important; overflow-x: auto; min-width: 0; gap: 6px !important }
+.rjChips .job { padding: 3px 9px; flex: 0 0 auto } .rjChips .job small { font-size: 11px }
+.rjBar > input { font-size: 14px; font-weight: 600; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; background: var(--surface); color: var(--fg); width: 240px; flex: 0 1 240px; min-width: 120px }
+.rjBar .hbtns { flex: 0 0 auto }
 .rjHead { display: flex; flex-wrap: wrap; gap: 10px; align-items: center } .rjHead h2 { margin: 0 }
 .rjHead input { font-size: 15px; font-weight: 600; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; background: var(--surface); color: var(--fg); flex: 1 1 260px; min-width: 0 }
 .rjHead .hbtns { margin-left: auto } .rjBar .note { margin: 0 }
@@ -494,11 +542,11 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
     <input type="file" id="rotaIn" accept=".rif,.RIF,.ord,.ORD,.txt,text/plain" multiple hidden>
     <input type="file" id="ordDir" webkitdirectory multiple hidden>
     <input type="file" id="difIn" accept=".dif,.DIF,.txt,text/plain" multiple hidden>
-    <div class="rjBar">
-      <div class="rjHead"><h2>Rota jobs</h2><input type="text" id="rjName" aria-label="Rota job name" hidden>
-        <div class="hbtns"><button type="button" class="btn" id="rjNew">New job</button><button type="button" class="btn" id="rjCopy">Copy job</button><button type="button" class="btn danger" id="rjDel">Delete job</button></div></div>
-      <div class="jobs" id="rjList"></div>
-      <p class="note">Opening an OmniROTA folder or a rota file makes a new job. To try new duties on the same rota: Copy job, rename it, then Load duties (.DIF).</p>
+    <div class="rjBar" title="Opening an OmniROTA folder or a rota file makes a new job. To try new duties on the same rota: Copy job, rename it, then Load duties (.DIF).">
+      <b class="rjLbl">Rota jobs</b>
+      <div class="jobs rjChips" id="rjList"></div>
+      <input type="text" id="rjName" aria-label="Rota job name" hidden>
+      <div class="hbtns"><button type="button" class="btn" id="rjNew">New job</button><button type="button" class="btn" id="rjCopy">Copy job</button><button type="button" class="btn danger" id="rjDel">Delete job</button></div>
     </div>
     <div class="omniTop">
       <div class="omniFiles">
@@ -553,9 +601,11 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
         <fieldset><legend>Rota lines</legend>
           <button type="button" id="rbIns">Insert</button><button type="button" id="rbDel">Remove</button><button type="button" id="rbSwap">Swap days</button><button type="button" id="rbWeeks">Week types…</button></fieldset>
         <fieldset><legend>Tools</legend>
-          <button type="button" id="rbFill">Auto-fill</button><button type="button" id="rbBal">Balance weeks</button><button type="button" id="rbStats">Rota statistics</button></fieldset>
+          <button type="button" id="rbFill">Auto-fill</button><button type="button" id="rbBal">Balance weeks</button><button type="button" id="rbStats">Rota statistics</button><button type="button" id="rbGStats">Global statistics</button></fieldset>
+        <fieldset><legend>View</legend>
+          <label class="rowsLbl" for="rotaRows">Lines on screen</label><select id="rotaRows"><option value="0">Normal</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option></select>
+          <span class="tipHint" tabindex="0" title="Click a cell, then click a duty in the list to put it there. Click a duty's type letter in the list to change it (E, M, L, S). Set each line's week type under its number. Tag &amp; type changes many duties at once. Double-click or Enter to type. Keys: arrows move, R toggles RD, S enters SP, Delete clears, Ctrl+Z undoes.">Tips ⓘ</span></fieldset>
       </div>
-      <p class="note">Click a cell, then click a duty in the list to put it there. Click a duty's type letter in the list to change it (E, M, L, S). Set each line's week type (Any, Mix, Early, Midday, L/M, Late) under its number. Use the Tag &amp; type tab to change the type of many duties at once. Double-click or Enter to type. Keys: arrows move, R toggles RD, S enters SP, Delete clears, Ctrl+Z undoes.</p>
     </div>
 
     <dialog id="subDlg" class="dlg" aria-labelledby="subT"><h3 id="subT">Single rota details</h3>
@@ -594,10 +644,12 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
         <label for="mr_sp">Stand by code</label><input type="text" id="mr_sp">
         <label for="mr_file">Rota filename</label><input type="text" id="mr_file">
         <label for="mr_e">Type E: sign off before</label><input type="text" id="mr_e">
-        <label for="mr_l">Type L: sign on from</label><input type="text" id="mr_l">
+        <label for="mr_l">Type L: sign off from</label><input type="text" id="mr_l">
         <label for="mr_m">Type M: sign off from</label><input type="text" id="mr_m">
+        <label for="mr_s4">Sunday 4 Day pay = duty value ×</label><input type="text" id="mr_s4">
       </div>
       <label class="cbrow"><input type="checkbox" id="mr_incl"> Include rest day pay in weekly total</label>
+      <p class="note" style="margin:6px 0 0">OmniROTA stores only the duty value for Sunday 4 Day duties. Their pay value is the duty value with the 16% premium (× 1.16, marked * in the duty list). Save for OmniROTA writes this pay value into the .ORD file. Which duties are 4 Day is set by the 4 Day numbers under Duty check → Rules.</p>
       <fieldset class="moves ctBox"><legend>Your own duty types</legend>
         <div class="tablebox"><table class="ctT"><thead><tr><th>Code</th><th>Name</th><th>Counts as</th><th>Sign on from / before</th><th>Sign off from / before</th><th></th></tr></thead><tbody id="ctBody"></tbody></table></div>
         <button type="button" class="btn" id="ctAdd">Add type</button>
@@ -1381,7 +1433,7 @@ function initAssign() {
   document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { e.preventDefault(); undo(); } });
   updateUndo();
   // tabs
-  const showTab = t => { $('checkView').hidden = t !== 'check'; $('assignView').hidden = t !== 'assign'; $('rotaView').hidden = t !== 'rota';
+  const showTab = t => { $('checkView').hidden = t !== 'check'; $('assignView').hidden = t !== 'assign'; $('rotaView').hidden = t !== 'rota'; document.body.classList.toggle('rotaMode', t === 'rota');
     document.querySelectorAll('#tabs button[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t)); if (t === 'assign') renderAssignResults(); if (t === 'rota') renderRota(); };
   document.querySelectorAll('#tabs button[data-tab]').forEach(b => b.onclick = () => { if (location.hash !== '#' + b.dataset.tab) location.hash = b.dataset.tab; showTab(b.dataset.tab); });
   const tabOf = () => ({ '#assign': 'assign', '#rota': 'rota' })[location.hash] || 'check';
@@ -1403,9 +1455,9 @@ try { const old = localStorage.getItem('dutyRotaFile'); if (old && !rotaJobs.len
 const curJob = () => rotaJobs.find(j => j.id === rotaJobId);
 // duty files are stored compactly: one entry per duty with the days it runs (Mon–Thu duties are not repeated four times)
 function packDif(dif) { const m = new Map(); DAYS.forEach(([d], di) => (dif[d] || []).forEach(du => { const k = [du.no, du.pay, du.s, du.e].join('|'); const e = m.get(k);
-    if (e) e[7] += di; else m.set(k, [du.no, du.pay, du.s, du.e, du.maxRelief, du.cls || '', du.code || '', String(di), du.ty == null ? null : du.ty]); }));
+    if (e) e[7] += di; else m.set(k, [du.no, du.pay, du.s, du.e, du.maxRelief, du.cls || '', du.code || '', String(di), du.ty == null ? null : du.ty, du.pay0 == null ? null : du.pay0]); }));
   return { _p: 1, l: [...m.values()] }; }
-function unpackDif(p) { const out = {}; p.l.forEach(([no, pay, s, e, mr, cls, code, days, ty]) => { const du = { no, num: parseInt(String(no).replace(/^\D+/, ''), 10), pay, s, e, maxRelief: mr, routes: [], valid: true, cls, code, src: 'DIF' }; if (ty != null) du.ty = ty;
+function unpackDif(p) { const out = {}; p.l.forEach(([no, pay, s, e, mr, cls, code, days, ty, pay0]) => { const du = { no, num: parseInt(String(no).replace(/^\D+/, ''), 10), pay, s, e, maxRelief: mr, routes: [], valid: true, cls, code, src: 'DIF' }; if (ty != null) du.ty = ty; if (pay0 != null) du.pay0 = pay0;
     String(days).split('').forEach(i => { const d = DAYS[+i][0]; (out[d] = out[d] || []).push(du); }); }); return out; }
 function difReplacer(k, v) { return k === 'dif' && v && !v._p ? packDif(v) : v; }
 function pickJob(id) { const j = rotaJobs.find(x => x.id === id) || rotaJobs[rotaJobs.length - 1] || null; rotaJobId = j ? j.id : null; rotaFile = j ? fixFile(j.file) : null; if (j) j.file = rotaFile; rotaSel = j ? j.sel : null; rotaCur = { li: 0, di: 0 }; rotaSubset = ''; }
@@ -1415,10 +1467,11 @@ const saveRota = () => { const j = curJob(); if (j) { j.file = rotaFile; j.sel =
 function newRotaJob(name, file) { const id = 'r' + Date.now() + Math.random().toString(36).slice(2, 5); rotaJobs.push({ id, name, created: Date.now(), file, sel: file && file.rotas[0] ? file.rotas[0].code : null }); pickJob(id); return curJob(); }
 function rotaMsg(t, err) { const st = $('rotaStatus'); if (!st) return; st.textContent = t || ''; st.classList.toggle('err', !!err); }
 
-const DEF_SET = { startDate: '', rdCode: 'RD', spCode: 'SP', includeRd: false, earlyOff: 900, lateOn: 900, midOff: 1170, customTypes: [] };
+const DEF_SET = { startDate: '', rdCode: 'RD', spCode: 'SP', includeRd: false, earlyOff: 900, lateOff: 1321, midOff: 1170, customTypes: [] };
 const defCfg = r => ({ min: asg.target, max: asg.target + 60, sp: 426, rd: 426, rest: 660, moves: (r && r.rotating === false) ? 'static' : 'down', short: '', startWeek: 1, splitEvery: r && /^SCH/i.test(r.code || '') ? 0 : 3 });
 function fixFile(f) { // fill in settings for files saved by older versions
   if (!f) return f; f.set = Object.assign({}, DEF_SET, f.set || {}); if (f.dif && f.dif._p) f.dif = unpackDif(f.dif);
+  if (f.dif) Object.values(f.dif).forEach(l => l.forEach(du => { if (du.pay0 != null && !du.exact) du.pay = sun4Pay(du.pay0); }));
   f.ranges = f.ranges || {};
   f.rotas.forEach(r => { if (!f.ranges[r.code]) { const n = ROTA_CODE_NAME[r.code]; f.ranges[r.code] = Object.assign({ mt: '', fri: '', sat: '', sun: '' }, n && asg.ranges[n] ? asg.ranges[n] : {}); } });
   f.rotas.forEach(r => { r.cfg = Object.assign(defCfg(r), r.cfg || {}); if (r.target != null && !(r.cfg && r.cfg._t)) { r.cfg.min = r.target; r.cfg.max = r.target + 60; r.cfg._t = 1; } delete r.rotating; delete r.target; });
@@ -1461,6 +1514,9 @@ function writeRif(f) {
   return rows.join('\r\n') + '\r\n';
 }
 
+const is4Day = no => String(rules.fourDayPattern || '').split(',').map(x => x.trim()).filter(Boolean).some(p => { try { return new RegExp(p, 'i').test(no); } catch (e) { return false; } });
+function sun4Factor() { return asg.sun4Factor > 0 ? asg.sun4Factor : 1.16; }
+function sun4Pay(v) { return Math.round(v * sun4Factor()); }
 // ---- OmniROTA data file (.ORD): the whole rota with its duties and settings ----
 // header · per line: no,name,roll,total + 7 × (duty,index) · duty table · day names · sub rotas (first,last,name,startNo,count,SP,RD,min,max,short+moves,rest)
 function csvRow(l) { const out = []; let cur = '', q = false; for (let i = 0; i < l.length; i++) { const ch = l[i]; if (ch === '"') q = !q; else if (ch === ',' && !q) { out.push(cur); cur = ''; } else cur += ch; } out.push(cur); return out; }
@@ -1485,6 +1541,8 @@ function parseOrd(text, name) {
     const mOn = parseInt(c[7], 10) || 0, mOff = parseInt(c[9], 10) || 0; let rel = null; if (mOn && mOff) { rel = hm(c[7]) - hm(c[9]); if (rel < 0) rel += 1440; }
     const ty = (c[11] || '').trim().toUpperCase();
     const du = { no, num: parseInt(no.replace(/^\D+/, ''), 10), pay: hm(c[1]), s: s0, e: e0, maxRelief: rel, routes: (c[19] || '').trim().split(/\s+/).filter(Boolean), valid: true, cls: ty === 'S' ? 'split' : '', code: (c[12] || '').trim(), ty, src: 'ORD' };
+    // OmniROTA keeps only the duty value (time worked) for Sunday 4 Day duties: work out their pay value
+    if ((c[13] || '').trim() === '$' && is4Day(no) && !/ROCR\s*$/i.test((H[11] || '').trim())) { du.pay0 = du.pay; du.pay = sun4Pay(du.pay0); }
     (c[13] || '').trim().split('').forEach(ch => { const d = DCH[ch]; if (d) (dif[d] = dif[d] || []).push(du); }); }
   p += 7;
   const rotas = [];
@@ -1564,7 +1622,7 @@ function autoType(du) {
   for (const c of customTypes()) { const hasRule = [c.onFrom, c.onTo, c.offFrom, c.offTo].some(x => x != null); if (hasRule && inClock(du.s, c.onFrom, c.onTo) && inClock(du.e, c.offFrom, c.offTo)) return c.code; }
   if (du.cls === 'split') return 'S';
   if (du.e != null && du.e < S.earlyOff) return 'E';
-  if (du.s != null && du.s >= S.lateOn) return 'L';
+  if (du.e != null && du.e >= S.lateOff) return 'L'; // signs off from 22:01 (or after midnight)
   if (du.e != null && du.e >= S.midOff) return 'M';
   return '';
 }
@@ -1770,6 +1828,40 @@ function renderRjobs() {
     return `<button type="button" class="job ${j.id === rotaJobId ? 'active' : ''}" data-rj="${esc(j.id)}"><b>${esc(j.name)}</b><small>${f ? `${esc(f.name)} · ${n} sub rota${n === 1 ? '' : 's'}${f.dif ? ' · duties loaded' : ''}` : 'empty: open a rota'}</small></button>`; }).join('') || '<span class="note">No rota jobs yet. Opening a rota creates one.</span>';
   const j = curJob(); $('rjName').hidden = !j; $('rjCopy').disabled = !j || !j.file; $('rjDel').disabled = !j; if (j && document.activeElement !== $('rjName')) $('rjName').value = j.name;
 }
+// lines on screen: shrink rows so the chosen number of weeks fits the grid (0 = normal size)
+let rotaRows = 0; try { rotaRows = parseInt(localStorage.getItem('rotaRows'), 10) || 0; } catch (e) {}
+function fitRows() {
+  const box = $('rotaGridBox'); const t = box && box.querySelector('table'); if (!t) return;
+  t.classList.remove('fit', 'd1', 'd2', 'd3', 'd4'); t.style.removeProperty('--rowH'); t.style.removeProperty('--fs');
+  if (!rotaRows || !box.clientHeight) return;
+  const h = Math.max(16, Math.floor((box.clientHeight - (t.tHead ? t.tHead.offsetHeight : 28) - 2) / rotaRows));
+  // pick the layout that fits both the row height and the column width: 3 rows, 2 rows, 1 row, or 1 row without times (times in the tooltip)
+  const ln = t.querySelector('tbody th.ln'), wk = t.querySelector('td.wk'); const cellW = (box.clientWidth - (ln ? 70 : 0) - (wk ? 124 : 0)) / 7;
+  let d, fs;
+  if (h >= 64 && cellW >= 112) { d = 'd1'; fs = 13; }
+  else { const two = Math.min(13, Math.floor((h - 4) / 2.4), Math.floor((cellW - 12) / 7)), one = Math.min(13, Math.floor(h * 0.6), Math.floor((cellW - 12) / 14.5));
+    if (two >= 10 && two >= one) { d = 'd2'; fs = two; } else if (one >= 10) { d = 'd3'; fs = one; } else { d = 'd3 d4'; fs = Math.max(8, Math.min(13, Math.floor(h * 0.6), Math.floor((cellW - 12) / 7.5))); } }
+  d.split(' ').forEach(c => t.classList.add(c)); t.classList.add('fit');
+  t.style.setProperty('--rowH', h + 'px'); t.style.setProperty('--fs', fs + 'px');
+}
+// ---- global statistics: every sub rota of the job ----
+function globalStats() {
+  if (!rotaA) return ''; let T = { n: 0, short: 0, mu: 0, best: 0, long: 0, ex: 0, expd: 0, work: 0, rd: 0, sp: 0, inc: 0, pr: 0 };
+  const rows = rotaFile.rotas.map(r => { const a = rotaA.res[r.code]; if (!a) return ''; const c = r.cfg; const L = a.lines; const n = L.length;
+    const sum = L.reduce((t, x) => t + x.total, 0); const short = L.filter(x => x.total < c.min), long = L.filter(x => x.total > c.max);
+    const mu = short.reduce((t, x) => t + c.min - x.total, 0), ex = long.reduce((t, x) => t + x.total - c.min, 0), expd = n * c.min, best = Math.max(0, expd - sum);
+    let rd = 0, sp = 0; r.lines.forEach(l => l.cells.forEach(x => { if (isRD(x.v)) rd++; else if (isSP(x.v)) sp++; }));
+    const inc = r.lines.filter(l => l.cells.some(x => !x.v)).length, pr = L.filter(x => x.issues.length).length;
+    Object.entries({ n, short: short.length, mu, best, long: long.length, ex, expd, work: sum, rd, sp, inc, pr }).forEach(([k, v]) => T[k] += v);
+    const e = v => v ? 'e' : '';
+    return `<tr data-code="${esc(r.code)}" tabindex="0"><th>${esc(r.code)}</th><td>${n}</td><td>${fmt(c.min)}–${fmt(c.max)}</td><td>${n ? fmt(Math.round(sum / n)) : ''}</td>
+      <td class="${e(short.length)}">${short.length}</td><td class="${e(mu)}">${fmt(mu)}</td><td>${fmt(best)}</td><td class="${e(long.length)}">${long.length}</td><td class="${e(ex)}">${fmt(ex)}</td>
+      <td>${fmt(expd)}</td><td>${fmt(sum)}</td><td class="${sum < expd ? 'e' : ''}">${sum < expd ? '−' : '+'}${fmt(Math.abs(sum - expd))}</td><td>${fmt(sum + mu)}</td><td>${rd}</td><td>${sp}</td><td class="${e(inc)}">${inc}</td><td class="${e(pr)}">${pr}</td></tr>`; }).join('');
+  const d = T.work - T.expd;
+  return `<p class="note">All ${rotaFile.rotas.length} sub rotas of ${esc(rotaFile.name)}. Click a sub rota to open it. "Lowest make up" is the least make up time possible with the hours on that rota.</p>
+    <div class="tablebox"><table class="statT gT"><thead><tr><th>Sub rota</th><th>Lines</th><th>Week min–max</th><th>Average week</th><th>Short weeks</th><th>Make up</th><th>Lowest make up</th><th>Long weeks</th><th>Excess hours</th><th>Expected hours</th><th>Hours worked</th><th>Excess (+/−)</th><th>Roster hours</th><th>RD</th><th>SP</th><th>Incom&shy;plete</th><th>Prob&shy;lems</th></tr></thead>
+    <tbody>${rows}</tbody><tfoot><tr><th>Total</th><td>${T.n}</td><td></td><td>${T.n ? fmt(Math.round(T.work / T.n)) : ''}</td><td>${T.short}</td><td>${fmt(T.mu)}</td><td>${fmt(T.best)}</td><td>${T.long}</td><td>${fmt(T.ex)}</td><td>${fmt(T.expd)}</td><td>${fmt(T.work)}</td><td class="${d < 0 ? 'e' : ''}">${d < 0 ? '−' : '+'}${fmt(Math.abs(d))}</td><td>${fmt(T.work + T.mu)}</td><td>${T.rd}</td><td>${T.sp}</td><td>${T.inc}</td><td>${T.pr}</td></tr></tfoot></table></div>`;
+}
 function renderRota(reveal) {
   if (!$('rotaView').hidden) renderRjobs();
   const box0 = $('rotaGridBox'); const keepTop = box0 ? box0.scrollTop : 0, keepLeft = box0 ? box0.scrollLeft : 0;
@@ -1795,18 +1887,19 @@ function renderRota(reveal) {
       const cls = ['oc', sel ? 'sel' : '', rotaSwap && rotaSwap.li === li && rotaSwap.di === di ? 'swp' : '', f.dup || f.unknown || f.empty ? 'badC' : ''].join(' ');
       let inner;
       if (isRD(c.v)) inner = `<div class="r1"><b class="rdx">${esc(c.v)}</b></div>${rotaFile.set.includeRd ? `<div class="r3">${fmt(r.cfg.rd)}</div>` : ''}`;
-      else if (isSP(c.v)) inner = `<div class="r1"><b class="dno">${esc(c.v)}</b></div><div class="r2"></div><div class="r3">${fmt(r.cfg.sp)}</div>`;
+      else if (isSP(c.v)) inner = `<div class="r1"><b class="dno">${esc(c.v)}</b><span class="v1">${fmt(r.cfg.sp)}</span></div><div class="r2"></div><div class="r3">${fmt(r.cfg.sp)}</div>`;
       else if (!c.v) inner = `<div class="r1"><b class="emp">empty</b></div>`;
-      else inner = `<div class="r1"><b class="dno">${esc(c.v)}</b><span class="dty ${f.wtBad || f.splitBad ? 'wtBad' : ''}" ${f.wtBad ? `title="Does not match the ${WT_SHORT[l.wt]} week"` : f.splitBad ? `title="Split again within ${r.cfg.splitEvery} weeks"` : ''}>${typeLetter(du) || (f.wtBad ? '–' : '')}${f.wtBad || f.splitBad ? ' ≠' : ''}</span></div>
+      else inner = `<div class="r1"><b class="dno">${esc(c.v)}</b><span class="v1">${du ? fmt(du.pay) : '?'}</span><span class="dty ${f.wtBad || f.splitBad ? 'wtBad' : ''}" ${f.wtBad ? `title="Does not match the ${WT_SHORT[l.wt]} week"` : f.splitBad ? `title="Split again within ${r.cfg.splitEvery} weeks"` : ''}>${typeLetter(du) || (f.wtBad ? '–' : '')}${f.wtBad || f.splitBad ? ' ≠' : ''}</span></div>
         <div class="r2"><span class="${f.onBad ? 'rb' : ''}">${du ? hhmmTxt(du.s) : '????'}</span><span class="${f.offBad ? 'rb' : ''}">${du ? hhmmTxt(du.e) : '????'}</span></div>
         <div class="r3">${du ? fmt(du.pay) : '<span class="e">not in list</span>'}</div>`;
-      return `<td class="${cls}" data-li="${li}" data-di="${di}" title="${esc([f.dup ? 'used twice on this day' : '', f.unknown ? 'not in the duty list' : '', f.onBad || f.offBad ? 'rest under ' + fmt(r.cfg.rest) : ''].filter(Boolean).join(', '))}">${inner}</td>`; }).join('');
+      return `<td class="${cls}" data-li="${li}" data-di="${di}" title="${esc([du ? `${c.v} ${hhmmTxt(du.s)}–${hhmmTxt(du.e)} · ${fmt(du.pay)}` : '', f.dup ? 'used twice on this day' : '', f.unknown ? 'not in the duty list' : '', f.onBad || f.offBad ? 'rest under ' + fmt(r.cfg.rest) : ''].filter(Boolean).join(' · '))}">${inner}</td>`; }).join('');
     const wt = l.wt || 'any';
     return `<tr><th class="ln wt-${wt}" scope="row"><b>${esc(l.pre[5])}</b><small>${RDc()}=${x.rd}</small>${l.driver ? `<small class="drvN" title="${esc(l.driver)}">${esc(l.driver)}</small>` : ''}<select class="wtSel" data-li="${li}" aria-label="Week type of line ${esc(l.pre[5])}">${WTYPES.map(([k, t]) => `<option value="${k}" ${k === wt ? 'selected' : ''}>${t}</option>`).join('')}</select></th>${cells}
       <td class="wk ${x.st}" title="${esc(x.issues.join('\n'))}"><b>${fmt(x.total)}</b>${x.st !== 'ok' ? `<small>(${x.diff > 0 ? '+' : '−'}${fmt(Math.abs(x.diff))})</small>` : ''}${x.issues.length ? `<i>${x.issues.length} problem${x.issues.length > 1 ? 's' : ''}</i>` : ''}</td></tr>`; }).join('');
   renderDutyList();
   const sel = $('rotaGrid').querySelector('td.sel'); const box = $('rotaGridBox');
   if (box) { box.scrollTop = keepTop; box.scrollLeft = keepLeft; }
+  fitRows();
   if (reveal && sel && box) { const t = sel.offsetTop - box.scrollTop, h = box.clientHeight; if (t < 40 || t > h - 60) box.scrollTop = Math.max(0, sel.offsetTop - h / 2); }
 }
 let rotaTagMode = false, rotaTags = new Set(), rotaLastTag = null, rotaShown = [];
@@ -1829,7 +1922,7 @@ function renderDutyList() {
   $('tagCount').textContent = `${rotaTags.size} tagged`;
   $('rotaDutyBody').innerHTML = list.map(x => { const u = used[x.no]; const where = u ? u.map(y => (y.code === r.code ? '' : y.code + ' ') + y.line).join(', ') : '';
     const tg = rotaTags.has(x.no);
-    return `<tr class="${u ? 'taken' : ''} ${tg ? 'tagged' : ''}" data-no="${esc(x.no)}" tabindex="0"><td>${rotaTagMode ? `<input type="checkbox" class="tagCk" ${tg ? 'checked' : ''} aria-label="Tag ${esc(x.no)}" tabindex="-1"> ` : ''}<b>${esc(x.no)}</b></td><td><button type="button" class="tyBtn ${rotaFile.typeOver && rotaFile.typeOver[x.no] != null ? 'over' : ''}" data-ty="${esc(x.no)}" title="Change duty type">${typeLetter(x) || '·'}</button></td><td>${hhmmTxt(x.s)}</td><td>${hhmmTxt(x.e)}</td><td>${fmt(x.pay)}</td><td>${esc(where)}</td><td>${esc(x.code || '')}</td></tr>`; }).join('') || `<tr><td colspan="7" class="empty">No duties for these filters.</td></tr>`;
+    return `<tr class="${u ? 'taken' : ''} ${tg ? 'tagged' : ''}" data-no="${esc(x.no)}" tabindex="0"><td>${rotaTagMode ? `<input type="checkbox" class="tagCk" ${tg ? 'checked' : ''} aria-label="Tag ${esc(x.no)}" tabindex="-1"> ` : ''}<b>${esc(x.no)}</b></td><td><button type="button" class="tyBtn ${rotaFile.typeOver && rotaFile.typeOver[x.no] != null ? 'over' : ''}" data-ty="${esc(x.no)}" title="Change duty type">${typeLetter(x) || '·'}</button></td><td>${hhmmTxt(x.s)}</td><td>${hhmmTxt(x.e)}</td><td ${x.pay0 != null ? `title="OmniROTA duty value ${fmt(x.pay0)}; pay value ${x.exact ? 'from the duty file' : 'with the Sunday 4 Day premium, × ' + sun4Factor()}"` : ''}>${fmt(x.pay)}${x.pay0 != null ? (x.exact ? '' : '*') : ''}</td><td>${esc(where)}</td><td>${esc(x.code || '')}</td></tr>`; }).join('') || `<tr><td colspan="7" class="empty">No duties for these filters.</td></tr>`;
   $('rotaDutyCount').textContent = `${list.length} dut${list.length === 1 ? 'y' : 'ies'}`;
 }
 // a duty can be on one line only: take it off every other line (any sub rota) on that day
@@ -1880,7 +1973,7 @@ function readCtypes() {
 }
 function fillMainDialog() { const s = rotaFile.set;
   $('mr_depot').value = rotaFile.depot || ''; $('mr_date').value = s.startDate || ''; $('mr_rd').value = s.rdCode; $('mr_sp').value = s.spCode; $('mr_file').value = rotaFile.name;
-  $('mr_incl').checked = !!s.includeRd; $('mr_e').value = clock(s.earlyOff); renderCtypes(s.customTypes || []); $('mr_l').value = clock(s.lateOn); $('mr_m').value = clock(s.midOff); $('mr_msg').textContent = ''; }
+  $('mr_incl').checked = !!s.includeRd; $('mr_e').value = clock(s.earlyOff); $('mr_s4').value = String(sun4Factor()); renderCtypes(s.customTypes || []); $('mr_l').value = clock(s.lateOff); $('mr_m').value = clock(s.midOff); $('mr_msg').textContent = ''; }
 function rotaStats() {
   const r = curRota(); const a = rotaA && rotaA.res[r.code]; if (!a) return '';
   const L = a.lines, cfg = r.cfg, n = L.length; const T = L.map(x => x.total);
@@ -1985,12 +2078,15 @@ function writeOrd(f) {
     (c[13] || '').trim().split('').forEach(ch => { const k = no + '|' + ch; if (idx[k] == null || vr === '0' || vr === o.v) idx[k] = i + 1; }); });
   // duty types changed here are written into the duty table
   const over = f.typeOver || {}; const rowsOut = dRows.map(row => { const m = row.match(/^("([^"]*)",\d+,"[^"]*",\d+,"[^"]*",\d+,"[^"]*",\d+,"[^"]*",\d+,"[^"]*",)"([^"]*)"(.*)$/); if (!m) return row;
-    const t = over[m[2].trim().toUpperCase()]; if (t == null || (t !== '-' && t.length > 2)) return row; return m[1] + q(pad(t === '-' ? '' : t, m[3].length)) + m[4]; });
+    const t = over[m[2].trim().toUpperCase()]; if (t == null || (t !== '-' && t.length > 2)) return row; return m[1] + q(pad(t === '-' ? '' : t, m[3].length)) + m[4]; })
+    // Sunday 4 Day duties: the pay value (with the premium) is written as the duty's value
+    .map(row => { const m = row.match(/^("([^"]*)",)(\d+)(,.*)$/); if (!m) return row; const c = csvRow(row); if ((c[13] || '').trim() !== '$') return row;
+      const du = src.look('sun', m[2].trim().toUpperCase()); return du && du.pay0 != null ? m[1] + hm(du.pay) + m[4] : row; });
   const out = []; const nLines = f.rotas.reduce((t, r) => t + r.lines.length, 0); const H = o.h.slice();
   const title = ordTitle(f); const sd = (f.set.startDate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   out.push([nLines, H[1], f.rotas.length, H[3], q(pad(f.set.spCode, 6)), q(pad(f.set.rdCode, 6)), q(H[6] || ''), H[7], q(sd ? `${sd[3]}/${sd[2]}/${sd[1]}` : H[8]), q(pad(f.depot, 4)), H[10], q(title), q(H[12] || '')].join(','));
   f.rotas.forEach(r => r.lines.forEach(l => { const dus = l.cells.map((c, di) => src.look(DAYS[di][0], c.v)); const w = weekTotal(r, l.cells, dus);
-    out.push([l.pre[5], q(pad(l.driver || '', 20)), q(pad('', 10)), l.s0 != null && l.s0 === l.cells.map(c => c.v).join(',') ? l.t0 : hm(w.t), q('')].join(','));
+    out.push([l.pre[5], q(pad(l.driver || '', 20)), q(pad('', 10)), l.s0 != null && l.s0 === l.cells.map(c => c.v).join(',') && !dus.some(du => du && du.pay0 != null) ? l.t0 : hm(w.t), q('')].join(','));
     l.cells.forEach((c, di) => { const k = isDutyVal(c.v) ? (idx[c.v + '|' + DCH[di]] || 0) : 0; out.push([q(pad(c.v, 8)), k, q(' '), q(pad('', 8)), q(pad('', 4)), 0].join(',')); }); }));
   rowsOut.forEach(x => out.push(x)); o.n.forEach(x => out.push(x));
   let first = 1; f.rotas.forEach(r => { const n = r.lines.length; const c = r.cfg; const mv = c.moves === 'static' ? 'S' : c.moves === 'up' ? 'U' : 'D';
@@ -2087,9 +2183,16 @@ function initRota() {
     if (!rotaFile) { rotaMsg('Load the rota (.RIF) first, then its duty file (.DIF).', true); return; }
     const got = {}, bad = []; for (const f of fs) { const p = parseDif(await f.text()); Object.entries(p.days).forEach(([d, l]) => got[d] = (got[d] || []).concat(l)); bad.push(...p.bad); }
     if (!Object.keys(got).length) { rotaMsg('No duties found. Choose a .DIF duty file exported from the rota program.', true); return; }
-    pushUndo('load duty file'); rotaFile.dif = Object.assign({}, rotaFile.dif || {}, got); saveRota();
+    pushUndo('load duty file'); let fixed = 0, added = 0; const ex = [];
+    if (rotaFile.ord && rotaFile.dif) { // rota from OmniROTA: keep its duties and types, take the pay values from the duty file
+      Object.entries(got).forEach(([d, list]) => { const cur = rotaFile.dif[d] = (rotaFile.dif[d] || []).slice(); const seen = new Set();
+        list.forEach(nu => { const i = cur.findIndex(x => x.no === nu.no); if (i < 0) { cur.push(nu); added++; return; }
+          if (cur[i].pay !== nu.pay) { if (!seen.has(nu.no) && ex.length < 3) ex.push(`${nu.no} ${fmt(cur[i].pay)} → ${fmt(nu.pay)}`); const o = Object.assign({}, cur[i]); if (o.pay0 == null) o.pay0 = o.pay; o.pay = nu.pay; o.exact = 1; cur[i] = o; fixed++; }
+          else if (cur[i].pay0 != null && !cur[i].exact) cur[i] = Object.assign({}, cur[i], { exact: 1 }); seen.add(nu.no); }); });
+    } else rotaFile.dif = Object.assign({}, rotaFile.dif || {}, got);
+    saveRota();
     const days = DAYS.filter(([d]) => got[d]).map(([d, s]) => `${s} (${got[d].length})`).join(', ');
-    rotaMsg(`Loaded duties for ${days}.` + (bad.length ? ` Skipped incomplete duty record${bad.length > 1 ? 's' : ''}: ${bad.join(', ')}. The file may have been cut off; export it again.` : ''), bad.length > 0); renderRota(); });
+    rotaMsg((rotaFile.ord ? `Duty file checked against the OmniROTA duties for ${days}: ${fixed} pay value${fixed === 1 ? '' : 's'} updated${ex.length ? ' (' + ex.join(', ') + (fixed > ex.length ? ' …' : '') + ')' : ''}${added ? `, ${added} new duties added` : ''}.` : `Loaded duties for ${days}.`) + (bad.length ? ` Skipped incomplete duty record${bad.length > 1 ? 's' : ''}: ${bad.join(', ')}. The file may have been cut off; export it again.` : ''), bad.length > 0); renderRota(); });
   $('difClear').onclick = () => { if (!rotaFile || !rotaFile.dif) return; pushUndo('remove duty file'); delete rotaFile.dif; saveRota(); rotaMsg('Duty file removed. Times and values now come from the PDFs.'); renderRota(); };
   $('rotaPick').onchange = e => { rotaSel = e.target.value; rotaCur = { li: 0, di: 0 }; rotaSubset = ''; rotaSwap = null; saveRota(); renderRota(); };
   $('rotaGrid').addEventListener('click', e => { if (e.target.closest('.wtSel')) return; const td = e.target.closest('td[data-li]'); if (!td || td.querySelector('input')) return;
@@ -2187,7 +2290,13 @@ function initRota() {
       const muTxt = mu ? ` Make up time is now ${fmt(mu.now)} (was ${fmt(muBefore.now)}); the lowest possible with these duties is ${fmt(mu.best)}.` : '';
       rotaMsg(`Balanced ${only ? only.size + ' lines of ' : ''}${r.code}.` + muTxt + wbsTxt + (out.spare ? ` ${out.spare} day${out.spare === 1 ? ' has' : 's have'} no duty and stayed empty: use Auto-fill or enter ${SPc()}.` : '') + (out.left ? ` ${out.left} duties could not be placed.` : '')); }
     renderRota(); };
-  $('rbStats').onclick = () => { $('statBody').innerHTML = rotaStats(); $('statTitle').textContent = 'Rota statistics: ' + rotaSel; showDialog('statDlg'); };
+  $('rbStats').onclick = () => { $('statDlg').classList.remove('xwide'); $('statBody').innerHTML = rotaStats(); $('statTitle').textContent = 'Rota statistics: ' + rotaSel; showDialog('statDlg'); };
+  $('rbGStats').onclick = () => { $('statDlg').classList.add('xwide'); $('statBody').innerHTML = globalStats(); $('statTitle').textContent = 'Global rota statistics'; showDialog('statDlg'); };
+  $('statBody').addEventListener('click', e => { const tr = e.target.closest('tr[data-code]'); if (!tr) return; rotaSel = tr.dataset.code; rotaCur = { li: 0, di: 0 }; rotaSubset = ''; saveRota(); closeDialog('statDlg'); renderRota(); });
+  $('statBody').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-code]'); if (tr) tr.click(); } });
+  $('rotaRows').value = String(rotaRows);
+  $('rotaRows').onchange = e => { rotaRows = parseInt(e.target.value, 10) || 0; try { localStorage.setItem('rotaRows', String(rotaRows)); } catch (err) {} fitRows(); };
+  window.addEventListener('resize', () => { if (!$('rotaView').hidden) fitRows(); });
   // settings dialogs
   $('rotaSubBtn').onclick = () => { fillSubDialog(); showDialog('subDlg'); };
   $('rotaMainBtn').onclick = () => { fillMainDialog(); showDialog('mainDlg'); };
@@ -2214,13 +2323,16 @@ function initRota() {
     saveRota(); closeDialog('subDlg'); renderRota(); };
   $('ctAdd').onclick = () => { const cur = readCtypes().list; cur.push({ code: '', name: '', as: '' }); renderCtypes(cur); const ins = document.querySelectorAll('#ctBody .ctCode'); if (ins.length) ins[ins.length - 1].focus(); };
   $('ctBody').addEventListener('click', e => { const b = e.target.closest('[data-ctdel]'); if (!b) return; const keep = readCtypes().list.filter((c, i) => String(i) !== b.dataset.ctdel); renderCtypes(keep); });
-  $('mainOk').onclick = () => { const m = $('mr_msg'); const e = parseClock($('mr_e').value), l = parseClock($('mr_l').value), mi = parseClock($('mr_m').value);
+  $('mainOk').onclick = () => { const m = $('mr_msg'); const s4 = parseFloat($('mr_s4').value.replace(',', '.'));
+    if (!(s4 >= 1 && s4 < 3)) { m.textContent = 'Write the Sunday 4 Day factor as a number, for example 1.16 for a 16% premium.'; return; }
+    const e = parseClock($('mr_e').value), l = parseClock($('mr_l').value), mi = parseClock($('mr_m').value);
     if ([e, l, mi].some(v => v == null)) { m.textContent = 'Write the type times as hh:mm, for example 15:00.'; return; }
     const rd = $('mr_rd').value.trim().toUpperCase() || 'RD', sp = $('mr_sp').value.trim().toUpperCase() || 'SP';
     const ct = readCtypes(); if (ct.err) { m.textContent = ct.err; return; }
     pushUndo('main rota settings'); const s = rotaFile.set;
+    if (s4 !== sun4Factor()) { asg.sun4Factor = s4; saveAsg(); if (rotaFile.dif) Object.values(rotaFile.dif).forEach(l => l.forEach(du => { if (du.pay0 != null && !du.exact) du.pay = sun4Pay(du.pay0); })); }
     if (rd !== s.rdCode || sp !== s.spCode) rotaFile.rotas.forEach(r => r.lines.forEach(x => x.cells.forEach(c => { if (c.v === s.rdCode) c.v = rd; else if (c.v === s.spCode) c.v = sp; })));
-    Object.assign(s, { startDate: $('mr_date').value, rdCode: rd, spCode: sp, includeRd: $('mr_incl').checked, earlyOff: e, lateOn: l, midOff: mi, customTypes: ct.list });
+    Object.assign(s, { startDate: $('mr_date').value, rdCode: rd, spCode: sp, includeRd: $('mr_incl').checked, earlyOff: e, lateOff: l, midOff: mi, customTypes: ct.list });
     const codes = new Set(ct.list.map(c => c.code)); if (rotaFile.typeOver) Object.keys(rotaFile.typeOver).forEach(k => { const v = rotaFile.typeOver[k]; if (!['E', 'M', 'L', 'S', '-'].includes(v) && !codes.has(v)) delete rotaFile.typeOver[k]; });
     rotaFile.depot = $('mr_depot').value.trim().toUpperCase() || rotaFile.depot; rotaFile.name = $('mr_file').value.trim() || rotaFile.name;
     saveRota(); closeDialog('mainDlg'); renderRota(); };
