@@ -361,6 +361,10 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .omT.d3 td.oc { white-space: nowrap; font-size: var(--fs) } .omT.d3 .oc .dno, .omT.d3 .oc .rdx { font-size: inherit }
 .omT.d3 .oc .r1, .omT.d3 .oc .r2 { display: inline-flex; gap: 6px; vertical-align: middle } .omT.d3 .oc .r1 { margin-right: 8px }
 .omT.fit tbody th.ln small { display: none } .omT.fit tbody th.ln b { display: inline; font-size: 14px; margin-right: 4px }
+.omT th.ln .keepT { display: flex; align-items: center; gap: 3px; margin-top: 3px; font-size: 11px; font-weight: 600; color: var(--muted); cursor: pointer }
+.omT th.ln .keepT input { margin: 0; width: 13px; height: 13px; accent-color: #b45309 }
+.omT tr.kept th.ln { box-shadow: inset 4px 0 0 #b45309 } .omT tr.kept th.ln .keepT { color: #b45309 }
+.omT.fit th.ln .keepT { display: inline-flex; margin: 0 0 0 3px } .omT.fit th.ln .keepT span, .omT.d3 th.ln .keepT span { display: none }
 .omT.fit th.ln .wtSel { display: inline-block; width: auto; margin: 0; font-size: 10.5px; padding: 0 } .omT.d3 tbody th.ln b { font-size: var(--fs) }
 .omT.fit td.wk { white-space: nowrap; min-width: 118px } .omT.fit .wkh { width: 118px }
 .omT.fit td.oc { min-width: 0 }
@@ -725,6 +729,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
       <div class="dGrid" style="margin-top:10px"><label for="bal_only">Only these lines</label><input type="text" id="bal_only" placeholder="whole rota, or e.g. 1-10, 15, 22">
         <label for="bal_skip">Don’t balance these lines</label><input type="text" id="bal_skip" placeholder="none, or e.g. 3, 7, 40-45"></div>
       <p class="note" style="margin:6px 0 0">With lines given, only those weeks swap duties among themselves. Lines you don’t balance keep their duties exactly as they are. The other weeks are not touched. Both can be used together.</p>
+      <p class="note" id="bal_kept" style="margin:6px 0 0"></p>
       <p class="status" id="bal_msg"></p>
       <div class="dBtns"><button type="button" class="btn primary" id="balRun">Balance weeks</button><button type="button" class="btn" data-close="balDlg">Cancel</button></div>
     </dialog>
@@ -1810,10 +1815,12 @@ function rotaSrc() {
 // week types: which duty types a line (week) should get
 const WTYPES = [['any', 'Any'], ['mix', 'Mix'], ['early', 'Early'], ['mid', 'Midday'], ['lm', 'L/M'], ['late', 'Late']];
 const WT_SHORT = { any: 'Any', mix: 'Mix', early: 'Early', mid: 'Midday', lm: 'L/M', late: 'Late' };
+// On Sunday only L duties follow the week type: other Sunday duties fit any week (same value, only the 11:00 rest counts).
 // Any: no limit · Mix: E, M, no type · Early: E · Midday: M, no type · L/M: L, M · Late: L. Splits (S): only Any, Mix, Early and Midday weeks, and the split rule.
 // a full SP week: every working day of the line is SP. These weeks are never changed by Auto-fill or Balance weeks.
 const fullSP = l => l.cells.some(c => isSP(c.v)) && l.cells.every(c => isSP(c.v) || isRD(c.v));
-function typeOK(wt, du) { if (!du || du.sp || !wt || wt === 'any') return true; const t = du._t != null ? du._t : baseType(du); if (t === 'S') return wt === 'early' || wt === 'mid' || wt === 'mix'; // splits only on Early, Midday and Mix weeks (and Any)
+// di = day (0 = Sunday): on Sunday only L duties follow the week type; every other Sunday duty may go in any week (only the 11:00 rest counts)
+function typeOK(wt, du, di) { if (!du || du.sp || !wt || wt === 'any') return true; const t = du._t != null ? du._t : baseType(du); if (di === 0 && t !== 'L') return true; if (t === 'S') return wt === 'early' || wt === 'mid' || wt === 'mix'; // splits only on Early, Midday and Mix weeks (and Any)
   return wt === 'mix' ? (t === 'E' || t === 'M' || t === '') : wt === 'early' ? t === 'E' : wt === 'late' ? t === 'L' : wt === 'lm' ? (t === 'L' || t === 'M') : wt === 'mid' ? (t === 'M' || t === '') : true; }
 // split rule: at most one S duty in any run of N consecutive weeks (lines in rota order); N = 0 means no limit
 function neighbours(r, li, k) { const n = r.lines.length; const out = []; for (let s = 1; s < k; s++) { [li - s, li + s].forEach(x => { if (r.cfg.moves === 'static') { if (x >= 0 && x < n) out.push(x); } else if (n > 1) out.push(((x % n) + n) % n); }); } return [...new Set(out)].filter(x => x !== li); }
@@ -1866,7 +1873,7 @@ function analyseRota(src) {
         } else if (!c.v) { issues.push(`${DAYS[di][1]} is empty`); flag[di].empty = 1; }
       });
       const wt = l.wt || 'any';
-      if (wt !== 'any') l.cells.forEach((c, di) => { if (dus[di] && !typeOK(wt, dus[di])) { flag[di].wtBad = 1; issues.push(`${c.v} (${DAYS[di][1]}) is type ${typeLetter(dus[di]) || '–'}, week is ${WT_SHORT[wt]}`); } });
+      if (wt !== 'any') l.cells.forEach((c, di) => { if (dus[di] && !typeOK(wt, dus[di], di)) { flag[di].wtBad = 1; issues.push(`${c.v} (${DAYS[di][1]}) is type ${typeLetter(dus[di]) || '–'}, week is ${WT_SHORT[wt]}`); } });
       { const N = cfg.splitEvery || 0; const sc = k => D[k].filter(du => baseType(du) === 'S').length;
         if (N > 1 && sc(li)) { if (sc(li) > 1) issues.push(`${sc(li)} split duties in one week`);
           for (let k = 1; k < N; k++) { const x = r.cfg.moves === 'static' ? li - k : (((li - k) % r.lines.length) + r.lines.length) % r.lines.length; if (x < 0 || x === li) continue;
@@ -1908,9 +1915,9 @@ function autoFill(r, src, opts) {
   const nWork = work.map(w => w.filter(Boolean).length);
   const duOf = (li, di) => li == null ? null : pick[li][di] ? pick[li][di].du : null;
   const bad = (a, b) => restFail(a, b, cfg) != null;
-  const fits = (li, du) => !du || typeOK(L[li].wt, du); // duty type matches the week type
+  const fits = (li, du, di) => !du || typeOK(L[li].wt, du, di); // duty type matches the week type
   const restOK = (li, di, du) => {
-    if (!fits(li, du)) return false;
+    if (!fits(li, du, di)) return false;
     if (di > 0 && bad(duOf(li, di - 1), du)) return false;
     if (di < 6 && bad(du, duOf(li, di + 1))) return false;
     if (di === 0 && bad(duOf(prevLine(r, li), 6), du)) return false;
@@ -1926,13 +1933,13 @@ function autoFill(r, src, opts) {
     const avail = pool[d].slice().sort((a, b) => (a.du.sp ? 1 : 0) - (b.du.sp ? 1 : 0) || b.du.pay - a.du.pay); // real duties first, SP last
     lines.forEach(li => { const sOK = p => baseType(p.du) !== 'S' || splitFree(r, li, sCnt);
       // the week type always follows the duty type assigned to the duty (OmniROTA, Tag & type or your own types): never a duty of the wrong type
-      let k = avail.findIndex(p => restOK(li, di, p.du) && typeOK(L[li].wt, p.du) && sOK(p)); if (k < 0) k = avail.findIndex(p => restOK(li, di, p.du) && typeOK(L[li].wt, p.du));
+      let k = avail.findIndex(p => restOK(li, di, p.du) && typeOK(L[li].wt, p.du, di) && sOK(p)); if (k < 0) k = avail.findIndex(p => restOK(li, di, p.du) && typeOK(L[li].wt, p.du, di));
       if (k >= 0) { pick[li][di] = avail[k]; avail.splice(k, 1); } });
     pool[d].left = avail; });
   // weeks outside min–max cost much more than uneven weeks inside it
   // first get as many weeks as possible inside min–max, then keep the rest as close as possible
   // week type first, then weeks inside min–max, then as even as possible
-  const mis = li => { const wt = L[li].wt; if (!wt || wt === 'any') return 0; return pick[li].reduce((n, p) => n + (p && !typeOK(wt, p.du) ? 1 : 0), 0); };
+  const mis = li => { const wt = L[li].wt; if (!wt || wt === 'any') return 0; return pick[li].reduce((n, p, di) => n + (p && !typeOK(wt, p.du, di) ? 1 : 0), 0); };
   // West Brom Special: prefer an early finish on the day before rest days and a later start on the day after
   const rdNext = (li, di) => di < 6 ? isRD(L[li].cells[di + 1].v) : (nextLine(r, li) != null && isRD(L[nextLine(r, li)].cells[0].v));
   const rdPrev = (li, di) => di > 0 ? isRD(L[li].cells[di - 1].v) : (prevLine(r, li) != null && isRD(L[prevLine(r, li)].cells[6].v));
@@ -2142,7 +2149,7 @@ function renderRota(reveal) {
         <div class="r3">${du ? fmt(du.pay) : '<span class="e">not in list</span>'}</div>`;
       return `<td class="${cls}" data-li="${li}" data-di="${di}" title="${esc([du ? `${c.v} ${hhmmTxt(du.s)}–${hhmmTxt(du.e)} · ${fmt(du.pay)}` : '', f.dup ? 'used twice on this day' : '', f.unknown ? 'not in the duty list' : '', f.onBad || f.offBad ? 'rest under ' + fmt(r.cfg.rest) : ''].filter(Boolean).join(' · '))}">${inner}</td>`; }).join('');
     const wt = l.wt || 'any';
-    return `<tr><th class="ln wt-${wt}" scope="row"><b>${esc(l.pre[5])}</b><small>${RDc()}=${x.rd}</small>${l.driver ? `<small class="drvN" title="${esc(l.driver)}">${esc(l.driver)}</small>` : ''}<select class="wtSel" data-li="${li}" aria-label="Week type of line ${esc(l.pre[5])}">${WTYPES.map(([k, t]) => `<option value="${k}" ${k === wt ? 'selected' : ''}>${t}</option>`).join('')}</select></th>${cells}
+    return `<tr${l.keep ? ' class="kept"' : ''}><th class="ln wt-${wt}" scope="row"><b>${esc(l.pre[5])}</b><small>${RDc()}=${x.rd}</small>${l.driver ? `<small class="drvN" title="${esc(l.driver)}">${esc(l.driver)}</small>` : ''}<select class="wtSel" data-li="${li}" aria-label="Week type of line ${esc(l.pre[5])}">${WTYPES.map(([k, t]) => `<option value="${k}" ${k === wt ? 'selected' : ''}>${t}</option>`).join('')}</select><label class="keepT" title="Keep: Balance weeks does not change this week"><input type="checkbox" data-keep="${li}" ${l.keep ? 'checked' : ''} aria-label="Keep line ${esc(l.pre[5])}: do not balance"><span>Keep</span></label></th>${cells}
       <td class="wk ${x.st}" title="${esc(x.issues.join('\n'))}"><b>${fmt(x.total)}</b>${x.st !== 'ok' ? `<small>(${x.diff > 0 ? '+' : '−'}${fmt(Math.abs(x.diff))})</small>` : ''}${x.issues.length ? `<i>${x.issues.length} problem${x.issues.length > 1 ? 's' : ''}</i>` : ''}</td></tr>`; }).join('');
   renderDutyList();
   const sel = $('rotaGrid').querySelector('td.sel'); const box = $('rotaGridBox');
@@ -2300,9 +2307,9 @@ function fillEmpty(r, src, subset) {
     pool.sort((a, b) => b.pay - a.pay);
     const sCnt = li => L[li].cells.reduce((n, c, k) => n + (baseType(dutyAt(li, k)) === 'S' ? 1 : 0), 0);
     pool.forEach(du => { const isS = baseType(du) === 'S';
-      const empt = L.map((_, li) => li).filter(li => !L[li].cells[di].v && restOK(li, di, du) && typeOK(L[li].wt, du) && (!isS || splitFree(r, li, sCnt)));
+      const empt = L.map((_, li) => li).filter(li => !L[li].cells[di].v && restOK(li, di, du) && typeOK(L[li].wt, du, di) && (!isS || splitFree(r, li, sCnt)));
       let onSp = false, cand = empt;
-      if (!cand.length) { onSp = true; cand = L.map((_, li) => li).filter(li => isSP(L[li].cells[di].v) && !fullSP(L[li]) && restOK(li, di, du) && typeOK(L[li].wt, du) && (!isS || splitFree(r, li, sCnt))); }
+      if (!cand.length) { onSp = true; cand = L.map((_, li) => li).filter(li => isSP(L[li].cells[di].v) && !fullSP(L[li]) && restOK(li, di, du) && typeOK(L[li].wt, du, di) && (!isS || splitFree(r, li, sCnt))); }
       if (!cand.length) { left++; return; }
       cand.sort((a, b) => total(a) - total(b)); const li = cand[0];
       L[li].cells[di].v = du.no; used[d].add(du.no); placed++; if (onSp) overSp++; });
@@ -2372,8 +2379,8 @@ function wpPreview() { const r = curRota(); if (!r) return; const idx = patternL
 // Early: E · Late: L · Midday: M and no type. Picked lines are spread through the rota as far as possible.
 const WS_NEED = { early: c => c.E, late: c => c.L, mid: c => c.M + c[''] };
 // how many of a day's duties can go into its weeks (w: working weeks by week type, c: duties by type), following the week type rules
-function wsFlow(w, c) { const W = Object.keys(w), C = ['E', 'M', 'L', 'S', ''];
-  const ok = (wt, t) => typeOK(wt, { _t: t }); const cap = {}; W.forEach(a => C.forEach(t => { if (ok(a, t)) cap[a + '|' + t] = Infinity; }));
+function wsFlow(w, c, di) { const W = Object.keys(w), C = ['E', 'M', 'L', 'S', ''];
+  const ok = (wt, t) => typeOK(wt, { _t: t }, di); const cap = {}; W.forEach(a => C.forEach(t => { if (ok(a, t)) cap[a + '|' + t] = Infinity; }));
   const fw = Object.assign({}, w), fc = Object.assign({}, c), back = {}; let total = 0;
   for (;;) { // breadth-first augmenting path source → week type → duty type (→ back to a week type …) → sink
     const prev = new Map(), q = []; W.forEach(a => { if (fw[a] > 0) { prev.set('w' + a, null); q.push('w' + a); } }); let end = null;
@@ -2390,7 +2397,7 @@ function wtSuggest(r) { const src = rotaSrc(); const N = r.lines.length; if (!sr
   const days = DAYS.map(([d, dn], di) => { const c = { E: 0, M: 0, L: 0, S: 0, '': 0 }; let slots = 0;
     r.lines.forEach((l, li) => { if (works[li][di]) slots++; const du = src.look(d, l.cells[di].v); if (du) c[baseType(du)]++; });
     return { dn, slots, c }; });
-  const order = Object.keys(WS_NEED).map(k => ({ k, ratio: Math.min(...days.filter(x => x.slots).map(x => WS_NEED[k](x.c) / x.slots)) })).sort((a, b) => a.ratio - b.ratio).map(x => x.k);
+  const order = Object.keys(WS_NEED).map(k => ({ k, ratio: Math.min(...days.filter((x, di) => di && x.slots).map(x => WS_NEED[k](x.c) / x.slots)) })).sort((a, b) => a.ratio - b.ratio).map(x => x.k);
   const taken = new Set(), pick = {}, short = {}, wtOf = {};
   // across the weekend a late week cannot be followed by an early week (Saturday late finish, Sunday early start: no 11:00 rest);
   // after a midday week it is often too short as well, so that is avoided where possible
@@ -2401,9 +2408,10 @@ function wtSuggest(r) { const src = rotaSrc(); const N = r.lines.length; if (!sr
     return (k === 'early' && pl != null && wtOf[pl] === 'mid' && before(pl, li)) || (k === 'mid' && nl != null && wtOf[nl] === 'early' && before(li, nl)) ? 1 : 0; };
   const dist = (a, b) => { const d = Math.abs(a - b); return r.cfg.moves === 'static' ? d : Math.min(d, N - d); };
   // weeks by type on each day, and how many duties each day must still be able to place
-  const wk = days.map(x => ({ any: x.slots, early: 0, mid: 0, late: 0 })); const target = days.map((x, di) => wsFlow(wk[di], x.c));
-  const fitsAll = (li, k) => works[li].every((w, di) => { if (!w) return true; wk[di].any--; wk[di][k]++; const f = wsFlow(wk[di], days[di].c); wk[di].any++; wk[di][k]--; return f >= target[di]; });
-  order.forEach(k => { const sup = days.map(x => WS_NEED[k](x.c)); pick[k] = [];
+  const wk = days.map(x => ({ any: x.slots, early: 0, mid: 0, late: 0 })); const target = days.map((x, di) => wsFlow(wk[di], x.c, di));
+  const fitsAll = (li, k) => works[li].every((w, di) => { if (!w) return true; wk[di].any--; wk[di][k]++; const f = wsFlow(wk[di], days[di].c, di); wk[di].any++; wk[di][k]--; return f >= target[di]; });
+  const tot = c => c.E + c.M + c.L + c.S + c[''];
+  order.forEach(k => { const sup = days.map((x, di) => di === 0 ? (k === 'late' ? tot(x.c) : tot(x.c) - x.c.L) : WS_NEED[k](x.c)); pick[k] = []; // Sunday: only L duties follow the week type
     for (;;) { const cand = r.lines.map((_, li) => li).filter(li => !taken.has(li) && works[li].some(Boolean) && works[li].every((w, di) => !w || sup[di] > 0) && !clash(li, k) && fitsAll(li, k));
       if (!cand.length) break;
       const score = li => (pick[k].length ? Math.min(...pick[k].map(x => dist(x, li))) : N - li) * 100 - works[li].filter(Boolean).length - soft(li, k) * 1000;
@@ -2416,7 +2424,7 @@ function wtSuggest(r) { const src = rotaSrc(); const N = r.lines.length; if (!sr
 function wtSuggestHtml(r) { const g = wtSuggest(r); if (!g) return '<p class="note">Load the duties first.</p>'; window._ws = g;
   const lim = k => g.short[k] ? ` <small>(no ${k === 'early' ? 'E' : k === 'late' ? 'L' : 'M / no type'} duties left on ${g.short[k]})</small>` : '';
   return `<div class="wsWrap"><table class="wsT"><thead><tr><th>Day</th><th>Weeks</th><th>E</th><th>M</th><th>L</th><th>S</th><th>No type</th></tr></thead><tbody>${g.days.map(x => `<tr><th scope="row">${x.dn}</th><td>${x.slots}</td><td>${x.c.E}</td><td>${x.c.M}</td><td>${x.c.L}</td><td>${x.c.S}</td><td>${x.c['']}</td></tr>`).join('')}</tbody></table></div></div>
-    <p class="note">Most weeks the duties allow, out of ${g.N}: <b>Early ${g.s.early}</b>${lim('early')} · <b>Midday ${g.s.mid}</b>${lim('mid')} · <b>Late ${g.s.late}</b>${lim('late')}. A week can only be Early if every day it works has an E duty for it, so a day with few E duties (often Sunday) limits the Early weeks to lines with that day as a rest day. Other weeks become Any. Splits (S) go only in Early, Midday, Mix and Any weeks.</p>
+    <p class="note">Most weeks the duties allow, out of ${g.N}: <b>Early ${g.s.early}</b>${lim('early')} · <b>Midday ${g.s.mid}</b>${lim('mid')} · <b>Late ${g.s.late}</b>${lim('late')}. A week can only be Early if every day it works has an E duty for it, so a day with few E duties limits the Early weeks to lines with that day as a rest day. On Sunday only L duties follow the week type (they go in Late, L/M or Any weeks); other Sunday duties fit any week, only the 11:00 rest counts. Other weeks become Any. Splits (S) go only in Early, Midday, Mix and Any weeks.</p>
     <div class="dGrid wsIn"><label for="ws_early">Early weeks</label><input type="number" min="0" max="${g.s.early}" id="ws_early" value="${g.s.early}">
       <label for="ws_mid">Midday weeks</label><input type="number" min="0" max="${g.s.mid}" id="ws_mid" value="${g.s.mid}">
       <label for="ws_late">Late weeks</label><input type="number" min="0" max="${g.s.late}" id="ws_late" value="${g.s.late}"></div>`; }
@@ -2517,13 +2525,15 @@ function initRota() {
     rotaMsg((rotaFile.ord ? `Duty file checked against the OmniROTA duties for ${days}: ${fixed} pay value${fixed === 1 ? '' : 's'} updated${ex.length ? ' (' + ex.join(', ') + (fixed > ex.length ? ' …' : '') + ')' : ''}${added ? `, ${added} new duties added` : ''}.` : `Loaded duties for ${days}.`) + (bad.length ? ` Skipped incomplete duty record${bad.length > 1 ? 's' : ''}: ${bad.join(', ')}. The file may have been cut off; export it again.` : ''), bad.length > 0); renderRota(); });
   $('difClear').onclick = () => { if (!rotaFile || !rotaFile.dif) return; pushUndo('remove duty file'); delete rotaFile.dif; saveRota(); rotaMsg('Duty file removed. Times and values now come from the PDFs.'); renderRota(); };
   $('rotaPick').onchange = e => { rotaSel = e.target.value; rotaCur = { li: 0, di: 0 }; rotaSubset = ''; rotaSwap = null; saveRota(); renderRota(); };
-  $('rotaGrid').addEventListener('click', e => { if (e.target.closest('.wtSel')) return; const td = e.target.closest('td[data-li]'); if (!td || td.querySelector('input')) return;
+  $('rotaGrid').addEventListener('click', e => { if (e.target.closest('.wtSel') || e.target.closest('.keepT')) return; const td = e.target.closest('td[data-li]'); if (!td || td.querySelector('input')) return;
     const li = +td.dataset.li, di = +td.dataset.di;
     if (rotaSwap) { const r = curRota(); const a = r.lines[rotaSwap.li].cells[rotaSwap.di], b = r.lines[li].cells[di];
       if (a !== b) { pushUndo('swap days'); [a.v, b.v] = [b.v, a.v]; saveRota(); rotaMsg(`Swapped line ${r.lines[rotaSwap.li].pre[5]} ${DAYS[rotaSwap.di][1]} with line ${r.lines[li].pre[5]} ${DAYS[di][1]}.`); }
       rotaSwap = null; }
     rotaCur = { li, di }; renderRota(); $('rotaGridBox').focus({ preventScroll: true }); if (e.detail >= 2) editRotaCell(); });
-  $('rotaGrid').addEventListener('change', e => { const s2 = e.target.closest('.wtSel'); if (!s2) return; const r = curRota(); const l = r.lines[+s2.dataset.li]; rotaCur.li = +s2.dataset.li;
+  $('rotaGrid').addEventListener('change', e => { const kb = e.target.closest('input[data-keep]');
+    if (kb) { const r = curRota(); const l = r.lines[+kb.dataset.keep]; pushUndo(`keep line ${l.pre[5]}`); l.keep = kb.checked || undefined; saveRota(); renderRota(); return; }
+    const s2 = e.target.closest('.wtSel'); if (!s2) return; const r = curRota(); const l = r.lines[+s2.dataset.li]; rotaCur.li = +s2.dataset.li;
     pushUndo(`week type of line ${l.pre[5]}`); l.wt = s2.value; saveRota(); renderRota(); });
   $('rotaGridBox').addEventListener('keydown', e => {
     if (e.target !== $('rotaGridBox')) return; const k = e.key;
@@ -2600,11 +2610,15 @@ function initRota() {
   $('flSP').onclick = () => { const r = curRota(); pushUndo('fill empty days with ' + SPc()); let k = 0; r.lines.forEach(l => l.cells.forEach(c => { if (!c.v) { c.v = SPc(); k++; } }));
     saveRota(); renderRota(); closeDialog('fillDlg'); rotaMsg(`${$('fl_msg').textContent} Entered ${SPc()} on ${k} empty day${k === 1 ? '' : 's'}.`); };
   $('flLeave').onclick = () => { closeDialog('fillDlg'); rotaMsg($('fl_msg').textContent + ' Empty days were left empty.'); };
-  $('rbBal').onclick = () => { $('bal_wbs').checked = rotaWbs; $('bal_only').value = ''; $('bal_skip').value = ''; $('bal_msg').textContent = ''; $('bal_rota').textContent = rotaSel; showDialog('balDlg'); };
+  $('rbBal').onclick = () => { $('bal_wbs').checked = rotaWbs; $('bal_only').value = ''; $('bal_skip').value = ''; $('bal_msg').textContent = ''; const kl = (curRota() ? curRota().lines : []).filter(l => l.keep).map(l => l.pre[5]);
+    $('bal_kept').textContent = kl.length ? `Lines tagged Keep in the grid are not changed: ${kl.join(', ')}.` : 'Tick Keep under a line number in the grid to leave that week out of Balance weeks.'; $('bal_rota').textContent = rotaSel; showDialog('balDlg'); };
   $('balRun').onclick = () => { const src = rotaSrc(); const r = curRota(); if (!src.ok || !r) return; rotaWbs = $('bal_wbs').checked; const before = rdTimes(r, src); const muBefore = makeUpOf(r) || { now: 0 };
     const snap = { label: 'balance weeks ' + r.code, snap: snapshot() }; let only = null; const spec = $('bal_only').value.trim();
-    const skipSpec = $('bal_skip').value.trim(); const skip = skipSpec ? new Set(linesOfSpec(r, skipSpec)) : null;
+    const skipSpec = $('bal_skip').value.trim(); let skip = skipSpec ? new Set(linesOfSpec(r, skipSpec)) : null;
+    const kept = r.lines.map((l, i) => l.keep ? i : -1).filter(i => i >= 0);
     if (skipSpec && !skip.size) { $('bal_msg').textContent = 'No line of this rota matches “Don’t balance these lines”. Write line numbers, for example 3, 7, 40-45.'; return; }
+    if (kept.length) { skip = skip || new Set(); kept.forEach(i => skip.add(i)); }
+    const skipTxt = [skipSpec ? 'lines ' + skipSpec : '', kept.length ? `${kept.length} kept line${kept.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' and ');
     if (spec || skip) { only = new Set(spec ? linesOfSpec(r, spec) : r.lines.map((_, i) => i)); if (skip) skip.forEach(i => only.delete(i));
       if (only.size < 2) { $('bal_msg').textContent = 'At least two lines must be left to balance.'; return; } }
     const out = autoFill(r, src, { useFree: false, wbs: rotaWbs, only }); const after = rdTimes(r, src);
@@ -2613,7 +2627,7 @@ function initRota() {
     if (out.unchanged) rotaMsg(`${r.code} is already as even as Balance Weeks can make it, so nothing was changed.`);
     else { undoStack.push(snap); updateUndo(); saveRota(); rotaA = analyseRota(src); const mu = makeUpOf(r);
       const muTxt = mu ? ` Make up time is now ${fmt(mu.now)} (was ${fmt(muBefore.now)}); the lowest possible with these duties is ${fmt(mu.best)}.` : '';
-      rotaMsg(`Balanced ${only ? only.size + ' lines of ' : ''}${r.code}${skip ? ` (lines ${skipSpec} not changed)` : ''}.` + muTxt + wbsTxt + (out.spare ? ` ${out.spare} day${out.spare === 1 ? ' has' : 's have'} no duty and stayed empty: use Auto-fill or enter ${SPc()}.` : '') + (out.left ? ` ${out.left} dut${out.left === 1 ? 'y was' : 'ies were'} left off the rota because no week of the right type had room (the duty type given to each duty decides which weeks it can go in): ${out.leftList.slice(0, 12).map(p => `${p.d} ${p.v} (${p.t || '–'})`).join(', ')}${out.left > 12 ? ' …' : ''}. Change their duty type or the week types, or put them in by hand.` : '')); }
+      rotaMsg(`Balanced ${only ? only.size + ' lines of ' : ''}${r.code}${skip ? ` (${skipTxt} not changed)` : ''}.` + muTxt + wbsTxt + (out.spare ? ` ${out.spare} day${out.spare === 1 ? ' has' : 's have'} no duty and stayed empty: use Auto-fill or enter ${SPc()}.` : '') + (out.left ? ` ${out.left} dut${out.left === 1 ? 'y was' : 'ies were'} left off the rota because no week of the right type had room (the duty type given to each duty decides which weeks it can go in): ${out.leftList.slice(0, 12).map(p => `${p.d} ${p.v} (${p.t || '–'})`).join(', ')}${out.left > 12 ? ' …' : ''}. Change their duty type or the week types, or put them in by hand.` : '')); }
     renderRota(); };
   $('rbStats').onclick = () => { $('statDlg').classList.remove('xwide'); $('statBody').innerHTML = rotaStats(); $('statTitle').textContent = 'Rota statistics: ' + rotaSel; showDialog('statDlg'); };
   $('rbGStats').onclick = () => { $('statDlg').classList.add('xwide'); $('statBody').innerHTML = globalStats(); $('statTitle').textContent = 'Global rota statistics'; showDialog('statDlg'); };
