@@ -173,6 +173,13 @@ td.tot small { font-size: 12px; font-weight: 600 } .okc { color: var(--ok) } .ov
 .tabs .tabEnd button { border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg); padding: 6px 12px; font-size: 13px; font-weight: 500; margin: 0 }
 .tabs .tabEnd .garSel { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted) }
 .tabs .tabEnd .garSel select { font-size: 13px; font-weight: 600; padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg) }
+.wsT { border-collapse: collapse; font-size: 12px; margin: 4px 0 8px; width: auto; min-width: 0; max-width: 100% }
+.wsT th { cursor: default; position: static }
+.wsWrap { overflow-x: auto; max-width: 100% }
+.wsT th, .wsT td { min-width: 0; width: auto; white-space: nowrap }
+.wsT th, .wsT td { padding: 3px 6px; border-bottom: 1px solid var(--line); text-align: right }
+.wsT th:first-child { text-align: left }
+.wsIn input { width: 80px }
 .opH { margin: 12px 0 6px; font-size: 13px }
 .opList { display: grid; gap: 6px; max-height: 40vh; overflow: auto }
 .opRow { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 13px }
@@ -679,7 +686,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
         <small>Down: line 1 → 2 → 3 each week. Rest from Saturday to the next line's Sunday is checked when the rota moves.</small></fieldset>
       <fieldset class="moves"><legend>Week types</legend>
         <label for="sr_wt">Set every line to</label><select id="sr_wt"><option value="any">Any</option><option value="mix">Mix</option><option value="early">Early</option><option value="mid">Midday</option><option value="lm">L/M</option><option value="late">Late</option></select><button type="button" class="btn" id="sr_wtAll">Apply to all lines</button>
-        <small id="sr_wtInfo"></small><small>Each line can also be set in the grid under its number. Any: no limit · Mix: E, M and no type · Early: E · Midday: M and no type · L/M: L and M (never splits) · Late: L.</small></fieldset>
+        <small id="sr_wtInfo"></small><small>Each line can also be set in the grid under its number. Any: no limit · Mix: E, M and no type · Early: E · Midday: M and no type · L/M: L and M · Late: L. Splits (S) only in Any, Mix, Early and Midday weeks.</small></fieldset>
       <fieldset class="moves"><legend>Split duties (S)</legend>
         <label for="sr_split">At most 1 split every</label><input type="text" id="sr_split" class="w3"> <span>weeks</span>
         <small>0 = no limit (school and split rotas such as SCH). Counted over consecutive lines in rota order.</small></fieldset>
@@ -715,8 +722,9 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
     <dialog id="balDlg" class="dlg" aria-labelledby="balT"><h3 id="balT">Balance weeks: <span id="bal_rota"></span></h3>
       <p class="note">Keeps every RD and never touches weeks that are SP on every working day. Duties and the other SP days move between lines to get the lowest make up time: no week above the minimum while another is below it, no week over the maximum, and the minimum daily rest kept. Nothing changes if it cannot do better. Undo puts it back.</p>
       <label class="cbrow"><input type="checkbox" id="bal_wbs"> West Brom Special: where possible, an early-finish duty before rest days and a later-start duty after rest days</label>
-      <div class="dGrid" style="margin-top:10px"><label for="bal_only">Only these lines</label><input type="text" id="bal_only" placeholder="whole rota, or e.g. 1-10, 15, 22"></div>
-      <p class="note" style="margin:6px 0 0">With lines given, only those weeks swap duties among themselves. The other weeks are not touched.</p>
+      <div class="dGrid" style="margin-top:10px"><label for="bal_only">Only these lines</label><input type="text" id="bal_only" placeholder="whole rota, or e.g. 1-10, 15, 22">
+        <label for="bal_skip">Don’t balance these lines</label><input type="text" id="bal_skip" placeholder="none, or e.g. 3, 7, 40-45"></div>
+      <p class="note" style="margin:6px 0 0">With lines given, only those weeks swap duties among themselves. Lines you don’t balance keep their duties exactly as they are. The other weeks are not touched. Both can be used together.</p>
       <p class="status" id="bal_msg"></p>
       <div class="dBtns"><button type="button" class="btn primary" id="balRun">Balance weeks</button><button type="button" class="btn" data-close="balDlg">Cancel</button></div>
     </dialog>
@@ -751,7 +759,13 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
       <div class="dBtns"><button type="button" class="btn primary" id="flRun">Auto-fill</button><button type="button" class="btn" data-close="fillDlg">Close</button></div>
     </dialog>
 
-    <dialog id="wpDlg" class="dlg" aria-labelledby="wpT"><h3 id="wpT">Week types: <span id="wp_rota"></span></h3>
+    <dialog id="wpDlg" class="dlg wide" aria-labelledby="wpT"><h3 id="wpT">Week types: <span id="wp_rota"></span></h3>
+      <h4 class="opH">Suggested from the duties</h4>
+      <p class="note" style="margin-top:0">Duties on this rota counted by their duty type, and how many Early, Midday and Late weeks they can fill.</p>
+      <div id="ws_box"></div>
+      <p class="status" id="ws_msg" aria-live="polite"></p>
+      <div class="dBtns" style="justify-content:flex-start"><button type="button" class="btn primary" id="wsApply">Use these numbers</button></div>
+      <h4 class="opH">Set lines by hand</h4>
       <p class="note">Give a week type to many lines at once, for example lines 2, 7, 12, 17 … as L/M. Line numbers are the numbers shown in the grid.</p>
       <div class="dGrid">
         <label for="wp_type">Week type</label><select id="wp_type"><option value="lm">L/M</option><option value="mix">Mix</option><option value="early">Early</option><option value="mid">Midday</option><option value="late">Late</option><option value="any">Any</option></select>
@@ -919,7 +933,9 @@ function parseDcl(text, name) {
     const k = c[0].trim().toUpperCase() + '|' + c[1].trim() + '|' + (parseInt(c[2], 10) || 0);
     (groups.get(k) || groups.set(k, []).get(k)).push(c); });
   const files = new Map(); // one entry per days code; duties with two versions: version 2 (schooldays) in the main list, version 1 in its own list
+  let hol = 0;
   groups.forEach((rows, k) => { const [no, days, v] = k.split('|'); const ver = +v;
+    if (ver === 1) { hol++; return; } // duties with two versions: the school holidays version (1) is left out
     const pieces = []; let prevEnd = null, prevDep = null;
     rows.forEach((c, i) => { const dep = t4(c[5]); let arr = t4(c[8]); const on = t4(c[3]); const off = t4(c[c.length >= 15 ? 11 : 10]);
       let onBus = dep != null && arr != null ? arr - dep : 0; if (onBus < 0) onBus += 1440;
@@ -932,7 +948,7 @@ function parseDcl(text, name) {
     const d = { duty: no, pieces, reliefs: pieces.map(p => p.relief).filter(r => r != null), totals: { onBusTotal, dutyTotal: pay, compass, pay } };
     const fk = days + '|' + (ver === 1 ? 1 : 0); if (!files.has(fk)) files.set(fk, { days, alt: ver === 1, duties: [] }); files.get(fk).duties.push(d); });
   const base = String(name || 'duties').replace(/\.dcl$/i, '');
-  return { bad, files: [...files.values()].sort((a, b) => a.alt - b.alt).map(f => ({ name: base + '.DCL' + (f.alt ? ' · version 1' : ''),
+  return { bad, hol, files: [...files.values()].sort((a, b) => a.alt - b.alt).map(f => ({ name: base + '.DCL' + (f.alt ? ' · version 1' : ''),
     dayLabel: f.alt ? 'Version 1 of ' + base + ' (duties with two versions)' : dclDayLabel(f.days), commencing: '', duties: f.duties, incomplete: [] })) };
 }
 
@@ -1624,9 +1640,9 @@ const curJob = () => rotaJobs.find(j => j.id === rotaJobId);
 const garRotaJobs = () => rotaJobs.filter(j => ((j.garage) || 'g1') === (window.profSel || 'g1'));
 // duty files are stored compactly: one entry per duty with the days it runs (Mon–Thu duties are not repeated four times)
 function packDif(dif) { const m = new Map(); DAYS.forEach(([d], di) => (dif[d] || []).forEach(du => { const k = [du.no, du.pay, du.s, du.e].join('|'); const e = m.get(k);
-    if (e) e[7] += di; else m.set(k, [du.no, du.pay, du.s, du.e, du.maxRelief, du.cls || '', du.code || '', String(di), du.ty == null ? null : du.ty, du.pay0 == null ? null : du.pay0, du.pc || null]); }));
+    if (e) e[7] += di; else m.set(k, [du.no, du.pay, du.s, du.e, du.maxRelief, du.cls || '', du.code || '', String(di), du.ty == null ? null : du.ty, du.pay0 == null ? null : du.pay0, du.pc || null, du.exact ? 1 : 0]); }));
   return { _p: 1, l: [...m.values()] }; }
-function unpackDif(p) { const out = {}; p.l.forEach(([no, pay, s, e, mr, cls, code, days, ty, pay0, pc]) => { const du = { no, num: parseInt(String(no).replace(/^\D+/, ''), 10), pay, s, e, maxRelief: mr, routes: [], valid: true, cls, code, src: 'DIF' }; if (ty != null) du.ty = ty; if (pay0 != null) du.pay0 = pay0; if (pc) du.pc = pc;
+function unpackDif(p) { const out = {}; p.l.forEach(([no, pay, s, e, mr, cls, code, days, ty, pay0, pc, ex]) => { const du = { no, num: parseInt(String(no).replace(/^\D+/, ''), 10), pay, s, e, maxRelief: mr, routes: [], valid: true, cls, code, src: 'DIF' }; if (ty != null) du.ty = ty; if (pay0 != null) du.pay0 = pay0; if (pc) du.pc = pc; if (ex) du.exact = 1;
     String(days).split('').forEach(i => { const d = DAYS[+i][0]; (out[d] = out[d] || []).push(du); }); }); return out; }
 function difReplacer(k, v) { return k === 'dif' && v && !v._p ? packDif(v) : v; }
 function pickJob(id) { const gr = garRotaJobs(); const j = gr.find(x => x.id === id) || gr[gr.length - 1] || null; rotaJobId = j ? j.id : null; rotaFile = j ? fixFile(j.file) : null; if (j) j.file = rotaFile; rotaSel = j ? j.sel : null; rotaCur = { li: 0, di: 0 }; rotaSubset = ''; }
@@ -1695,7 +1711,9 @@ function csvRow(l) { const out = []; let cur = '', q = false; for (let i = 0; i 
 // .DCL (duty files) have the same rows with an extra 0 before the sign off, and the depot at the end
 function parseOrl(text) { const m = new Map(); const t4 = x => { x = String(x || '').trim(); return /^\d{4}$/.test(x) ? +x.slice(0, 2) * 60 + +x.slice(2) : null; };
   String(text || '').replace(/\r/g, '').split('\n').filter(Boolean).forEach(l => { const c = csvRow(l); if (c.length < 11) return;
-    const k = c[0].trim().toUpperCase() + '|' + c[1].trim() + '|' + (parseInt(c[2], 10) || 0); (m.get(k) || m.set(k, []).get(k)).push([t4(c[5]), t4(c[8]), t4(c[3]), t4(c[c.length >= 15 ? 11 : 10])]); });
+    const k = c[0].trim().toUpperCase() + '|' + c[1].trim() + '|' + (parseInt(c[2], 10) || 0); const a = m.get(k) || m.set(k, []).get(k);
+    const vm = String(c[c.length >= 15 ? 13 : 12] || '').trim().match(/^(\d+):(\d{2})$/); if (vm) a.val = +vm[1] * 60 + +vm[2]; // duty value as paid (Sunday 4 Day duties with the premium)
+    a.push([t4(c[5]), t4(c[8]), t4(c[3]), t4(c[c.length >= 15 ? 11 : 10])]); });
   return m; }
 function parseOrd(text, name, orlText) { const orl = orlText ? parseOrl(orlText) : null;
   const raw = String(text).replace(/\r/g, '').split('\n').filter(l => l.length); const rows = raw.map(csvRow); const H = rows[0] || [];
@@ -1718,9 +1736,11 @@ function parseOrd(text, name, orlText) { const orl = orlText ? parseOrl(orlText)
     const mOn = parseInt(c[7], 10) || 0, mOff = parseInt(c[9], 10) || 0; let rel = null; if (mOn && mOff) { rel = hm(c[7]) - hm(c[9]); if (rel < 0) rel += 1440; }
     const ty = (c[11] || '').trim().toUpperCase();
     const du = { no, num: parseInt(no.replace(/^\D+/, ''), 10), pay: hm(c[1]), s: s0, e: e0, maxRelief: rel, routes: (c[19] || '').trim().split(/\s+/).filter(Boolean), valid: true, cls: ty === 'S' ? 'split' : '', code: (c[12] || '').trim(), ty, src: 'ORD' };
-    if (orl) { const pc = orl.get(no + '|' + (c[13] || '').trim() + '|' + (parseInt(c[14], 10) || 0)); if (pc) du.pc = pc; }
-    // OmniROTA keeps only the duty value (time worked) for Sunday 4 Day duties: work out their pay value
-    if ((c[13] || '').trim() === '$' && is4Day(no) && !/ROCR\s*$/i.test((H[11] || '').trim())) { du.pay0 = du.pay; du.pay = sun4Pay(du.pay0); }
+    let pcv = null; if (orl) { const pc = orl.get(no + '|' + (c[13] || '').trim() + '|' + (parseInt(c[14], 10) || 0)); if (pc) { du.pc = pc.slice(); pcv = pc.val; } }
+    // OmniROTA keeps only the duty value (time worked) for Sunday 4 Day duties. The duty files (.DCL / .ORL) have the value as paid: use it.
+    // Without them the premium is worked out (not for a table this tool already saved with the premium).
+    if (pcv != null && pcv !== du.pay) { du.pay0 = du.pay; du.pay = pcv; du.exact = 1; }
+    else if (pcv == null && (c[13] || '').trim() === '$' && is4Day(no) && !/ROCR\s*$/i.test((H[11] || '').trim())) { du.pay0 = du.pay; du.pay = sun4Pay(du.pay0); }
     (c[13] || '').trim().split('').forEach(ch => { const d = DCH[ch]; if (d) (dif[d] = dif[d] || []).push(du); }); }
   p += 7;
   const rotas = [];
@@ -1790,10 +1810,10 @@ function rotaSrc() {
 // week types: which duty types a line (week) should get
 const WTYPES = [['any', 'Any'], ['mix', 'Mix'], ['early', 'Early'], ['mid', 'Midday'], ['lm', 'L/M'], ['late', 'Late']];
 const WT_SHORT = { any: 'Any', mix: 'Mix', early: 'Early', mid: 'Midday', lm: 'L/M', late: 'Late' };
-// Any: no limit · Mix: E, M, no type · Early: E · Midday: M, no type · L/M: L, M (never S) · Late: L. Splits (S) also follow the split rule.
+// Any: no limit · Mix: E, M, no type · Early: E · Midday: M, no type · L/M: L, M · Late: L. Splits (S): only Any, Mix, Early and Midday weeks, and the split rule.
 // a full SP week: every working day of the line is SP. These weeks are never changed by Auto-fill or Balance weeks.
 const fullSP = l => l.cells.some(c => isSP(c.v)) && l.cells.every(c => isSP(c.v) || isRD(c.v));
-function typeOK(wt, du) { if (!du || du.sp || !wt || wt === 'any') return true; const t = baseType(du); if (t === 'S') return wt !== 'lm'; // splits never on L/M weeks
+function typeOK(wt, du) { if (!du || du.sp || !wt || wt === 'any') return true; const t = du._t != null ? du._t : baseType(du); if (t === 'S') return wt === 'early' || wt === 'mid' || wt === 'mix'; // splits only on Early, Midday and Mix weeks (and Any)
   return wt === 'mix' ? (t === 'E' || t === 'M' || t === '') : wt === 'early' ? t === 'E' : wt === 'late' ? t === 'L' : wt === 'lm' ? (t === 'L' || t === 'M') : wt === 'mid' ? (t === 'M' || t === '') : true; }
 // split rule: at most one S duty in any run of N consecutive weeks (lines in rota order); N = 0 means no limit
 function neighbours(r, li, k) { const n = r.lines.length; const out = []; for (let s = 1; s < k; s++) { [li - s, li + s].forEach(x => { if (r.cfg.moves === 'static') { if (x >= 0 && x < n) out.push(x); } else if (n > 1) out.push(((x % n) + n) % n); }); } return [...new Set(out)].filter(x => x !== li); }
@@ -1888,7 +1908,9 @@ function autoFill(r, src, opts) {
   const nWork = work.map(w => w.filter(Boolean).length);
   const duOf = (li, di) => li == null ? null : pick[li][di] ? pick[li][di].du : null;
   const bad = (a, b) => restFail(a, b, cfg) != null;
+  const fits = (li, du) => !du || typeOK(L[li].wt, du); // duty type matches the week type
   const restOK = (li, di, du) => {
+    if (!fits(li, du)) return false;
     if (di > 0 && bad(duOf(li, di - 1), du)) return false;
     if (di < 6 && bad(du, duOf(li, di + 1))) return false;
     if (di === 0 && bad(duOf(prevLine(r, li), 6), du)) return false;
@@ -1903,7 +1925,8 @@ function autoFill(r, src, opts) {
     lines.sort((a, b) => ((T * (done(b) + 1) / Math.max(1, nWork[b])) - total(b)) - ((T * (done(a) + 1) / Math.max(1, nWork[a])) - total(a)));
     const avail = pool[d].slice().sort((a, b) => (a.du.sp ? 1 : 0) - (b.du.sp ? 1 : 0) || b.du.pay - a.du.pay); // real duties first, SP last
     lines.forEach(li => { const sOK = p => baseType(p.du) !== 'S' || splitFree(r, li, sCnt);
-      let k = avail.findIndex(p => restOK(li, di, p.du) && typeOK(L[li].wt, p.du) && sOK(p)); if (k < 0) k = avail.findIndex(p => restOK(li, di, p.du) && sOK(p)); if (k < 0) k = avail.findIndex(p => restOK(li, di, p.du));
+      // the week type always follows the duty type assigned to the duty (OmniROTA, Tag & type or your own types): never a duty of the wrong type
+      let k = avail.findIndex(p => restOK(li, di, p.du) && typeOK(L[li].wt, p.du) && sOK(p)); if (k < 0) k = avail.findIndex(p => restOK(li, di, p.du) && typeOK(L[li].wt, p.du));
       if (k >= 0) { pick[li][di] = avail[k]; avail.splice(k, 1); } });
     pool[d].left = avail; });
   // weeks outside min–max cost much more than uneven weeks inside it
@@ -1922,7 +1945,7 @@ function autoFill(r, src, opts) {
   const T2 = Math.min(cfg.max, mean);
   const cost = li => { const t = total(li); const under = Math.max(0, cfg.min - t), over = Math.max(0, t - cfg.max);
     const holes = pick[li].reduce((n, p, di) => n + (work[li][di] && !p ? 1 : 0), 0);
-    return holes * 5e5 + mis(li) * 3e5 + splitPen(r, li, sCnt) * 2e5 + (over > 0 ? 1e5 + over * 400 : 0) + under * 200 + (t - T2) * (t - T2) * 0.05 + wbsPen(li); };
+    return holes * 5e5 + mis(li) * 8e5 + splitPen(r, li, sCnt) * 2e5 + (over > 0 ? 1e5 + over * 400 : 0) + under * 200 + (t - T2) * (t - T2) * 0.05 + wbsPen(li); };
   // a split duty also changes the split-rule cost of the neighbouring weeks, so those weeks are counted too
   const isSd = p => !!p && !p.du.sp && baseType(p.du) === 'S';
   const zone = (i, j, pi, pj) => (isSd(pi) || isSd(pj)) && (cfg.splitEvery || 0) > 1 ? [...new Set([i, j, ...neighbours(r, i, cfg.splitEvery), ...(j == null ? [] : neighbours(r, j, cfg.splitEvery))])].filter(x => x != null) : (j == null ? [i] : [i, j]);
@@ -1945,24 +1968,29 @@ function autoFill(r, src, opts) {
     }
     if (!better) break; } };
   improve();
+  // fill empty days: a duty left over goes in directly, or through a chain of moves on the same day
+  // (a duty moves to the empty day, its own day is filled the same way, …), keeping rest and week types
   for (let di = 0; di < 7; di++) { const left = pool[DAYS[di][0]].left || []; if (!left.length) continue;
+    left.sort((a, b) => (a.du.sp ? 1 : 0) - (b.du.sp ? 1 : 0));
     const lines = L.map((_, li) => li).filter(li => work[li][di]);
-    lines.filter(i => !pick[i][di]).forEach(i => {
-      for (let k = 0; k < left.length; k++) { const p = left[k];
-        if (restOK(i, di, p.du)) { pick[i][di] = p; left.splice(k, 1); return; }
-        for (const j of lines) { const q = pick[j][di]; if (!q || j === i) continue;
-          pick[j][di] = p; pick[i][di] = q;
-          if (restOK(i, di, q.du) && restOK(j, di, p.du)) { left.splice(k, 1); return; }
-          pick[j][di] = q; pick[i][di] = null; }
-        // three-way: left duty → line m, m's duty → line j, j's duty → the empty day
-        for (const j of lines) { const q = pick[j][di]; if (!q || j === i) continue;
-          for (const m of lines) { const q2 = pick[m][di]; if (!q2 || m === i || m === j) continue;
-            pick[m][di] = p; pick[j][di] = q2; pick[i][di] = q;
-            if (restOK(i, di, q.du) && restOK(j, di, q2.du) && restOK(m, di, p.du)) { left.splice(k, 1); return; }
-            pick[m][di] = q2; pick[j][di] = q; pick[i][di] = null; } }
-      } });
+    const fill = (i, seen) => {
+      for (let k = 0; k < left.length; k++) if (restOK(i, di, left[k].du)) { pick[i][di] = left[k]; left.splice(k, 1); return true; }
+      for (const j of lines) { if (j === i || seen.has(j)) continue; const q = pick[j][di]; if (!q || !restOK(i, di, q.du)) continue;
+        seen.add(j); pick[i][di] = q; pick[j][di] = null; if (fill(j, seen)) return true; pick[j][di] = q; pick[i][di] = null; }
+      return false; };
+    lines.filter(i => !pick[i][di]).forEach(i => { if (left.length) fill(i, new Set([i])); });
+    // still empty: the next or previous day of that week may block it (rest), so try changing that day's duty with another week's first
+    lines.filter(i => !pick[i][di]).forEach(i => { if (!left.length) return;
+      // neighbouring cells: the day after and before in the same week; for Sunday the Saturday of the week before, for Saturday the Sunday after
+      const nb = [[i, di + 1], [i, di - 1]].filter(([, d]) => d >= 0 && d <= 6);
+      if (di === 0 && prevLine(r, i) != null) nb.push([prevLine(r, i), 6]); if (di === 6 && nextLine(r, i) != null) nb.push([nextLine(r, i), 0]);
+      for (const [ni, nd] of nb) { if (!work[ni][nd]) continue; const a = pick[ni][nd]; if (!a) continue;
+        for (const j of L.map((_, x) => x).filter(x => x !== ni && x !== i && work[x][nd] && pick[x][nd])) { const b = pick[j][nd];
+          pick[ni][nd] = b; pick[j][nd] = a;
+          if (restOK(ni, nd, b.du) && restOK(j, nd, a.du) && fill(i, new Set([i]))) return;
+          pick[ni][nd] = a; pick[j][nd] = b; } } });
   }
-  const score = () => { let sq = 0, empty = 0; L.forEach((l, li) => { sq += cost(li); pick[li].forEach((p, di) => { if (work[li][di] && !p) empty++; }); }); return empty * 1e12 + sq; };
+  const score = () => { let sq = 0, empty = 0, wrong = 0; L.forEach((l, li) => { sq += cost(li); wrong += mis(li); pick[li].forEach((p, di) => { if (work[li][di] && !p) empty++; }); }); return wrong * 1e13 + empty * 1e12 + sq; };
   improve(); // the repair may have unbalanced some weeks
   // West Brom Special: second pass, swapping duties between lines (never leaves a day empty)
   if (opts.wbs) { useW = true;
@@ -1979,8 +2007,8 @@ function autoFill(r, src, opts) {
     keep.forEach((x, li) => pick[li] = x);
   }
   let spare = 0; L.forEach((l, li) => l.cells.forEach((c, di) => { if (!work[li][di]) return; const p = pick[li][di]; if (p) c.v = p.v; else { c.v = opts.fresh ? SPc() : ''; spare++; } }));
-  const left = DAYS.map(([d]) => (pool[d].left || []).filter(p => !p.du.sp).length).reduce((a, b) => a + b, 0);
-  return { spare, left };
+  const leftL = DAYS.flatMap(([d, dn]) => (pool[d].left || []).filter(p => !p.du.sp).map(p => ({ d: dn, v: p.v, t: typeLetter(p.du) || '–' })));
+  return { spare, left: leftL.length, leftList: leftL };
 }
 
 // ---- new sub rota from scratch: RD pattern from duty counts, then balance ----
@@ -2338,6 +2366,60 @@ function patternLines(r) {
 function wpPreview() { const r = curRota(); if (!r) return; const idx = patternLines(r); const nums = idx.map(i => r.lines[i].pre[5]);
   $('wp_mode_every').hidden = $('wp_mode').value !== 'every'; $('wp_mode_list').hidden = $('wp_mode').value !== 'list';
   $('wp_prev').textContent = nums.length ? `${nums.length} line${nums.length === 1 ? '' : 's'}: ${nums.slice(0, 40).join(', ')}${nums.length > 40 ? ' …' : ''}` : 'No lines match.'; $('wpApply').disabled = !nums.length; }
+// ---- suggested week types: how many Early, Midday and Late weeks the duties of this sub rota can fill ----
+// Duties on the rota's lines are counted by their duty type. Lines are then picked one by one for each week type, scarcest type first:
+// a line can take a week type only if every day it works still has a duty of that type left (its rest days need none).
+// Early: E · Late: L · Midday: M and no type. Picked lines are spread through the rota as far as possible.
+const WS_NEED = { early: c => c.E, late: c => c.L, mid: c => c.M + c[''] };
+// how many of a day's duties can go into its weeks (w: working weeks by week type, c: duties by type), following the week type rules
+function wsFlow(w, c) { const W = Object.keys(w), C = ['E', 'M', 'L', 'S', ''];
+  const ok = (wt, t) => typeOK(wt, { _t: t }); const cap = {}; W.forEach(a => C.forEach(t => { if (ok(a, t)) cap[a + '|' + t] = Infinity; }));
+  const fw = Object.assign({}, w), fc = Object.assign({}, c), back = {}; let total = 0;
+  for (;;) { // breadth-first augmenting path source → week type → duty type (→ back to a week type …) → sink
+    const prev = new Map(), q = []; W.forEach(a => { if (fw[a] > 0) { prev.set('w' + a, null); q.push('w' + a); } }); let end = null;
+    while (q.length && !end) { const n = q.shift();
+      if (n[0] === 'w') { const a = n.slice(1); for (const t of C) if (cap[a + '|' + t] && !prev.has('c' + t)) { prev.set('c' + t, n); if (fc[t] > 0) { end = 'c' + t; break; } q.push('c' + t); } }
+      else { const t = n.slice(1); for (const a of W) if ((back[a + '|' + t] || 0) > 0 && !prev.has('w' + a)) { prev.set('w' + a, n); q.push('w' + a); } } }
+    if (!end) return total;
+    let x = end; const path = []; while (x) { path.unshift(x); x = prev.get(x); }
+    fw[path[0].slice(1)]--; fc[end.slice(1)]--; total++;
+    for (let i = 0; i + 1 < path.length; i++) { const u = path[i], v = path[i + 1]; if (u[0] === 'w') back[u.slice(1) + '|' + v.slice(1)] = (back[u.slice(1) + '|' + v.slice(1)] || 0) + 1; else back[v.slice(1) + '|' + u.slice(1)]--; } }
+}
+function wtSuggest(r) { const src = rotaSrc(); const N = r.lines.length; if (!src.ok || !N) return null;
+  const works = r.lines.map(l => l.cells.map(c => !isRD(c.v) && !(isSP(c.v) && fullSP(l))));
+  const days = DAYS.map(([d, dn], di) => { const c = { E: 0, M: 0, L: 0, S: 0, '': 0 }; let slots = 0;
+    r.lines.forEach((l, li) => { if (works[li][di]) slots++; const du = src.look(d, l.cells[di].v); if (du) c[baseType(du)]++; });
+    return { dn, slots, c }; });
+  const order = Object.keys(WS_NEED).map(k => ({ k, ratio: Math.min(...days.filter(x => x.slots).map(x => WS_NEED[k](x.c) / x.slots)) })).sort((a, b) => a.ratio - b.ratio).map(x => x.k);
+  const taken = new Set(), pick = {}, short = {}, wtOf = {};
+  // across the weekend a late week cannot be followed by an early week (Saturday late finish, Sunday early start: no 11:00 rest);
+  // after a midday week it is often too short as well, so that is avoided where possible
+  const before = (a, b) => works[a][6] && works[b][0]; // line a's Saturday and line b's Sunday are both worked
+  const clash = (li, k) => { const pl = prevLine(r, li), nl = nextLine(r, li);
+    return (k === 'early' && pl != null && wtOf[pl] === 'late' && before(pl, li)) || (k === 'late' && nl != null && wtOf[nl] === 'early' && before(li, nl)); };
+  const soft = (li, k) => { const pl = prevLine(r, li), nl = nextLine(r, li);
+    return (k === 'early' && pl != null && wtOf[pl] === 'mid' && before(pl, li)) || (k === 'mid' && nl != null && wtOf[nl] === 'early' && before(li, nl)) ? 1 : 0; };
+  const dist = (a, b) => { const d = Math.abs(a - b); return r.cfg.moves === 'static' ? d : Math.min(d, N - d); };
+  // weeks by type on each day, and how many duties each day must still be able to place
+  const wk = days.map(x => ({ any: x.slots, early: 0, mid: 0, late: 0 })); const target = days.map((x, di) => wsFlow(wk[di], x.c));
+  const fitsAll = (li, k) => works[li].every((w, di) => { if (!w) return true; wk[di].any--; wk[di][k]++; const f = wsFlow(wk[di], days[di].c); wk[di].any++; wk[di][k]--; return f >= target[di]; });
+  order.forEach(k => { const sup = days.map(x => WS_NEED[k](x.c)); pick[k] = [];
+    for (;;) { const cand = r.lines.map((_, li) => li).filter(li => !taken.has(li) && works[li].some(Boolean) && works[li].every((w, di) => !w || sup[di] > 0) && !clash(li, k) && fitsAll(li, k));
+      if (!cand.length) break;
+      const score = li => (pick[k].length ? Math.min(...pick[k].map(x => dist(x, li))) : N - li) * 100 - works[li].filter(Boolean).length - soft(li, k) * 1000;
+      const li = cand.reduce((a, b) => score(b) > score(a) ? b : a); pick[k].push(li); taken.add(li); wtOf[li] = k; works[li].forEach((w, di) => { if (w) { sup[di]--; wk[di].any--; wk[di][k]++; } }); }
+    // the day that ran out first
+    const z = days.map((x, di) => ({ dn: x.dn, left: sup[di], slots: x.slots })).filter(x => x.slots && x.left <= 0); short[k] = z.length ? z.map(x => x.dn).join(', ') : ''; });
+  // with fewer weeks than the most: the first lines picked are used, which also keeps every day placeable
+  return { days, N, pick, short, s: { early: pick.early.length, mid: pick.mid.length, late: pick.late.length } };
+}
+function wtSuggestHtml(r) { const g = wtSuggest(r); if (!g) return '<p class="note">Load the duties first.</p>'; window._ws = g;
+  const lim = k => g.short[k] ? ` <small>(no ${k === 'early' ? 'E' : k === 'late' ? 'L' : 'M / no type'} duties left on ${g.short[k]})</small>` : '';
+  return `<div class="wsWrap"><table class="wsT"><thead><tr><th>Day</th><th>Weeks</th><th>E</th><th>M</th><th>L</th><th>S</th><th>No type</th></tr></thead><tbody>${g.days.map(x => `<tr><th scope="row">${x.dn}</th><td>${x.slots}</td><td>${x.c.E}</td><td>${x.c.M}</td><td>${x.c.L}</td><td>${x.c.S}</td><td>${x.c['']}</td></tr>`).join('')}</tbody></table></div></div>
+    <p class="note">Most weeks the duties allow, out of ${g.N}: <b>Early ${g.s.early}</b>${lim('early')} · <b>Midday ${g.s.mid}</b>${lim('mid')} · <b>Late ${g.s.late}</b>${lim('late')}. A week can only be Early if every day it works has an E duty for it, so a day with few E duties (often Sunday) limits the Early weeks to lines with that day as a rest day. Other weeks become Any. Splits (S) go only in Early, Midday, Mix and Any weeks.</p>
+    <div class="dGrid wsIn"><label for="ws_early">Early weeks</label><input type="number" min="0" max="${g.s.early}" id="ws_early" value="${g.s.early}">
+      <label for="ws_mid">Midday weeks</label><input type="number" min="0" max="${g.s.mid}" id="ws_mid" value="${g.s.mid}">
+      <label for="ws_late">Late weeks</label><input type="number" min="0" max="${g.s.late}" id="ws_late" value="${g.s.late}"></div>`; }
 function initRota() {
   $('rjList').addEventListener('click', e => { const b = e.target.closest('[data-rj]'); if (!b) return; pickJob(b.dataset.rj); saveRota(); rotaMsg(''); renderRota(); });
   $('rjNew').onclick = () => { newRotaJob('New rota job · ' + new Date().toLocaleDateString('en-GB'), null); saveRota(); renderRota(); rotaMsg('New empty rota job. Open a rota (.RIF) to fill it.'); };
@@ -2518,17 +2600,20 @@ function initRota() {
   $('flSP').onclick = () => { const r = curRota(); pushUndo('fill empty days with ' + SPc()); let k = 0; r.lines.forEach(l => l.cells.forEach(c => { if (!c.v) { c.v = SPc(); k++; } }));
     saveRota(); renderRota(); closeDialog('fillDlg'); rotaMsg(`${$('fl_msg').textContent} Entered ${SPc()} on ${k} empty day${k === 1 ? '' : 's'}.`); };
   $('flLeave').onclick = () => { closeDialog('fillDlg'); rotaMsg($('fl_msg').textContent + ' Empty days were left empty.'); };
-  $('rbBal').onclick = () => { $('bal_wbs').checked = rotaWbs; $('bal_only').value = ''; $('bal_msg').textContent = ''; $('bal_rota').textContent = rotaSel; showDialog('balDlg'); };
+  $('rbBal').onclick = () => { $('bal_wbs').checked = rotaWbs; $('bal_only').value = ''; $('bal_skip').value = ''; $('bal_msg').textContent = ''; $('bal_rota').textContent = rotaSel; showDialog('balDlg'); };
   $('balRun').onclick = () => { const src = rotaSrc(); const r = curRota(); if (!src.ok || !r) return; rotaWbs = $('bal_wbs').checked; const before = rdTimes(r, src); const muBefore = makeUpOf(r) || { now: 0 };
     const snap = { label: 'balance weeks ' + r.code, snap: snapshot() }; let only = null; const spec = $('bal_only').value.trim();
-    if (spec) { only = new Set(linesOfSpec(r, spec)); if (only.size < 2) { $('bal_msg').textContent = 'Choose at least two lines of this rota, for example 1-10, 15, 22.'; return; } }
+    const skipSpec = $('bal_skip').value.trim(); const skip = skipSpec ? new Set(linesOfSpec(r, skipSpec)) : null;
+    if (skipSpec && !skip.size) { $('bal_msg').textContent = 'No line of this rota matches “Don’t balance these lines”. Write line numbers, for example 3, 7, 40-45.'; return; }
+    if (spec || skip) { only = new Set(spec ? linesOfSpec(r, spec) : r.lines.map((_, i) => i)); if (skip) skip.forEach(i => only.delete(i));
+      if (only.size < 2) { $('bal_msg').textContent = 'At least two lines must be left to balance.'; return; } }
     const out = autoFill(r, src, { useFree: false, wbs: rotaWbs, only }); const after = rdTimes(r, src);
     const wbsTxt = rotaWbs && !out.unchanged && after.off != null ? ` West Brom Special: before rest days duties now finish at ${clock(after.off)} on average (was ${clock(before.off)}), after rest days they start at ${clock(after.on)} (was ${clock(before.on)}).` : '';
     closeDialog('balDlg');
     if (out.unchanged) rotaMsg(`${r.code} is already as even as Balance Weeks can make it, so nothing was changed.`);
     else { undoStack.push(snap); updateUndo(); saveRota(); rotaA = analyseRota(src); const mu = makeUpOf(r);
       const muTxt = mu ? ` Make up time is now ${fmt(mu.now)} (was ${fmt(muBefore.now)}); the lowest possible with these duties is ${fmt(mu.best)}.` : '';
-      rotaMsg(`Balanced ${only ? only.size + ' lines of ' : ''}${r.code}.` + muTxt + wbsTxt + (out.spare ? ` ${out.spare} day${out.spare === 1 ? ' has' : 's have'} no duty and stayed empty: use Auto-fill or enter ${SPc()}.` : '') + (out.left ? ` ${out.left} duties could not be placed.` : '')); }
+      rotaMsg(`Balanced ${only ? only.size + ' lines of ' : ''}${r.code}${skip ? ` (lines ${skipSpec} not changed)` : ''}.` + muTxt + wbsTxt + (out.spare ? ` ${out.spare} day${out.spare === 1 ? ' has' : 's have'} no duty and stayed empty: use Auto-fill or enter ${SPc()}.` : '') + (out.left ? ` ${out.left} dut${out.left === 1 ? 'y was' : 'ies were'} left off the rota because no week of the right type had room (the duty type given to each duty decides which weeks it can go in): ${out.leftList.slice(0, 12).map(p => `${p.d} ${p.v} (${p.t || '–'})`).join(', ')}${out.left > 12 ? ' …' : ''}. Change their duty type or the week types, or put them in by hand.` : '')); }
     renderRota(); };
   $('rbStats').onclick = () => { $('statDlg').classList.remove('xwide'); $('statBody').innerHTML = rotaStats(); $('statTitle').textContent = 'Rota statistics: ' + rotaSel; showDialog('statDlg'); };
   $('rbGStats').onclick = () => { $('statDlg').classList.add('xwide'); $('statBody').innerHTML = globalStats(); $('statTitle').textContent = 'Global rota statistics'; showDialog('statDlg'); };
@@ -2541,7 +2626,12 @@ function initRota() {
   $('rotaSubBtn').onclick = () => { fillSubDialog(); showDialog('subDlg'); };
   $('rotaMainBtn').onclick = () => { fillMainDialog(); showDialog('mainDlg'); };
   $('rbWeeks').onclick = () => { const r = curRota(); if (!r) return; const first = r.lines[0] ? parseInt(r.lines[0].pre[5], 10) : 1;
-    if (!$('wp_start').value) $('wp_start').value = first; $('wp_rota').textContent = r.code; $('wp_msg').textContent = ''; wpPreview(); showDialog('wpDlg'); };
+    if (!$('wp_start').value) $('wp_start').value = first; $('wp_rota').textContent = r.code; $('wp_msg').textContent = ''; $('ws_box').innerHTML = wtSuggestHtml(r); $('ws_msg').textContent = ''; wpPreview(); showDialog('wpDlg'); };
+  $('wsApply').onclick = () => { const r = curRota(); if (!r || !$('ws_early')) return; const v = id => Math.max(0, parseInt($(id).value, 10) || 0);
+    const cnt = { early: v('ws_early'), mid: v('ws_mid'), late: v('ws_late') }; if (cnt.early + cnt.mid + cnt.late > r.lines.length) { $('ws_msg').textContent = `That is more than the ${r.lines.length} lines of ${r.code}.`; return; }
+    const g = window._ws; const over = Object.keys(cnt).filter(k => cnt[k] > g.s[k]); if (over.length) { $('ws_msg').textContent = `The duties allow at most ${over.map(k => `${g.s[k]} ${WT_SHORT[k]}`).join(' and ')} weeks.`; return; }
+    pushUndo('suggested week types in ' + r.code); r.lines.forEach(l => l.wt = 'any'); Object.keys(cnt).forEach(k => g.pick[k].slice(0, cnt[k]).forEach(li => r.lines[li].wt = k)); saveRota(); renderRota();
+    $('ws_msg').textContent = `Set ${cnt.early} Early, ${cnt.mid} Midday and ${cnt.late} Late weeks, on lines whose working days have duties of that type; the other ${r.lines.length - cnt.early - cnt.mid - cnt.late} are Any. Use Balance weeks next.`; };
   ['wp_mode', 'wp_start', 'wp_every', 'wp_upto', 'wp_list'].forEach(id => $(id).addEventListener('input', wpPreview));
   $('wp_mode').addEventListener('change', wpPreview);
   $('wpApply').onclick = () => { const r = curRota(); const idx = patternLines(r); if (!idx.length) return; const v = $('wp_type').value;
