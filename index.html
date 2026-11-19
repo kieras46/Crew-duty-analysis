@@ -581,6 +581,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
     <table class="garList"><tbody id="garBody"></tbody></table>
     <div class="dGrid"><label for="gar_new">New garage</label><input type="text" id="gar_new" placeholder="e.g. Walsall">
       <label for="gar_copy">Start with</label><select id="gar_copy"><option value="">Default rules, no rotas, no drivers</option></select></div>
+    <label class="opRow" style="margin-top:8px"><input type="checkbox" id="gar_autoWt"><span><b>Walsall rule for week types</b><small>When a rota is opened in this garage (now: <b id="gar_cur"></b>), each week gets its type from its duties: only E → Early, only M → Midday, only L → Late, mixed → Mix. Change any line afterwards.</small></span></label>
     <p class="note" id="garMsg" aria-live="polite"></p>
     <div class="dBtns"><button type="button" class="btn primary" id="garAdd">Add garage</button><button type="button" class="btn" data-close="garDlg">Close</button></div>
   </dialog>
@@ -773,6 +774,9 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
       <div id="ws_box"></div>
       <p class="status" id="ws_msg" aria-live="polite"></p>
       <div class="dBtns" style="justify-content:flex-start"><button type="button" class="btn primary" id="wsApply">Use these numbers</button></div>
+      <h4 class="opH">From the duties on each line (Walsall rule)</h4>
+      <p class="note" style="margin-top:0">Only E → Early · M (with or without untyped duties) → Midday · only untyped duties → Any · only L → Late · L and M → L/M · E with M or no type → Mix · others → Any. Splits fit Early, Midday and Mix; Sunday duties other than L and SP/RD do not count. You can change any line afterwards.</p>
+      <div class="dBtns" style="justify-content:flex-start"><button type="button" class="btn" id="wtDetect">Set this sub rota</button><button type="button" class="btn" id="wtDetectAll">Set all sub rotas</button></div>
       <h4 class="opH">Set lines by hand</h4>
       <p class="note">Give a week type to many lines at once, for example lines 2, 7, 12, 17 … as L/M. Line numbers are the numbers shown in the grid.</p>
       <div class="dGrid">
@@ -2546,6 +2550,25 @@ function specialRun(src, days, pre, codes) {
     stats.same += ps.same; stats.similar += ps.similar; stats.sp += ps.sp; stats.perDay[d] = ps; });
   return stats;
 }
+// ---- Walsall rule: week types from the duties already on each line ----
+// only E → Early · M (with or without untyped duties) → Midday · only untyped → Any · only L → Late · L and M → L/M · E with M / no type → Mix · anything else → Any.
+// Splits (S) fit Early, Midday and Mix; Sunday duties other than L do not count (they fit any week). SP and RD do not count.
+function wtFromDuties(r, src) { const n = { early: 0, mid: 0, late: 0, lm: 0, mix: 0, any: 0 };
+  r.lines.forEach(l => { const ts = new Set(); let s = false;
+    l.cells.forEach((c, di) => { const du = src.look(DAYS[di][0], c.v); if (!du) return; const t = baseType(du); if (di === 0 && t !== 'L') return; if (t === 'S') s = true; else ts.add(t || '-'); });
+    const only = (...ks) => [...ts].every(k => ks.includes(k));
+    let wt = 'any';
+    if (!ts.size) wt = s ? 'mix' : 'any';
+    else if (only('-')) wt = s ? 'mix' : 'any'; // no duty types at all (e.g. 4 Day rotas): Any
+    else if (only('E')) wt = 'early'; else if (only('M', '-')) wt = 'mid'; else if (only('L')) wt = s ? 'any' : 'late';
+    else if (only('L', 'M')) wt = s ? 'any' : 'lm'; else if (only('E', 'M', '-')) wt = 'mix';
+    l.wt = wt; n[wt]++; });
+  return n; }
+const wtCountTxt = n => Object.entries(n).filter(([, v]) => v).map(([k, v]) => `${v} ${WT_SHORT[k]}`).join(', ');
+// garages with the Walsall rule set the week types when a rota is opened (only sub rotas with no week types set yet)
+function autoWtOnOpen() { const p = typeof curProfile === 'function' ? curProfile() : null; if (!p || !p.autoWt || !rotaFile) return ''; const src = rotaSrc(); if (!src.ok) return '';
+  const done = []; rotaFile.rotas.forEach(r => { if (r.lines.some(l => l.wt && l.wt !== 'any')) return; const n = wtFromDuties(r, src); done.push(`${r.code}: ${wtCountTxt(n)}`); });
+  if (done.length) saveRota(); return done.length ? ` Week types set from the duties (Walsall rule) — ${done.slice(0, 6).join('; ')}${done.length > 6 ? ' …' : ''}. Change any line with its week type box.` : ''; }
 function initRota() {
   $('rjList').addEventListener('click', e => { const b = e.target.closest('[data-rj]'); if (!b) return; pickJob(b.dataset.rj); saveRota(); rotaMsg(''); renderRota(); });
   $('rjNew').onclick = () => { newRotaJob('New rota job · ' + new Date().toLocaleDateString('en-GB'), null); saveRota(); renderRota(); rotaMsg('New empty rota job. Open a rota (.RIF) to fill it.'); };
@@ -2612,7 +2635,8 @@ function initRota() {
         if (j && !j.file && !done.length) { j.file = parsed; j.name = f.name.replace(/\.ord$/i, '') + ' · ' + new Date().toLocaleDateString('en-GB'); pickJob(j.id); } else newRotaJob(f.name.replace(/\.ord$/i, '') + ' · ' + new Date().toLocaleDateString('en-GB'), parsed);
         rotaSel = parsed.rotas[0].code; saveRota(); done.push(`${f.name} (${parsed.rotas.length} sub rotas, ${parsed.rotas.reduce((t, r) => t + r.lines.length, 0)} lines, duties for ${DAYS.filter(([d]) => parsed.dif[d]).length} days${parsed.variants ? `, ${parsed.variants} school-variation duty versions not used by the rota left out` : ''}${pcNote})`);
       } catch (err) { bad.push(f.name); } }
-    rotaMsg((done.length ? `New rota job from OmniROTA: ${done.join('; ')}.` : '') + (bad.length ? ` Could not read ${bad.join(', ')}.` : ''), !done.length); renderRota(); };
+    const wtTxt = done.length ? autoWtOnOpen() : '';
+    rotaMsg((done.length ? `New rota job from OmniROTA: ${done.join('; ')}.` : '') + wtTxt + (bad.length ? ` Could not read ${bad.join(', ')}.` : ''), !done.length); renderRota(); };
   $('ordDir').addEventListener('change', e => { const fs = e.target.files; openOrd(fs); e.target.value = ''; });
   $('ordLoad').onclick = () => $('ordDir').click();
   $('rotaIn').addEventListener('change', async e => { const all = [...e.target.files]; const f = all[0]; e.target.value = ''; if (!f) return;
@@ -2637,6 +2661,7 @@ function initRota() {
           if (cur[i].pay !== nu.pay) { if (!seen.has(nu.no) && ex.length < 3) ex.push(`${nu.no} ${fmt(cur[i].pay)} → ${fmt(nu.pay)}`); const o = Object.assign({}, cur[i]); if (o.pay0 == null) o.pay0 = o.pay; o.pay = nu.pay; o.exact = 1; cur[i] = o; fixed++; }
           else if (cur[i].pay0 != null && !cur[i].exact) cur[i] = Object.assign({}, cur[i], { exact: 1 }); seen.add(nu.no); }); });
     } else rotaFile.dif = Object.assign({}, rotaFile.dif || {}, got);
+    const wtAfter = autoWtOnOpen(); if (wtAfter) setTimeout(() => { const st = $('rotaStatus'); if (st) st.textContent += wtAfter; }, 0);
     if (fs.every(f => !/\.dcl$/i.test(f.name))) rotaFile.difOut = Object.assign({ name: fs[0].name }, difStrip(raw.join('\r\n')));
     saveRota();
     const days = DAYS.filter(([d]) => got[d]).map(([d, s]) => `${s} (${got[d].length})`).join(', ');
@@ -2787,6 +2812,11 @@ function initRota() {
   $('rotaMainBtn').onclick = () => { fillMainDialog(); showDialog('mainDlg'); };
   $('rbWeeks').onclick = () => { const r = curRota(); if (!r) return; const first = r.lines[0] ? parseInt(r.lines[0].pre[5], 10) : 1;
     if (!$('wp_start').value) $('wp_start').value = first; $('wp_rota').textContent = r.code; $('wp_msg').textContent = ''; $('ws_box').innerHTML = wtSuggestHtml(r); $('ws_msg').textContent = ''; wpPreview(); showDialog('wpDlg'); };
+  $('wtDetect').onclick = () => { const r = curRota(); if (!r) return; const src = rotaSrc(); if (!src.ok) { $('ws_msg').textContent = 'Load the duties first.'; return; }
+    pushUndo('week types from duties in ' + r.code); const n = wtFromDuties(r, src); saveRota(); renderRota(); $('ws_msg').textContent = `Week types of ${r.code} set from the duties on each line: ${wtCountTxt(n)}.`; };
+  $('wtDetectAll').onclick = () => { if (!rotaFile) return; const src = rotaSrc(); if (!src.ok) { $('ws_msg').textContent = 'Load the duties first.'; return; }
+    pushUndo('week types from duties, all sub rotas'); const t = {}; rotaFile.rotas.forEach(r => { const n = wtFromDuties(r, src); Object.keys(n).forEach(k => t[k] = (t[k] || 0) + n[k]); }); saveRota(); renderRota();
+    $('ws_msg').textContent = `Week types of all ${rotaFile.rotas.length} sub rotas set from their duties: ${wtCountTxt(t)}.`; };
   $('wsApply').onclick = () => { const r = curRota(); if (!r || !$('ws_early')) return; const v = id => Math.max(0, parseInt($(id).value, 10) || 0);
     const cnt = { early: v('ws_early'), mid: v('ws_mid'), late: v('ws_late') }; if (cnt.early + cnt.mid + cnt.late > r.lines.length) { $('ws_msg').textContent = `That is more than the ${r.lines.length} lines of ${r.code}.`; return; }
     const g = window._ws; const over = Object.keys(cnt).filter(k => cnt[k] > g.s[k]); if (over.length) { $('ws_msg').textContent = `The duties allow at most ${over.map(k => `${g.s[k]} ${WT_SHORT[k]}`).join(' and ')} weeks.`; return; }
@@ -2887,10 +2917,12 @@ function initProfiles() {
     profSel = 'g1';
   }
   if (!curProfile()) profSel = profiles[0].id;
+  profiles.forEach(x => { if (x.autoWt == null) x.autoWt = /walsall/i.test(x.name); }); // Walsall rule for week types: on by default for Walsall
   loadProfile(curProfile()); storeProfile();
   if (garRotaJobs().every(j => j.id !== rotaJobId)) pickJob(null);
   renderGarages();
   $('garSel').onchange = e => switchGarage(e.target.value);
+  $('gar_autoWt').onchange = e => { const p = curProfile(); if (!p) return; p.autoWt = e.target.checked; storeProfile(); };
   $('garBtn').onclick = () => { $('garMsg').textContent = ''; $('gar_new').value = ''; renderGarDlg(); showDialog('garDlg'); };
   $('garAdd').onclick = () => {
     const name = $('gar_new').value.trim(); const m = $('garMsg');
@@ -2898,7 +2930,7 @@ function initProfiles() {
     if (profiles.some(p => p.name.toLowerCase() === name.toLowerCase())) { m.textContent = `${name} already exists.`; return; }
     storeProfile();
     const src = profiles.find(p => p.id === $('gar_copy').value);
-    const p = { id: 'g' + Date.now().toString(36), name, subRanges: {}, drivers: [] };
+    const p = { id: 'g' + Date.now().toString(36), name, subRanges: {}, drivers: [], autoWt: /walsall/i.test(name) };
     if (src) { // copy the duty rules and the assignment settings, not the drivers or 4 Day numbers
       p.rules = clone(src.rules || {}); p.rules.fourDayNums = { mt: '', fri: '', sat: '', sun: '' };
       p.asg = clone(src.asg || {}); p.asg.ranges = {}; p.asg.friFromMT = []; p.asg.boards = '';
@@ -2925,7 +2957,7 @@ function renderGarages() {
   $('garSel').innerHTML = profiles.map(p => `<option value="${esc(p.id)}" ${p.id === profSel ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
   const p = curProfile(); $('fdGar').textContent = p ? '· ' + p.name : '';
 }
-function renderGarDlg() {
+function renderGarDlg() { const cp = curProfile(); $('gar_autoWt').checked = !!(cp && cp.autoWt); $('gar_cur').textContent = cp ? cp.name : '';
   $('garBody').innerHTML = profiles.map(p => { const nJ = jobs.filter(j => garOf(j) === p.id).length, nR = rotaJobs.filter(j => (j.garage || 'g1') === p.id).length;
     return `<tr><td><input type="text" data-gname="${esc(p.id)}" value="${esc(p.name)}" aria-label="Garage name"></td><td class="note">${nJ} job${nJ === 1 ? '' : 's'} · ${nR} rota job${nR === 1 ? '' : 's'} · ${(p.drivers || []).length} drivers${p.id === profSel ? ' · <b>in use</b>' : ''}</td>
       <td><button type="button" class="btn danger" data-gdel="${esc(p.id)}">Delete</button></td></tr>`; }).join('');
