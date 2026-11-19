@@ -180,6 +180,9 @@ td.tot small { font-size: 12px; font-weight: 600 } .okc { color: var(--ok) } .ov
 .wsT th, .wsT td { padding: 3px 6px; border-bottom: 1px solid var(--line); text-align: right }
 .wsT th:first-child { text-align: left }
 .wsIn input { width: 80px }
+.spdDays { display: flex; flex-wrap: wrap; gap: 6px 14px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 8px 0 0 }
+.spdDays legend { font-size: 12px; color: var(--muted); padding: 0 4px }
+.spdDays label { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600 }
 .opH { margin: 12px 0 6px; font-size: 13px }
 .opList { display: grid; gap: 6px; max-height: 40vh; overflow: auto }
 .opRow { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 13px }
@@ -605,8 +608,8 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
   <div id="rotaView" class="view" hidden>
     <input type="file" id="rotaIn" accept=".rif,.RIF,.ord,.ORD,.dcl,.DCL,.orl,.ORL,.txt,text/plain" multiple hidden>
     <input type="file" id="ordDir" webkitdirectory multiple hidden>
-    <input type="file" id="difIn" accept=".dif,.DIF,.txt,text/plain" multiple hidden>
-    <div class="rjBar" title="Opening an OmniROTA folder or a rota file makes a new job. To try new duties on the same rota: Copy job, rename it, then Load duties (.DIF).">
+    <input type="file" id="difIn" accept=".dif,.DIF,.dcl,.DCL,.txt,text/plain" multiple hidden>
+    <div class="rjBar" title="Opening an OmniROTA folder or a rota file makes a new job. To try new duties on the same rota: Copy job, rename it, then Load duties (.DIF or .DCL).">
       <b class="rjLbl">Rota jobs</b>
       <div class="jobs rjChips" id="rjList"></div>
       <input type="text" id="rjName" aria-label="Rota job name" hidden>
@@ -616,7 +619,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
       <div class="omniFiles">
         <button type="button" class="btn primary" id="ordLoad">Open OmniROTA folder</button>
         <button type="button" class="btn" id="rotaLoad">Open rota file (.RIF / .ORD)</button>
-        <button type="button" class="btn" id="difLoad">Load duties (.DIF)</button>
+        <button type="button" class="btn" id="difLoad">Load duties (.DIF / .DCL)</button>
         <button type="button" class="btn" id="rotaNewBtn">New sub rota</button>
         <button type="button" class="btn" id="rotaMainBtn" disabled>Main rota settings</button>
         <button type="button" class="btn" id="ordDl" disabled>Save for OmniROTA (.ORD)</button>
@@ -666,7 +669,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
         <fieldset><legend>Rota lines</legend>
           <button type="button" id="rbIns">Insert</button><button type="button" id="rbDel">Remove</button><button type="button" id="rbSwap">Swap days</button><button type="button" id="rbWeeks">Week types…</button></fieldset>
         <fieldset><legend>Tools</legend>
-          <button type="button" id="rbFill">Auto-fill</button><button type="button" id="rbBal">Balance weeks</button><button type="button" id="rbStats">Rota statistics</button><button type="button" id="rbGStats">Global statistics</button></fieldset>
+          <button type="button" id="rbFill">Auto-fill</button><button type="button" id="rbBal">Balance weeks</button><button type="button" id="rbStats">Rota statistics</button><button type="button" id="rbGStats">Global statistics</button><button type="button" id="rbBhm" title="Bank Holiday Monday: Monday runs the Sunday duties">BHM</button><button type="button" id="rbSpecial" title="Christmas Eve, days between Christmas and New Year: duties change to their special version (2001 → E2001)">Special days</button></fieldset>
         <fieldset><legend>View</legend>
           <label class="rowsLbl" for="rotaRows">Lines on screen</label><select id="rotaRows"><option value="0">Normal</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option></select>
           <span class="tipHint" tabindex="0" title="Click a cell, then click a duty in the list to put it there. Click a duty's type letter in the list to change it (E, M, L, S). Set each line's week type under its number. Tag &amp; type changes many duties at once. Double-click or Enter to type. Keys: arrows move, R toggles RD, S enters SP, Delete clears, Ctrl+Z undoes.">Tips ⓘ</span></fieldset>
@@ -794,6 +797,29 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
       <h4 class="opH">Rota (.ORD)</h4><div id="op_ords" class="opList"></div>
       <div id="op_srcBox"><h4 class="opH">Duty pieces for the duty rule checks</h4><div id="op_srcs" class="opList"></div></div>
       <div class="dBtns"><button type="button" class="btn primary" id="opOk">Open</button><button type="button" class="btn" data-close="openDlg">Cancel</button></div>
+    </dialog>
+    <dialog id="spdDlg" class="dlg wide" aria-labelledby="spdT"><h3 id="spdT">Special days</h3>
+      <p class="note">On the days you choose, every duty on the rota changes to its special version with the letter in front: 2001 → E2001. If that duty is missing, already used or breaks the minimum rest, the most similar free special duty of the same sub rota’s subset is used (closest sign-on and sign-off); if none fits, SP. RD and SP stay. Load the special duties first with <b>Load duties (.DIF / .DCL)</b>. Tip: use Copy job first to keep the normal rota.</p>
+      <fieldset class="spdDays"><legend>Days</legend>
+        <label><input type="checkbox" name="spd_day" value="sun"> Sun</label><label><input type="checkbox" name="spd_day" value="mon"> Mon</label><label><input type="checkbox" name="spd_day" value="tue"> Tue</label><label><input type="checkbox" name="spd_day" value="wed"> Wed</label><label><input type="checkbox" name="spd_day" value="thu"> Thu</label><label><input type="checkbox" name="spd_day" value="fri"> Fri</label><label><input type="checkbox" name="spd_day" value="sat"> Sat</label>
+      </fieldset>
+      <div class="dGrid" style="margin-top:10px"><label for="spd_pre">Letter of the special duties</label><input type="text" id="spd_pre" maxlength="3" placeholder="E" style="width:70px;text-transform:uppercase"></div>
+      <p class="note" id="spd_found" style="margin:6px 0"></p>
+      <div class="opList">
+        <label class="opRow"><input type="radio" name="spd_scope" value="all" checked><span>All sub rotas</span></label>
+        <label class="opRow"><input type="radio" name="spd_scope" value="one"><span>Only <b id="spd_rota"></b></span></label>
+      </div>
+      <p class="status" id="spd_msg" aria-live="polite"></p>
+      <div class="dBtns"><button type="button" class="btn primary" id="spdRun">Change duties</button><button type="button" class="btn" data-close="spdDlg">Cancel</button></div>
+    </dialog>
+    <dialog id="bhmDlg" class="dlg wide" aria-labelledby="bhmT"><h3 id="bhmT">Bank Holiday Monday (BHM)</h3>
+      <p class="note">On a Bank Holiday Monday the Sunday duties are worked on the Monday. This makes a copy of <b id="bhm_name"></b> as a new rota job in which every sub rota's Monday duties are taken off and replaced by Sunday duties. The normal rota job stays as it is. Monday RD stays RD, Monday SP stays SP, each Sunday duty is used once and the minimum rest of each sub rota is kept.</p>
+      <div class="opList">
+        <label class="opRow"><input type="radio" name="bhm_rule" value="walsall"><span><b>Walsall rule</b><small>A week with a Sunday duty works the same Sunday duty on Monday, or a similar one if the rest does not allow it. A week with Sunday RD gets SP on Monday.</small></span></label>
+        <label class="opRow"><input type="radio" name="bhm_rule" value="westbrom"><span><b>West Bromwich rule</b><small>As Walsall, and the Sunday duties left over go to weeks with Sunday RD that work on Tuesday (closest to their own Monday sign-on; first those of the same sub rota, then other Sunday duties in its subset: Soho duties on SOHO, Oldbury duties on OLD). A week with Tuesday RD, or when the Sunday duties run out, gets SP on Monday.</small></span></label>
+      </div>
+      <p class="status" id="bhm_msg" aria-live="polite"></p>
+      <div class="dBtns"><button type="button" class="btn primary" id="bhmRun">Make BHM rota</button><button type="button" class="btn" data-close="bhmDlg">Cancel</button></div>
     </dialog>
     <dialog id="statDlg" class="dlg wide" aria-labelledby="statTitle"><h3 id="statTitle">Rota statistics</h3><div id="statBody"></div>
       <div class="dBtns"><button type="button" class="btn" data-close="statDlg">Close</button></div></dialog>
@@ -1678,7 +1704,9 @@ const curRota = () => rotaFile && rotaFile.rotas.find(r => r.code === rotaSel);
 const dayGroup = d => d === 'sun' ? 'sun' : d === 'sat' ? 'sat' : d === 'fri' ? 'fri' : 'mt';
 const rgOf = code => (rotaFile && rotaFile.ranges && rotaFile.ranges[code]) || null;
 const hasRanges = code => { const g = rgOf(code); return !!g && ['mt', 'fri', 'sat', 'sun'].some(k => String(g[k] || '').trim()); };
-const inRc = (code, d, num) => { const g = rgOf(code); return !!g && inRanges(num, g[dayGroup(d)]); };
+// in a Bank Holiday Monday copy (f.bhm) Monday runs Sunday duties
+const dayGroupF = d => d === 'mon' && rotaFile && rotaFile.bhm ? 'sun' : dayGroup(d);
+const inRc = (code, d, num) => { const g = rgOf(code); return !!g && inRanges(num, g[dayGroupF(d)]); };
 const rcOf = (d, num) => { const r = rotaFile && rotaFile.rotas.find(x => inRc(x.code, d, num)); return r ? r.code : ''; };
 
 function parseRif(text, name) {
@@ -1791,6 +1819,26 @@ function parseDif(text) {
   close();
   return { days: out, bad };
 }
+// .DCL duty files as a duty list per day: the days code of each duty ($ Sun, M T W H, F Fri, S Sat) says which days it runs,
+// so special duties (e.g. E2001 on Christmas Eve only, X… between Christmas and New Year) go on their own days. Version 1 (holidays) is left out.
+function parseDclDays(text) {
+  const t4 = x => { x = String(x || '').trim(); return /^\d{4}$/.test(x) ? +x.slice(0, 2) * 60 + +x.slice(2) : null; };
+  const DCH2 = { $: 'sun', M: 'mon', T: 'tue', W: 'wed', H: 'thu', F: 'fri', S: 'sat' };
+  const g = new Map(), out = {}, bad = [];
+  String(text || '').replace(/\r/g, '').split('\n').filter(l => l.trim()).forEach(l => { const c = csvCells(l);
+    if (c.length < 14 || !/^[A-Za-z]?\d+[A-Za-z]?$/.test(c[0].trim())) return; if ((parseInt(c[2], 10) || 0) === 1) return;
+    const k = c[0].trim().toUpperCase() + '|' + c[1].trim(); (g.get(k) || g.set(k, []).get(k)).push(c); });
+  g.forEach((rows, k) => { const [no, code] = k.split('|'); const offI = rows[0].length >= 15 ? 11 : 10;
+    const P = rows.map(c => ({ on: t4(c[3]), dep: t4(c[5]), arr: t4(c[8]), off: t4(c[offI]) }));
+    const vm = String(rows[0][offI + 2] || '').trim().match(/^(\d+):(\d{2})$/); const days = code.split('').map(ch => DCH2[ch]).filter(Boolean);
+    if (!vm || !days.length) { bad.push(no); return; }
+    const s = P[0].on != null ? P[0].on : P[0].dep, last = P[P.length - 1]; let e = last.off != null ? last.off : last.arr; if (e != null && s != null && e < s) e += 1440;
+    const rel = []; for (let i = 1; i < P.length; i++) { let a = P[i - 1].off != null ? P[i - 1].off : P[i - 1].arr, b = P[i].on != null ? P[i].on : P[i].dep; if (a != null && b != null) { if (b < a) b += 1440; rel.push(b - a); } }
+    const mr = rel.length ? Math.max(...rel) : null;
+    const du = { no, num: parseInt(no.replace(/^\D+/, ''), 10), pay: +vm[1] * 60 + +vm[2], s, e, maxRelief: mr, routes: [...new Set(rows.map(c => c[7].replace(/[()]/g, '').trim()).filter(Boolean))], valid: true, cls: mr != null && mr >= 120 ? 'split' : '', code: '', src: 'DCL', pc: P.map(p => [p.dep, p.arr, p.on, p.off]) };
+    days.forEach(d => (out[d] = out[d] || []).push(du)); });
+  return { days: out, bad };
+}
 // where duties come from: the .DIF duty file for days it covers, otherwise the PDFs of the selected job
 function rotaSrc() {
   const info = rotaJobInfo(); const dif = (rotaFile && rotaFile.dif) || {};
@@ -1898,19 +1946,21 @@ function autoFill(r, src, opts) {
   const look = src.look; const cfg = r.cfg; const L = r.lines; const n = L.length;
   const T = (cfg.min + cfg.max) / 2;
   const inSel = li => !opts.only || opts.only.has(li);
+  // lockDays: days that stay as they are (Sunday and Monday in a Bank Holiday Monday copy)
+  const inSelD = (li, di) => inSel(li) && !(opts.lockDays && opts.lockDays.has(di));
   const pool = {}; const used = {}; DAYS.forEach(([d]) => used[d] = new Set());
   rotaFile.rotas.forEach(o => { if (o === r) return; o.lines.forEach(l => l.cells.forEach((c, di) => { if (isDutyVal(c.v)) used[DAYS[di][0]].add(c.v); })); });
   const name = hasRanges(r.code) ? r.code : null;
   DAYS.forEach(([d], di) => { const set = new Map();
-    if (!opts.fresh) L.forEach((l, li) => { if (!inSel(li)) return; const v = l.cells[di].v; const du = look(d, v); if (du) set.set(v, du); });
+    if (!opts.fresh) L.forEach((l, li) => { if (!inSelD(li, di)) return; const v = l.cells[di].v; const du = look(d, v); if (du) set.set(v, du); });
     if ((opts.useFree || opts.fresh) && name) src.day(d, name).forEach(du => { const v = du.no; if (!used[d].has(v) && !set.has(v)) set.set(v, du); });
     pool[d] = [...set.entries()].map(([v, du]) => ({ v, du }));
     // SP days of ordinary weeks can move between lines too (full SP weeks stay as they are)
-    if (!opts.fresh) L.forEach((l, li) => { if (inSel(li) && isSP(l.cells[di].v) && !fullSP(l)) pool[d].push({ v: SPc(), du: { pay: cfg.sp, s: null, e: null, sp: true } }); }); });
-  const work = L.map((l, li) => { const full = fullSP(l); return l.cells.map(c => inSel(li) && (!isRD(c.v) && !isSP(c.v) || (isSP(c.v) && (opts.fresh || !full)))); });
+    if (!opts.fresh) L.forEach((l, li) => { if (inSelD(li, di) && isSP(l.cells[di].v) && !fullSP(l)) pool[d].push({ v: SPc(), du: { pay: cfg.sp, s: null, e: null, sp: true } }); }); });
+  const work = L.map((l, li) => { const full = fullSP(l); return l.cells.map((c, di) => inSelD(li, di) && (!isRD(c.v) && !isSP(c.v) || (isSP(c.v) && (opts.fresh || !full)))); });
   const pick = L.map(() => Array(7).fill(null));
   // weeks that are not selected keep their duties; they still count for rest and the split rule
-  if (opts.only) L.forEach((l, li) => { if (!inSel(li)) l.cells.forEach((c, di) => { const du = look(DAYS[di][0], c.v); if (du) pick[li][di] = { v: c.v, du }; }); });
+  if (opts.only || opts.lockDays) L.forEach((l, li) => l.cells.forEach((c, di) => { if (inSelD(li, di)) return; const du = look(DAYS[di][0], c.v); if (du) pick[li][di] = { v: c.v, du }; }));
   const fixedPay = L.map((l, li) => l.cells.reduce((s, c, di) => s + (isSP(c.v) && !work[li][di] ? cfg.sp : isRD(c.v) && rotaFile.set.includeRd ? cfg.rd : 0), 0));
   const nWork = work.map(w => w.filter(Boolean).length);
   const duOf = (li, di) => li == null ? null : pick[li][di] ? pick[li][di].du : null;
@@ -2073,7 +2123,7 @@ function dutyRuleIssues(du, d) {
   const bus = P.map(p => p[0] != null && p[1] != null ? (p[1] - p[0] + 1440) % 1440 : 0);
   const rel = []; for (let i = 1; i < P.length; i++) { const a = P[i - 1][3] != null ? P[i - 1][3] : P[i - 1][1], b = P[i][2] != null ? P[i][2] : P[i][0]; if (a != null && b != null) rel.push((b - a + 1440) % 1440); }
   const pseudo = { duty: du.no, reliefs: rel, totals: { compass: du.e - du.s }, pieces: P.map((p, k) => ({ onBus: bus[k], relief: k ? rel[k - 1] : null })) };
-  return checkDuty(pseudo, d === 'sun', rules).issues;
+  const sun = d === 'sun' || (d === 'mon' && rotaFile && rotaFile.bhm); return checkDuty(pseudo, sun, rules, null, sun ? 'sun' : dayGroup(d)).issues;
 }
 const RTA_REST = 660; // 11:00 between finishing one day and starting the next
 function rotaChecks() {
@@ -2342,7 +2392,7 @@ function writeOrd(f) {
   out.push([nLines, H[1], f.rotas.length, H[3], q(pad(f.set.spCode, 6)), q(pad(f.set.rdCode, 6)), q(H[6] || ''), H[7], q(sd ? `${sd[3]}/${sd[2]}/${sd[1]}` : H[8]), q(pad(f.depot, 4)), H[10], q(title), q(H[12] || '')].join(','));
   f.rotas.forEach(r => r.lines.forEach(l => { const dus = l.cells.map((c, di) => src.look(DAYS[di][0], c.v)); const w = weekTotal(r, l.cells, dus);
     out.push([l.pre[5], q(pad(l.driver || '', 20)), q(pad('', 10)), l.s0 != null && l.s0 === l.cells.map(c => c.v).join(',') && !dus.some(du => du && du.pay0 != null) ? l.t0 : hm(w.t), q('')].join(','));
-    l.cells.forEach((c, di) => { const k = isDutyVal(c.v) ? (idx[c.v + '|' + DCH[di]] || 0) : 0; out.push([q(pad(c.v, 8)), k, q(' '), q(pad('', 8)), q(pad('', 4)), 0].join(',')); }); }));
+    l.cells.forEach((c, di) => { const k = isDutyVal(c.v) ? (idx[c.v + '|' + (f.bhm && di === 1 ? '$' : DCH[di])] || 0) : 0; out.push([q(pad(c.v, 8)), k, q(' '), q(pad('', 8)), q(pad('', 4)), 0].join(',')); }); }));
   rowsOut.forEach(x => out.push(x)); o.n.forEach(x => out.push(x));
   let first = 1; f.rotas.forEach(r => { const n = r.lines.length; const c = r.cfg; const mv = c.moves === 'static' ? 'S' : c.moves === 'up' ? 'U' : 'D';
     out.push([first, first + n - 1, q(pad(r.code, 20)), parseInt(r.lines[0] ? r.lines[0].pre[5] : 1, 10) || 1, n, hm(c.sp), hm(c.rd), hm(c.min), hm(c.max), q(pad(c.short || '', 4) + mv), hm(c.rest)].join(',')); first += n; });
@@ -2428,6 +2478,74 @@ function wtSuggestHtml(r) { const g = wtSuggest(r); if (!g) return '<p class="no
     <div class="dGrid wsIn"><label for="ws_early">Early weeks</label><input type="number" min="0" max="${g.s.early}" id="ws_early" value="${g.s.early}">
       <label for="ws_mid">Midday weeks</label><input type="number" min="0" max="${g.s.mid}" id="ws_mid" value="${g.s.mid}">
       <label for="ws_late">Late weeks</label><input type="number" min="0" max="${g.s.late}" id="ws_late" value="${g.s.late}"></div>`; }
+// ---- Bank Holiday Monday: Sunday duties are worked on the Monday ----
+// Makes a copy of the rota job in which Monday runs the Sunday duties. In every sub rota all Monday duties come off, then:
+//  · a week with a Sunday duty gets the same Sunday duty on Monday, or the most similar free one (closest sign-on) if the rest does not allow it;
+//  · walsall rule: a week with Sunday RD gets SP on Monday;
+//  · westbrom rule: Sunday duties still free go to weeks with Sunday RD that work Tuesday (closest to their own Monday sign-on, keeping the rest);
+//    (its own sub rota's first, then other Sunday duties in its subset); a week with Tuesday RD, or when the duties run out, gets SP.
+// Monday RD stays RD and Monday SP stays SP. Each Sunday duty is used once on the Monday. The minimum rest of each sub rota is kept.
+function bhmBuild(f, rule) {
+  const sun = f.dif.sun, look = new Map(sun.map(du => [du.no, du])); const sp = f.set.spCode || 'SP';
+  const used = new Set(), stats = [], ctx = [];
+  const tueOf = (L, li) => { const v = L[li].cells[2].v; return isDutyVal(v) ? (f.dif.tue || []).find(x => x.no === v) || null : null; };
+  const monOf = v => isDutyVal(v) ? (f.dif.mon || []).find(x => x.no === v) || null : null;
+  f.rotas.forEach(r => { const L = r.lines, cfg = r.cfg;
+    const c = { r, L, cfg, st: { code: r.code, same: 0, similar: 0, extra: 0, sp: 0, unused: [] },
+      sunDu: L.map(l => look.get(l.cells[0].v) || null), oldMon: L.map(l => l.cells[1].v), monWork: L.map(l => !isRD(l.cells[1].v) && !isSP(l.cells[1].v)) };
+    c.pool = c.sunDu.filter(Boolean).map(du => du.no);
+    c.fits = (li, du) => !restFail(c.sunDu[li], du, cfg) && !(tueOf(L, li) && restFail(du, tueOf(L, li), cfg));
+    c.set = (li, v) => { L[li].cells[1] = Object.assign({}, L[li].cells[1], { v }); };
+    c.near = (li, ref, pool) => { let best = null; pool.forEach(no => { if (used.has(no)) return; const du = look.get(no); if (!du || !c.fits(li, du)) return;
+      const d = ref ? Math.abs(du.s - ref.s) : 0; if (!best || d < best.d) best = { du, d }; }); return best && best.du; };
+    ctx.push(c); stats.push(c.st); });
+  // 1. weeks working Sunday and Monday: the same Sunday duty on Monday
+  ctx.forEach(c => { c.needSim = []; c.L.forEach((l, li) => { if (!c.monWork[li]) return; c.set(li, ''); const du = c.sunDu[li]; if (!du) return;
+    if (!used.has(du.no) && c.fits(li, du)) { c.set(li, du.no); used.add(du.no); c.st.same++; } else c.needSim.push(li); }); });
+  // 2. otherwise the most similar Sunday duty of the same sub rota still free
+  ctx.forEach(c => c.needSim.forEach(li => { const du = c.near(li, c.sunDu[li], c.pool); if (du) { c.set(li, du.no); used.add(du.no); c.st.similar++; } else { c.set(li, ''); c.wait = (c.wait || []).concat(li); } }));
+  // 3. weeks without a Sunday duty: West Bromwich gives them the Sunday duties left over when they work Tuesday
+  //    (own sub rota first, then any sub rota); Walsall gives them SP
+  ctx.forEach(c => { c.open = c.L.map((_, li) => li).filter(li => c.monWork[li] && !c.sunDu[li]); });
+  if (rule === 'westbrom') [false, true].forEach(anyRota => ctx.forEach(c => c.open.forEach(li => { if (c.L[li].cells[1].v || isRD(c.L[li].cells[2].v)) return;
+    // then Sunday duties from other sub rotas, but only those in this sub rota's subset (its Sunday duty numbers, e.g. Soho duties on SOHO)
+    const pool = anyRota ? sun.filter(du => inRanges(du.num, ((f.ranges || {})[c.r.code] || {}).sun)).map(du => du.no) : c.pool; const du = c.near(li, monOf(c.oldMon[li]), pool); if (du) { c.set(li, du.no); used.add(du.no); c.st.extra++; } })));
+  ctx.forEach(c => { c.L.forEach((l, li) => { if (c.monWork[li] && !l.cells[1].v) { c.set(li, sp); c.st.sp++; } });
+    c.pool.forEach(no => { if (!used.has(no)) c.st.unused.push(no); }); });
+  return stats;
+}
+// ---- Special days (Christmas Eve, the days between Christmas and New Year …) ----
+// On the chosen days every line's duty is replaced by its special version: 2001 → E2001 (the letter put before the number).
+// If that duty is not there, already used, or breaks the minimum rest, the most similar special duty still free is used
+// (closest sign-on, from the same sub rota's subset); if there is none, SP. RD and SP stay. Each special duty is used once.
+function specialPrefixes(src, days) { const c = {}; days.forEach(d => src.day(d).forEach(du => { const m = du.no.match(/^([A-Z]+)\d/i); if (m) { const k = m[1].toUpperCase(); c[k] = (c[k] || 0) + 1; } })); return c; }
+function specialRun(src, days, pre, codes) {
+  const stats = { same: 0, similar: 0, sp: 0, unused: [], perDay: {} }; const sp = (rotaFile.set && rotaFile.set.spCode) || 'SP';
+  const spec = no => new RegExp('^' + pre + '\\d', 'i').test(no);
+  days.forEach(d => { const di = DAYS.findIndex(x => x[0] === d); const pool = src.day(d).filter(du => spec(du.no)); const byNo = new Map(pool.map(du => [du.no, du])); const used = new Set();
+    const ps = { same: 0, similar: 0, sp: 0 };
+    const todo = [];
+    rotaFile.rotas.filter(r => !codes || codes.includes(r.code)).forEach(r => r.lines.forEach((l, li) => { const v = l.cells[di].v; if (!isDutyVal(v) || spec(v)) return; todo.push({ r, l, li, v, old: src.look(d, v) }); }));
+    const nb = (r, li) => { const L = r.lines; const prev = di > 0 ? src.look(DAYS[di - 1][0], L[li].cells[di - 1].v) : (prevLine(r, li) != null ? src.look('sat', L[prevLine(r, li)].cells[6].v) : null);
+      const next = di < 6 ? src.look(DAYS[di + 1][0], L[li].cells[di + 1].v) : (nextLine(r, li) != null ? src.look('sun', L[nextLine(r, li)].cells[0].v) : null); return { prev, next }; };
+    const fits = (t, du) => { const { prev, next } = nb(t.r, t.li); return !(prev && restFail(prev, du, t.r.cfg)) && !(next && restFail(du, next, t.r.cfg)); };
+    const put = (t, v) => { t.l.cells[di] = Object.assign({}, t.l.cells[di], { v }); };
+    // the sub rota's subset for that day; a sub rota without duty numbers set can take any special duty
+    const inSub = (code, du) => { const g = rgOf(code); return !g || !String(g[dayGroupF(d)] || '').trim() || inRc(code, d, du.num); };
+    // 1. the special version of the same duty (2001 → E2001; F001 → EF001 or E001)
+    const rest = [];
+    todo.forEach(t => { const base = t.v.replace(/^[A-Z]+/i, ''); const cand = [pre + t.v, pre + base].map(x => x.toUpperCase()).find(x => byNo.has(x) && !used.has(x));
+      if (cand && fits(t, byNo.get(cand))) { put(t, cand); used.add(cand); ps.same++; } else rest.push(t); });
+    // 2. the most similar free special duty in the sub rota's subset
+    // closest pairs first, so each special duty goes to the line whose own duty it is most like
+    const pairs = []; rest.forEach((t, ti) => pool.forEach(du => { if (used.has(du.no) || !inSub(t.r.code, du)) return; pairs.push({ ti, du, dd: t.old ? Math.abs(du.s - t.old.s) + Math.abs(du.e - t.old.e) / 2 : 0 }); }));
+    pairs.sort((x, y) => x.dd - y.dd); const done = new Set();
+    pairs.forEach(p => { if (done.has(p.ti) || used.has(p.du.no)) return; const t = rest[p.ti]; if (!fits(t, p.du)) return; put(t, p.du.no); used.add(p.du.no); done.add(p.ti); ps.similar++; });
+    rest.forEach((t, ti) => { if (!done.has(ti)) { put(t, sp); ps.sp++; } });
+    pool.forEach(du => { if (!used.has(du.no) && (!codes || codes.some(c => inRc(c, d, du.num)))) stats.unused.push(`${DAYS[di][1]} ${du.no}`); });
+    stats.same += ps.same; stats.similar += ps.similar; stats.sp += ps.sp; stats.perDay[d] = ps; });
+  return stats;
+}
 function initRota() {
   $('rjList').addEventListener('click', e => { const b = e.target.closest('[data-rj]'); if (!b) return; pickJob(b.dataset.rj); saveRota(); rotaMsg(''); renderRota(); });
   $('rjNew').onclick = () => { newRotaJob('New rota job · ' + new Date().toLocaleDateString('en-GB'), null); saveRota(); renderRota(); rotaMsg('New empty rota job. Open a rota (.RIF) to fill it.'); };
@@ -2509,8 +2627,8 @@ function initRota() {
   $('difLoad').onclick = () => $('difIn').click();
   $('difIn').addEventListener('change', async e => { const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return;
     if (!rotaFile) { rotaMsg('Load the rota (.RIF) first, then its duty file (.DIF).', true); return; }
-    const got = {}, bad = [], raw = []; for (const f of fs) { const tx = await f.text(); raw.push(tx); const p = parseDif(tx); Object.entries(p.days).forEach(([d, l]) => got[d] = (got[d] || []).concat(l)); bad.push(...p.bad); }
-    if (!Object.keys(got).length) { rotaMsg('No duties found. Choose a .DIF duty file exported from the rota program.', true); return; }
+    const got = {}, bad = [], raw = []; for (const f of fs) { const tx = await f.text(); raw.push(tx); const p = /\.dcl$/i.test(f.name) ? parseDclDays(tx) : parseDif(tx); Object.entries(p.days).forEach(([d, l]) => got[d] = (got[d] || []).concat(l)); bad.push(...p.bad); }
+    if (!Object.keys(got).length) { rotaMsg('No duties found. Choose a .DIF or .DCL duty file exported from the rota program.', true); return; }
     pushUndo('load duty file'); let fixed = 0, added = 0; const ex = [];
     if (rotaFile.ord && rotaFile.dif) { // rota from OmniROTA: keep its duties and types, take the pay values from the duty file
       Object.entries(got).forEach(([d, list]) => { const cur = rotaFile.dif[d] = (rotaFile.dif[d] || []).slice(); const seen = new Set();
@@ -2519,7 +2637,7 @@ function initRota() {
           if (cur[i].pay !== nu.pay) { if (!seen.has(nu.no) && ex.length < 3) ex.push(`${nu.no} ${fmt(cur[i].pay)} → ${fmt(nu.pay)}`); const o = Object.assign({}, cur[i]); if (o.pay0 == null) o.pay0 = o.pay; o.pay = nu.pay; o.exact = 1; cur[i] = o; fixed++; }
           else if (cur[i].pay0 != null && !cur[i].exact) cur[i] = Object.assign({}, cur[i], { exact: 1 }); seen.add(nu.no); }); });
     } else rotaFile.dif = Object.assign({}, rotaFile.dif || {}, got);
-    rotaFile.difOut = Object.assign({ name: fs[0].name }, difStrip(raw.join('\r\n')));
+    if (fs.every(f => !/\.dcl$/i.test(f.name))) rotaFile.difOut = Object.assign({ name: fs[0].name }, difStrip(raw.join('\r\n')));
     saveRota();
     const days = DAYS.filter(([d]) => got[d]).map(([d, s]) => `${s} (${got[d].length})`).join(', ');
     rotaMsg((rotaFile.ord ? `Duty file checked against the OmniROTA duties for ${days}: ${fixed} pay value${fixed === 1 ? '' : 's'} updated${ex.length ? ' (' + ex.join(', ') + (fixed > ex.length ? ' …' : '') + ')' : ''}${added ? `, ${added} new duties added` : ''}.` : `Loaded duties for ${days}.`) + (bad.length ? ` Skipped incomplete duty record${bad.length > 1 ? 's' : ''}: ${bad.join(', ')}. The file may have been cut off; export it again.` : ''), bad.length > 0); renderRota(); });
@@ -2610,8 +2728,36 @@ function initRota() {
   $('flSP').onclick = () => { const r = curRota(); pushUndo('fill empty days with ' + SPc()); let k = 0; r.lines.forEach(l => l.cells.forEach(c => { if (!c.v) { c.v = SPc(); k++; } }));
     saveRota(); renderRota(); closeDialog('fillDlg'); rotaMsg(`${$('fl_msg').textContent} Entered ${SPc()} on ${k} empty day${k === 1 ? '' : 's'}.`); };
   $('flLeave').onclick = () => { closeDialog('fillDlg'); rotaMsg($('fl_msg').textContent + ' Empty days were left empty.'); };
+  const spDays = () => [...document.querySelectorAll('input[name="spd_day"]:checked')].map(x => x.value);
+  const spHint = () => { const src = rotaSrc(); const c = specialPrefixes(src, spDays()); const ks = Object.keys(c).sort((a, b) => c[b] - c[a]);
+    $('spd_found').textContent = spDays().length ? (ks.length ? 'Duty numbers with a letter on these days: ' + ks.map(k => `${k} (${c[k]})`).join(', ') + '.' : 'No duties with a letter on these days. Load the special duties first (Load duties .DIF / .DCL).') : 'Choose a day.';
+    const cur = $('spd_pre').value.trim().toUpperCase(); if (!cur || !c[cur]) { const k = ks.find(x => x !== 'F') || ks[0]; if (k) $('spd_pre').value = k; } };
+  $('rbSpecial').onclick = () => { if (!rotaFile) { rotaMsg('Open a rota first.', true); return; } $('spd_msg').textContent = ''; $('spd_rota').textContent = rotaSel || ''; spHint(); showDialog('spdDlg'); };
+  $('spdDlg').addEventListener('change', e => { if (e.target.name === 'spd_day') spHint(); });
+  $('spdRun').onclick = () => { const days = spDays(), pre = $('spd_pre').value.trim().toUpperCase().replace(/[^A-Z]/g, ''); const m = $('spd_msg');
+    if (!days.length) { m.textContent = 'Choose at least one day.'; return; } if (!pre) { m.textContent = 'Write the letter of the special duties, e.g. E or X.'; return; }
+    const src = rotaSrc(); if (!days.some(d => src.day(d).some(du => du.no.toUpperCase().startsWith(pre)))) { m.textContent = `No ${pre}… duties on these days. Load the special duties first (Load duties .DIF / .DCL).`; return; }
+    const codes = document.querySelector('input[name="spd_scope"]:checked').value === 'one' ? [rotaSel] : null;
+    pushUndo(`special days ${pre}`); const st = specialRun(src, days, pre, codes); saveRota(); closeDialog('spdDlg'); rotaA = analyseRota(rotaSrc()); renderRota();
+    const dn = days.map(d => DAYS.find(x => x[0] === d)[1]).join(', ');
+    rotaMsg(`Special days (${pre}) on ${dn}${codes ? ' in ' + codes[0] : ''}: ${st.same} duties changed to their ${pre} version, ${st.similar} to the most similar ${pre} duty, ${st.sp} SP (no ${pre} duty fitted).` + (st.unused.length ? ` ${pre} duties not used: ${st.unused.slice(0, 15).join(', ')}${st.unused.length > 15 ? ' …' : ''}.` : ` Every ${pre} duty is used.`) + ' Undo puts the normal duties back.'); };
+  $('rbBhm').onclick = () => { const j = curJob(); if (!j || !rotaFile) { rotaMsg('Open a rota first.', true); return; }
+    $('bhm_msg').textContent = ''; $('bhm_name').textContent = j.name;
+    const wb = /west\s*brom|^wb\b/i.test((curProfile() || {}).name || '') || (rotaFile.depot || '').toUpperCase() === 'WB';
+    document.querySelector(`input[name="bhm_rule"][value="${wb ? 'westbrom' : 'walsall'}"]`).checked = true; showDialog('bhmDlg'); };
+  $('bhmRun').onclick = () => { const j = curJob(); if (!j || !rotaFile) return;
+    if (rotaFile.bhm) { $('bhm_msg').textContent = 'This rota job is already a Bank Holiday Monday copy. Open the normal rota job first.'; return; }
+    if (!rotaFile.dif || !rotaFile.dif.sun || !rotaFile.dif.sun.length) { $('bhm_msg').textContent = 'This rota job has no Sunday duties. Open the rota from an OmniROTA folder or load its .DIF first.'; return; }
+    const rule = document.querySelector('input[name="bhm_rule"]:checked').value; const f = JSON.parse(JSON.stringify(rotaFile));
+    const st = bhmBuild(f, rule); f.bhm = rule; f.dif.mon = JSON.parse(JSON.stringify(f.dif.sun));
+    newRotaJob(`${j.name} BHM (${rule === 'walsall' ? 'Walsall' : 'West Bromwich'} rule)`, f); saveRota(); closeDialog('bhmDlg');
+    rotaA = analyseRota(rotaSrc()); renderRota();
+    const tot = k => st.reduce((t, x) => t + (Array.isArray(x[k]) ? x[k].length : x[k]), 0);
+    const un = st.filter(x => x.unused.length).map(x => `${x.code}: ${x.unused.join(', ')}`).join('; ');
+    rotaMsg(`New rota job for Bank Holiday Monday (${rule === 'walsall' ? 'Walsall' : 'West Bromwich'} rule): Monday now runs the Sunday duties. Same Sunday duty as the week's Sunday: ${tot('same')}; similar Sunday duty: ${tot('similar')}` + (rule === 'westbrom' ? `; Sunday duties moved to weeks with Sunday off: ${tot('extra')}` : '') + `; SP on Monday: ${tot('sp')}.` + (un ? ` Sunday duties not worked on the Monday: ${un}.` : ' Every Sunday duty is worked on the Monday.') + ' The normal rota job is unchanged.'); };
   $('rbBal').onclick = () => { $('bal_wbs').checked = rotaWbs; $('bal_only').value = ''; $('bal_skip').value = ''; $('bal_msg').textContent = ''; const kl = (curRota() ? curRota().lines : []).filter(l => l.keep).map(l => l.pre[5]);
-    $('bal_kept').textContent = kl.length ? `Lines tagged Keep in the grid are not changed: ${kl.join(', ')}.` : 'Tick Keep under a line number in the grid to leave that week out of Balance weeks.'; $('bal_rota').textContent = rotaSel; showDialog('balDlg'); };
+    $('bal_kept').textContent = kl.length ? `Lines tagged Keep in the grid are not changed: ${kl.join(', ')}.` : 'Tick Keep under a line number in the grid to leave that week out of Balance weeks.';
+    if (rotaFile && rotaFile.bhm) $('bal_kept').textContent += ' Bank Holiday Monday copy: Sunday and Monday stay exactly as they are.'; $('bal_rota').textContent = rotaSel; showDialog('balDlg'); };
   $('balRun').onclick = () => { const src = rotaSrc(); const r = curRota(); if (!src.ok || !r) return; rotaWbs = $('bal_wbs').checked; const before = rdTimes(r, src); const muBefore = makeUpOf(r) || { now: 0 };
     const snap = { label: 'balance weeks ' + r.code, snap: snapshot() }; let only = null; const spec = $('bal_only').value.trim();
     const skipSpec = $('bal_skip').value.trim(); let skip = skipSpec ? new Set(linesOfSpec(r, skipSpec)) : null;
@@ -2621,7 +2767,7 @@ function initRota() {
     const skipTxt = [skipSpec ? 'lines ' + skipSpec : '', kept.length ? `${kept.length} kept line${kept.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' and ');
     if (spec || skip) { only = new Set(spec ? linesOfSpec(r, spec) : r.lines.map((_, i) => i)); if (skip) skip.forEach(i => only.delete(i));
       if (only.size < 2) { $('bal_msg').textContent = 'At least two lines must be left to balance.'; return; } }
-    const out = autoFill(r, src, { useFree: false, wbs: rotaWbs, only }); const after = rdTimes(r, src);
+    const out = autoFill(r, src, { useFree: false, wbs: rotaWbs, only, lockDays: rotaFile.bhm ? new Set([0, 1]) : null }); const after = rdTimes(r, src);
     const wbsTxt = rotaWbs && !out.unchanged && after.off != null ? ` West Brom Special: before rest days duties now finish at ${clock(after.off)} on average (was ${clock(before.off)}), after rest days they start at ${clock(after.on)} (was ${clock(before.on)}).` : '';
     closeDialog('balDlg');
     if (out.unchanged) rotaMsg(`${r.code} is already as even as Balance Weeks can make it, so nothing was changed.`);
