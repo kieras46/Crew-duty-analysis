@@ -803,11 +803,15 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
       <div class="dBtns"><button type="button" class="btn primary" id="opOk">Open</button><button type="button" class="btn" data-close="openDlg">Cancel</button></div>
     </dialog>
     <dialog id="spdDlg" class="dlg wide" aria-labelledby="spdT"><h3 id="spdT">Special days</h3>
-      <p class="note">On the days you choose, every duty on the rota changes to its special version with the letter in front: 2001 → E2001. If that duty is missing, already used or breaks the minimum rest, the most similar free special duty of the same sub rota’s subset is used (closest sign-on and sign-off); if none fits, SP. RD and SP stay. Load the special duties first with <b>Load duties (.DIF / .DCL)</b>. Tip: use Copy job first to keep the normal rota.</p>
+      <p class="note">On the days you choose, every duty on the rota changes to SP, or to its special version with the letter in front: 2001 → E2001. If that duty is missing, already used or breaks the minimum rest, the most similar free special duty of the same sub rota’s subset is used (closest sign-on and sign-off); if none fits, SP. RD and SP stay. Load the special duties first with <b>Load duties (.DIF / .DCL)</b>. Tip: use Copy job first to keep the normal rota.</p>
       <fieldset class="spdDays"><legend>Days</legend>
         <label><input type="checkbox" name="spd_day" value="sun"> Sun</label><label><input type="checkbox" name="spd_day" value="mon"> Mon</label><label><input type="checkbox" name="spd_day" value="tue"> Tue</label><label><input type="checkbox" name="spd_day" value="wed"> Wed</label><label><input type="checkbox" name="spd_day" value="thu"> Thu</label><label><input type="checkbox" name="spd_day" value="fri"> Fri</label><label><input type="checkbox" name="spd_day" value="sat"> Sat</label>
       </fieldset>
-      <div class="dGrid" style="margin-top:10px"><label for="spd_pre">Letter of the special duties</label><input type="text" id="spd_pre" maxlength="3" placeholder="E" style="width:70px;text-transform:uppercase"></div>
+      <div class="opList" style="margin-top:10px">
+        <label class="opRow"><input type="radio" name="spd_mode" value="letter" checked><span><b>Change to the special duties</b><small>2001 → E2001, or the most similar special duty.</small></span></label>
+        <label class="opRow"><input type="radio" name="spd_mode" value="sp"><span><b>Change every duty to SP</b><small>Every duty on these days becomes SP. <label style="display:inline-flex;gap:4px;align-items:center;font-weight:600;color:var(--fg)"><input type="checkbox" id="spd_rd"> including RD</label> (rest days become SP too).</small></span></label>
+      </div>
+      <div class="dGrid" id="spd_letterBox" style="margin-top:10px"><label for="spd_pre">Letter of the special duties</label><input type="text" id="spd_pre" maxlength="3" placeholder="E" style="width:70px;text-transform:uppercase"></div>
       <p class="note" id="spd_found" style="margin:6px 0"></p>
       <div class="opList">
         <label class="opRow"><input type="radio" name="spd_scope" value="all" checked><span>All sub rotas</span></label>
@@ -2757,10 +2761,19 @@ function initRota() {
   const spHint = () => { const src = rotaSrc(); const c = specialPrefixes(src, spDays()); const ks = Object.keys(c).sort((a, b) => c[b] - c[a]);
     $('spd_found').textContent = spDays().length ? (ks.length ? 'Duty numbers with a letter on these days: ' + ks.map(k => `${k} (${c[k]})`).join(', ') + '.' : 'No duties with a letter on these days. Load the special duties first (Load duties .DIF / .DCL).') : 'Choose a day.';
     const cur = $('spd_pre').value.trim().toUpperCase(); if (!cur || !c[cur]) { const k = ks.find(x => x !== 'F') || ks[0]; if (k) $('spd_pre').value = k; } };
-  $('rbSpecial').onclick = () => { if (!rotaFile) { rotaMsg('Open a rota first.', true); return; } $('spd_msg').textContent = ''; $('spd_rota').textContent = rotaSel || ''; spHint(); showDialog('spdDlg'); };
-  $('spdDlg').addEventListener('change', e => { if (e.target.name === 'spd_day') spHint(); });
+  $('rbSpecial').onclick = () => { if (!rotaFile) { rotaMsg('Open a rota first.', true); return; } $('spd_msg').textContent = ''; $('spd_rota').textContent = rotaSel || ''; spHint(); spModeUI(); showDialog('spdDlg'); };
+  const spMode = () => (document.querySelector('input[name="spd_mode"]:checked') || {}).value || 'letter';
+  const spModeUI = () => { const sp = spMode() === 'sp'; $('spd_letterBox').hidden = sp; $('spd_found').hidden = sp; $('spd_rd').disabled = !sp; $('spdRun').textContent = sp ? 'Change to SP' : 'Change duties'; };
+  $('spdDlg').addEventListener('change', e => { if (e.target.name === 'spd_day') spHint(); if (e.target.name === 'spd_mode') spModeUI(); if (e.target.id === 'spd_rd' && e.target.checked) { const sp = document.querySelector('input[name="spd_mode"][value="sp"]'); sp.checked = true; spModeUI(); } });
   $('spdRun').onclick = () => { const days = spDays(), pre = $('spd_pre').value.trim().toUpperCase().replace(/[^A-Z]/g, ''); const m = $('spd_msg');
-    if (!days.length) { m.textContent = 'Choose at least one day.'; return; } if (!pre) { m.textContent = 'Write the letter of the special duties, e.g. E or X.'; return; }
+    if (!days.length) { m.textContent = 'Choose at least one day.'; return; }
+    if (spMode() === 'sp') { // every duty (and RD if ticked) on these days becomes SP
+      const codes = document.querySelector('input[name="spd_scope"]:checked').value === 'one' ? [rotaSel] : null; const rd = $('spd_rd').checked; const spc = SPc();
+      pushUndo('special days: SP'); let nD = 0, nR = 0;
+      rotaFile.rotas.filter(r => !codes || codes.includes(r.code)).forEach(r => r.lines.forEach(l => days.forEach(d => { const di = DAYS.findIndex(x => x[0] === d); const v = l.cells[di].v;
+        if (isDutyVal(v) || (!v && !isRD(v))) { l.cells[di] = Object.assign({}, l.cells[di], { v: spc }); if (v) nD++; } else if (rd && isRD(v)) { l.cells[di] = Object.assign({}, l.cells[di], { v: spc }); nR++; } })));
+      saveRota(); closeDialog('spdDlg'); rotaA = analyseRota(rotaSrc()); renderRota();
+      rotaMsg(`Special days on ${days.map(d => DAYS.find(x => x[0] === d)[1]).join(', ')}${codes ? ' in ' + codes[0] : ''}: ${nD} duties changed to ${spc}${rd ? `, ${nR} rest days changed to ${spc}` : ' (rest days kept)'}. Undo puts them back.`); return; } if (!pre) { m.textContent = 'Write the letter of the special duties, e.g. E or X.'; return; }
     const src = rotaSrc(); if (!days.some(d => src.day(d).some(du => du.no.toUpperCase().startsWith(pre)))) { m.textContent = `No ${pre}… duties on these days. Load the special duties first (Load duties .DIF / .DCL).`; return; }
     const codes = document.querySelector('input[name="spd_scope"]:checked').value === 'one' ? [rotaSel] : null;
     pushUndo(`special days ${pre}`); const st = specialRun(src, days, pre, codes); saveRota(); closeDialog('spdDlg'); rotaA = analyseRota(rotaSrc()); renderRota();
