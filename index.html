@@ -624,8 +624,8 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
         <button type="button" class="btn" id="rotaNewBtn">New sub rota</button>
         <button type="button" class="btn" id="rotaMainBtn" disabled>Main rota settings</button>
         <button type="button" class="btn" id="ordDl" disabled>Save for OmniROTA (.ORD)</button>
-        <button type="button" class="btn" id="rotaDl" disabled>Save RIF</button>
-        <button type="button" class="btn" id="difDl" disabled title="Copy of the loaded .DIF without the day flags, or a .DIF written from the .DCL / .ORL duty files; duties that are the same on Mon–Thu and Friday are written once">Save DIF</button>
+        <button type="button" class="btn" id="rotaDl" disabled title="Rota file (.RIF), e.g. WB ROTAS 131226.RIF">Save Rota file for DAS</button>
+        <button type="button" class="btn" id="difDl" disabled title="Copy of the loaded .DIF without the day flags, or a .DIF written from the .DCL / .ORL duty files; duties that are the same on Mon–Thu and Friday are written once. Saved as e.g. WB DUTIES 131226.DIF">Save Duties file for DAS</button>
         <button type="button" class="btn" id="rotaCopy" disabled>Copy RIF text</button>
       </div>
       <div class="omniPick">
@@ -1798,7 +1798,8 @@ function parseOrd(text, name, orlText) { const orl = orlText ? parseOrl(orlText)
 function difStrip(text) {
   const out = [], seen = new Set(); let rec = [], duties = 0, dropped = 0;
   const flush = () => { if (!rec.length) return; const k = rec.join('\n'); if (seen.has(k)) dropped++; else { seen.add(k); out.push(...rec); duties++; } rec = []; };
-  String(text).split(/\r?\n/).forEach(l => { if (/^D,/.test(l)) { flush(); const c = l.split(','); rec = [c.length >= 20 ? c.slice(0, 10).join(',') : l]; } else if (l) { if (rec.length) rec.push(l); else out.push(l); } });
+  String(text).split(/\r?\n/).forEach(l => { if (/^D,/.test(l)) { flush(); const c = l.split(','); rec = [c.length >= 20 ? c.slice(0, 10).join(',') : l]; } else if (l) { if (/^L,/.test(l)) { const c = l.split(','); if (c.length >= 10) { if (!c[4]) c[4] = '00.00'; if (!c[9]) c[9] = '00.00'; } l = c.join(','); } // blank sign-on / sign-off as 00.00, like OmniROTA
+    if (rec.length) rec.push(l); else out.push(l); } });
   flush();
   return { text: out.join('\r\n') + '\r\n', duties, dropped };
 }
@@ -2386,6 +2387,9 @@ const unpackTxt = t => t.replace(/~(\d+)~/g, (m, n) => ' '.repeat(+n));
 //   D,depot,duty,mm/dd/yyyy,,NO,STD ,depot,DU,D   ·  L,piece,T,board,sign on,depart,from,arrive,to,sign off  ·  V,0,1,value (h.mm)
 // Sunday first, then Mon–Fri / Mon–Thu, Friday, Saturday. Duties with two versions: the version the rota uses (holidays version 1 left out
 // otherwise). A duty with the same pieces on two day groups (e.g. Oldbury Mon–Thu and Friday) is written once.
+// file names for DAS: depot, ROTAS / DUTIES and the start date as ddmmyy, e.g. WB ROTAS 131226.RIF and WB DUTIES 131226.DIF
+function dasName(kind, ext) { const f = rotaFile; const sd = (f.set.startDate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const dp = (f.depot || 'WB').trim(); return `${dp} ${kind}${sd ? ' ' + sd[3] + sd[2] + sd[1].slice(2) : ''}.${ext}`; }
 function difFromPieces(f) { const txt = unpackTxt(f.pcRaw || ''); const dp = (f.depot || 'WB').trim();
   const sd = (f.set.startDate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/); const date = sd ? `${sd[2]}/${sd[3]}/${sd[1]}` : '';
   const t = x => { x = String(x || '').trim(); return /^\d{4}$/.test(x) ? x.slice(0, 2) + '.' + x.slice(2) : ''; };
@@ -2907,10 +2911,10 @@ function initRota() {
     rotaMsg(`Saved ${t}.ORD for OmniROTA.` + (emp ? ` ${emp} empty day${emp === 1 ? '' : 's'} were written as empty.` : '') + ' Open it in OmniROTA on a copy first to check it.'); };
   $('difDl').onclick = () => { if (!rotaFile) return; const o = rotaFile.difOut || (rotaFile.pcRaw ? difFromPieces(rotaFile) : null);
     if (!o) { rotaMsg('No duty file in this job. Open the rota from its OmniROTA folder (with the .DCL or .ORL files) or load the .DIF / .DCL duties first.', true); return; }
-    saveFile(o.name, o.text, 'text/plain', true);
+    o.name = dasName('DUTIES', 'DIF'); saveFile(o.name, o.text, 'text/plain', true);
     rotaMsg(o.made ? `Saved ${o.name}: ${o.duties} duties written from the duty pieces (${rotaFile.pcKind || '.DCL / .ORL'})${o.dropped ? `, ${o.dropped} duties that were the same on two day groups written once` : ''}.`
       : `Saved ${o.name}: ${o.duties} duties, day flags taken off${o.dropped ? `, ${o.dropped} duties that were the same on Mon–Thu and Friday written once` : ''}.`); };
-  $('rotaDl').onclick = () => { if (rotaFile) saveFile(rotaFile.name.replace(/\.rif$/i, '') + '.RIF', writeRif(rotaFile), 'text/plain', true); };
+  $('rotaDl').onclick = () => { if (!rotaFile) return; const n = dasName('ROTAS', 'RIF'); saveFile(n, writeRif(rotaFile), 'text/plain', true); rotaMsg(`Saved ${n}.`); };
   $('rotaCopy').onclick = async () => { const b = $('rotaCopy'); try { await navigator.clipboard.writeText(writeRif(rotaFile)); b.textContent = 'Copied'; } catch (e) { b.textContent = 'Copy blocked'; } setTimeout(() => b.textContent = 'Copy RIF text', 2500); };
   // new sub rota
   fillNrRange();
