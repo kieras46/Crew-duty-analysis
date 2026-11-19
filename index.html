@@ -2401,7 +2401,8 @@ function difFromPieces(f) { const txt = unpackTxt(f.pcRaw || ''); const dp = (f.
     const val = String(rows[0][offI + 2] || '').trim().replace(':', '.');
     const mins = x => { x = String(x || '').trim(); return /^\d{4}$/.test(x) ? +x.slice(0, 2) * 60 + +x.slice(2) : null; };
     const st = mins(rows[0][3]) != null ? mins(rows[0][3]) : mins(rows[0][5]); // a piece that departs after midnight is marked N (next day)
-    const body = rows.map((c, i) => `L,${i + 1},${i && st != null && mins(c[5]) != null && mins(c[5]) < st ? 'N' : 'T'},${c[4].trim()},${t(c[3])},${t(c[5])},${c[6].trim()},${t(c[8])},${c[9].trim()},${t(c[offI])}`).concat(`V,0,1,${val}`).join('\r\n');
+    const t0 = x => t(x) || '00.00'; // blank sign-on / sign-off written as 00.00, as OmniROTA does
+    const body = rows.map((c, i) => `L,${i + 1},${i && st != null && mins(c[5]) != null && mins(c[5]) < st ? 'N' : 'T'},${c[4].trim()},${t0(c[3])},${t(c[5])},${c[6].trim()},${t(c[8])},${c[9].trim()},${t0(c[offI])}`).concat(`V,0,1,${val}`).join('\r\n');
     if (seen.get(no) === body) { dropped++; return; } seen.set(no, body);
     out.push(`D,${dp},${no},${date},,NO,STD ,${dp},DU,D   \r\n${body}`); });
   const yy = sd ? sd[1].slice(2) + sd[2] + sd[3] : '';
