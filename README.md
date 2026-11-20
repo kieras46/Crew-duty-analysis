@@ -6,7 +6,7 @@ PDFs are read in your browser with [pdf.js](https://mozilla.github.io/pdf.js/). 
 
 ## How to use
 
-The page opens in the **Crew creator**. **Duty check** and **Driver assignment** are in the **☰** menu in the top left corner; the menu button shows the view you are in.
+The page opens in the **Rota Editor Tool**. **Duty check** and **Driver assignment** are in the **☰** menu in the top left corner; the menu button shows the view you are in.
 
 1. Open the page (see GitHub Pages below) and choose **☰ → Duty check**.
 2. Click **New job: choose PDFs** and select one or more duty summary PDFs (for example Mon–Thu, Friday, Saturday and Sunday together).
@@ -22,7 +22,7 @@ Use **Garage** (top right, next to Undo) to switch between depots, e.g. West Bro
 - duty rules and 4 Day duty numbers,
 - driver assignment settings, including its rotas and their duty numbers,
 - driver list,
-- sub rota duty numbers in the Rota creator.
+- sub rota duty numbers in the Rota Editor Tool.
 
 Jobs and rota jobs are listed under the garage they were made in. A new garage can start from the default rules or copy the rules and settings of another garage (without its rotas, drivers or 4 Day numbers). Everything made before garages existed belongs to West Bromwich.
 
@@ -30,7 +30,7 @@ Jobs and rota jobs are listed under the garage they were made in. A new garage c
 
 ## 4 Day duties
 
-The **4 Day duties** panel in Duty check holds the 4 Day duty numbers of the selected garage, separately for Mon–Thu, Friday, Saturday and Sunday PDFs. Write numbers or ranges, comma-separated: `2401-2499, 2510`. Keep the letter for lettered duties: `F2401-F2499`. Under each field you see how many duties of the selected job match. The numbers are used by Duty check, Driver assignment and the Rota creator (Sunday 4 Day premium, applied when a rota is opened).
+The **4 Day duties** panel in Duty check holds the 4 Day duty numbers of the selected garage, separately for Mon–Thu, Friday, Saturday and Sunday PDFs. Write numbers or ranges, comma-separated: `2401-2499, 2510`. Keep the letter for lettered duties: `F2401-F2499`. Under each field you see how many duties of the selected job match. The numbers are used by Duty check, Driver assignment and the Rota Editor Tool (Sunday 4 Day premium, applied when a rota is opened).
 
 Jobs, rules and manual type changes are saved in the browser you use (local storage). They are not shared between computers or browsers, and clearing your browser data removes them.
 
@@ -42,7 +42,7 @@ Open the **Driver assignment** tab to give duties to drivers. **Duties from job*
 2. For each driver set **Rota** (WB, Soho, Bearwood, Oldbury), **Duty type** (Early, Late, Finish before, Start after, or both), **Special condition** (minimum break or specific routes) and working days.
 3. The tool picks a duty for each working day so each driver's weekly pay is as close as possible to the target (default 35:30). Duties can differ from day to day, and duties with duty-check errors can be used (both can be changed in the settings). Drivers with a lower No are served first.
 4. Click a duty to change it by hand. Your choice is marked **fixed** and the other drivers are re-planned around it.
-5. **Export to rota** sends the result to the Rota creator: choose a rota job and a sub rota (or a new one). Each driver becomes a line with the driver's name under the line number.
+5. **Export to rota** sends the result to the Rota Editor Tool: choose a rota job and a sub rota (or a new one). Each driver becomes a line with the driver's name under the line number.
 6. **Export to Google Sheets**: one row per driver with number, roll number, name, rota, the requests (duty type, special condition, working days, notes — optional) and the duty given on each day (RD on rest days), plus weekly pay, difference to the target and the reason for any day without a duty. Optionally each duty shows sign-on, sign-off and pay. *Copy table* and paste into cell A1, or *Download CSV* and use File → Import in Google Sheets. Duty numbers keep their leading zeros (012).
 
 Rotas and their duty numbers are set under **Assignment settings**: rename a rota by editing its name, **Add rota** for a new one, × to remove one. West Bromwich defaults:
@@ -60,17 +60,18 @@ Every driver gets at least 11:00 rest between finishing one duty and starting th
 
 Early means book off by 14:30 and Late means book on from 15:00 (both editable). Routes come from the running board numbers: 12/xx covers routes 12 and 13, 87/xx covers 82 and 87, and any other board runs its own number (74/10 is route 74). A specific route request means every piece of the duty runs on one of the requested routes. Jobs uploaded before this version have no sign-on/off times stored, so upload their PDFs again to use time and route requests.
 
-## Rota creator
+## Rota Editor Tool
 
-Works like OmniROTA. Export the rota (`.RIF`) and its duties (`.DIF`) from OmniROTA and open them in the **Rota creator** tab. The `.DIF` file gives the exact sign-on/off times, values and pay codes; without it the duties of the selected PDF job are used.
+Works like OmniROTA. Export the rota (`.RIF`) and its duties (`.DIF`) from OmniROTA and open them in the **Rota Editor Tool** tab. The `.DIF` file gives the exact sign-on/off times, values and pay codes; without it the duties of the selected PDF job are used.
 
 - **Layout**: one row above the rota. **File** holds Open OmniROTA folder, Open rota file, Load duties, Remove duty file, Save for OmniROTA and Save Rota/Duties file for DAS, with the name of the open rota file and where the duty times come from. Next to it: Current rota, Sub rota settings, New sub rota, Main rota settings and the summary of the sub rota (lines, week, under, over, problems). Messages show for a few seconds over the rota (errors stay until clicked); **ⓘ** shows the last message again. **Rename** (or double-click the job) renames the rota job.
 - **Week type and Keep** of a line: click the small tag under the line number (e.g. *Early*, or *Late 🔒* for a kept line) and choose the week type or tick **Keep**.
 
-- **Open OmniROTA folder** looks for the rota files (`.ORD`) and the duty files (`.DCL`) in the folder. If there is more than one rota (e.g. the original and a `ROCR` copy) or more than one set of duty files, it asks which to open. The duty pieces come from the `.DCL` files, or from the rota's own `.ORL` file when there are none; they are used for the duty rule checks in Global statistics. Choose the OmniROTA folder with the rota's `.ORD` file (or open the `.ORD` with *Open rota file*). It holds everything: all sub rotas and lines, every duty with sign-on/off, value, type (E, M, L, S as set in OmniROTA), pay grade and days, plus each sub rota's minimum/maximum week, stand-by pay, minimum rest and Up/Static/Down, the start date and the RD/SP codes. No separate RIF or DIF export is needed. Where a duty has school-day and school-holiday versions, the version used by the rota lines is kept.
+- **Add new OmniROTA** (next to the rota jobs) and **File → Open OmniROTA folder** read only the rota files (`.ORD`), duty files (`.DCL`) and `.ORL` files at the top of the chosen folder; subfolders and other files are not read. Chrome and Edge ask once to let the page view the folder; nothing is uploaded, the files are read in the browser. Other browsers use their folder picker instead. A new rota job is made for the rota.
+- The folder is searched for the rota files (`.ORD`) and the duty files (`.DCL`). If there is more than one rota (e.g. the original and a `ROCR` copy) or more than one set of duty files, it asks which to open. The duty pieces come from the `.DCL` files, or from the rota's own `.ORL` file when there are none; they are used for the duty rule checks in Global statistics. Choose the OmniROTA folder with the rota's `.ORD` file (or open the `.ORD` with *Open rota file*). It holds everything: all sub rotas and lines, every duty with sign-on/off, value, type (E, M, L, S as set in OmniROTA), pay grade and days, plus each sub rota's minimum/maximum week, stand-by pay, minimum rest and Up/Static/Down, the start date and the RD/SP codes. No separate RIF or DIF export is needed. Where a duty has school-day and school-holiday versions, the version used by the rota lines is kept.
 - **Sunday 4 Day pay**: OmniROTA stores only the duty value (time worked) for Sunday 4 Day duties in the `.ORD`. The duty files (`.DCL`, or the rota's `.ORL`) have the value as paid, with the 16% premium, and that value is used. Only without them is the pay value worked out as the duty value plus the 16% premium (× 1.16, editable in Main rota settings), marked `*` in the duty list. Which duties are 4 Day comes from the Sunday field of the 4 Day duties panel in Duty check (790-799 for West Bromwich). **Save for OmniROTA** writes the pay value into the duty table and the week totals; a file saved here (… ROCR) is not given the premium again when reopened.
 - **Global statistics** (Tools) starts with checks, each ✓ or ✗ with the list behind it: all duties allocated (every duty in the duty list is on a rota line), no duty used twice, **RTA: 11:00 rest between days** on every line of every sub rota (also Saturday → next line's Sunday, whatever the sub rota's own setting), duty rules from the Duty check tab (compass, relief, time on bus — worked out from the duty pieces in the `.ORL` or `.DIF` file), all duty numbers known, and no empty days. Below it: one table with every sub rota of the job — lines, average week, short weeks, make up and the lowest make up possible, long weeks and excess hours, expected/worked/roster hours, RD, SP, incomplete weeks and lines with problems — with a total row. Click a sub rota to open it.
-- **Lines on screen** (View): Normal, or 10, 15, 20, 25 or 30 weeks at once; cells get smaller (two rows, then one row) to fit. On a wide screen the Rota creator fills one screen, with the toolbar always visible.
+- **Lines on screen** (View): Normal, or 10, 15, 20, 25 or 30 weeks at once; cells get smaller (two rows, then one row) to fit. On a wide screen the Rota Editor Tool fills one screen, with the toolbar always visible.
 - **Load duties (.DIF / .DCL)** also takes `.DCL` duty files. Each duty goes on the days in its days code (`$` Sunday, `M T W H` Monday–Thursday, `F` Friday, `S` Saturday, e.g. `MTWHF`), so special duties such as `E2001` on Christmas Eve only (`H`) or `X…` duties between Christmas and New Year go on their own days. Letters in duty numbers are ignored for the subsets: E2001 belongs to the same sub rota as 2001. On a rota from OmniROTA the new duties are added to the duty list of those days; Auto-fill puts them only into empty days.
 - **Rota jobs**: opening a rota (.RIF) creates a new rota job, saved in the browser with its duties, week types and settings. **Copy job** duplicates the current one: rename it, then **Load duties (.DIF)** to try new duties on the same rota. **New job** starts empty; **Delete job** needs a second click.
 - **Duty numbers of each sub rota** (Sub rota settings → *Duty numbers of this rota*): ranges for Mon–Thu, Fri, Sat and Sun, comma-separated. They drive the Subset filter, the list of duties on no rota, Auto-fill and Balance weeks. WB, SOHO, BW and OLD start with the defaults from Driver assignment.

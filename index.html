@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>WB Crew Duty Check</title>
+<title>RET · Rota Editor Tool</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAHTklEQVR4Xp1Xa4hdVxX+1t7n3MfcmclkMo/ETDIwjSS0EgRJLVg1YuoPm/ionfxIYga0IlGMaC3+K4IW+kdqk0YLwR9KHWgnxdJa0LSmJVaC0mCpWIcgA32kbWYmmZvcuXMf5+y9ZO19zplz76QmdTHDuffcc/ba61vf+vZaBLHJpzRm9puRI3+ZCMq937fW3g0TbwGbEGyJmQH3bwEwWK75eyz3GEB63/rv/h1mUATG2yA8H5uVR69OH5xLfRImWWOGzMajfz+kwuIjID3EUQNsIu8wXTxznmwkd/0fzv37kM0pkA5k3UXTWvlBdebrT8gmSADYdPRvB1R54He2VQPHbQNmBfDNR55sTq4daLnNZ6gws7GkAg1dgm1WDy7NTE3TxvvPj5Ph1wHq47jlt5q+lIP0BjB3/M7Ww++cS/QJWm5z1looRWziGhu1M0A7/hEVK/22ec0A0PIwwTrYotgBlAAiTuQLufXk6r/L7/4574gQKlkq5UUHCnJfsWkbCnr6YZfvDwi8j6OGPKVkDYJBI9IgZgxXahkPEq9rCOjz3xnlQq3sAi2HEUyCRoaq2yQUx02G5S8FzDwGE7lwJHJxvm1wEb/Y9yx2DC0AlkBJgD5Kf8l9yMwDw5idH8TRJz+DC/N9KAcRZA9p1SRpIdgYDDsWAKwztieRPLbvOXxy+yxQrwCUebw5Y4U7b5vDL/cz7jp+d46UOfScH0kHpC4SlsK6nI9Watg+tABT7wVbBfqQGxCEabkHO0arGOmtY3G56DghapCmcbVaLIKU3ZRgKxAZa6ApgmGd3b9pY2GyrKEz0cp4kkTuS9UHLhxI4JAa9swmvQ5QBUArYeWHM8mYtiBdzKllVynmBC5wte52JkoaA9QDtfE4UAlAFh66nGnVRcouc48ToJYjMP0J4GZSrl6klCtz8eo54VLg5VIgSTbjEFDyB1eb/4+JFjj2y5qiHQwNg7pltKxBCUCZsJoCx4FE91mQQIhL1SZ++/IcYiP7BUKtMPW5CYysK3myXS89CQKAP0skSkltCIOFtsaeXoVvre/Hw/OX8Y9GUxBIqyA5NJhhHOqE37w8hx8fPwesK3oMrrac1we+fKsTmMAfJR9g8psPSpzPt8r4/PAFPDX8cayn9dhVLGD/WxdF91NGJinINgS0Y4vS+jI2Dfp/+dyORWZvzgT2gGIsNCvYMzKLpz/7KCqDZ7HULGFrqPHM+NgqAqkIeRZ5KwQKzaUG3rNONBwChUDKy5ug4EvMR0tEULm8hBSh2qzgro+8gVN3nkBJGbQ2PY6iLWD50tcwFNbzOuARkI0I08Wmdt/ilo59ThzkU7sn3OfVakjTkB5cfnMaMRYaFeweOY9Tn34cJRWhZUIEpGA2H0NZxVi58qmEhMmxm2qCRCI2OlDCA1+5bQ3eKQGfP38Rr/7nMsoFjUbbYNe2DfjiJzYDbLCMCr6w6d/41cdOoKwtmrE4N4g5cEgsj57EwTco0YFMKHJyKbV6HR0QiKU8a40I9504h/cv1SRXQhhsHO3Dhcf2oq+nhP7qKzi58xGUA4uWc24Rs0ZRt9EwIe7983048+5EqgMe+jwBxQSIIElHailF2sa6yAc39CAMNKLYoBQCkS4BC+egXtwHRS20bAHaOVco6ghNE+CeM9/AmfduwWCx5kko0Kc64HlwYyto5WC/cnnFI9BqozA2iqD6T7RP74WNG0BQgGKBXSL3zr8qzi9+1DmPrEqFyDcVTjSEhESO4fQBB4G1jN5SiJPfucNzoBig0Wrj9h1b0Ns6i5XGElRYcWvKgSbOGy7yb+LMxW2Jczl3LGjo8DOcQi8oNFoRXvjpHtyxfejGMKyxOuz8LOy7p9F+9UEYKqIUWqzEusu59LxeJTMllC+e/IwjJ87h2Ldvx61bBhzhVpHoTM6qDkh3RRgOl2Cja+DNe6EMo/Svn+BqVMLkSwJ7Z+Rpt0wbDj0du65IKC9cII+CoDHcLxKcG0qyVOVnA4YixnKjjQf3GHx3ahcQxYDuxek/nsYPn3gfs8vj6A/qiN1Zl4iXKK61RiaFd0DBVrAcQEyS33IoCm1x+VrDt9iZTnRORKluMGkUW5fw0M+fhZGDa2Acv//ra3jt7TJWmmPoc859zpN35CiTz+/QhgMzxygsfc+2pC2nrD/Mt09rO+LOiUnoGkZVKNvGlbiCOGIoDfSEQuikp+iKHEFR23bjOA0cODWu2bwOQh/Lm9K35+bArummu7vNhg4rFePasdjPFZZhXFq7xjvp10kRW1MzKtqpqtP3vmltdARBSSROMRvj3u4aPvN9/erEk5wfwh0bg2wb1hjEsfSEa5yz5BykFHRI4PhI86WH3lQyIC49eWjaNKqHwbRIQVnLDq/XQIqjTuc5QqWdVVf/t4omkcDOwKKNaofrZ382nQ2n6ai87p5fT6igeBTW7GUbbwVbKVM3i3WmZe0Q2jGYugY3qxR5OWbCW8T0hyiqH2u98vAcJic1ZmbMfwHlv9czCSt9OAAAAABJRU5ErkJggg==">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
@@ -475,7 +476,7 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
   </section>
 
 
-  <nav class="tabs" id="tabs" aria-label="Views"><div class="menuWrap" id="menuWrap"><button type="button" class="menuBtn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-controls="menuPanel">&#9776; Crew creator</button><div class="menuPanel" id="menuPanel" hidden><button type="button" data-tab="rota" class="on">Crew creator</button><button type="button" data-tab="check">Duty check</button><button type="button" data-tab="assign">Driver assignment</button></div></div><span class="tabEnd"><label class="garSel" for="garSel">Garage <select id="garSel"></select></label><button type="button" id="garBtn">Garages…</button><span class="note" id="undoMsg" aria-live="polite"></span><button type="button" id="undoBtn" class="undo" disabled>Undo</button></span></nav>
+  <nav class="tabs" id="tabs" aria-label="Views"><div class="menuWrap" id="menuWrap"><button type="button" class="menuBtn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-controls="menuPanel">&#9776; Rota Editor Tool</button><div class="menuPanel" id="menuPanel" hidden><button type="button" data-tab="rota" class="on">Rota Editor Tool</button><button type="button" data-tab="check">Duty check</button><button type="button" data-tab="assign">Driver assignment</button></div></div><span class="tabEnd"><label class="garSel" for="garSel">Garage <select id="garSel"></select></label><button type="button" id="garBtn">Garages…</button><span class="note" id="undoMsg" aria-live="polite"></span><button type="button" id="undoBtn" class="undo" disabled>Undo</button></span></nav>
 
   <div id="checkView" class="view">
   <section id="emptySec" class="emptyBox">
@@ -513,7 +514,7 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
 
   <section class="fdPanel" id="fdPanel" aria-labelledby="fdT">
     <h3 id="fdT">4 Day duties <small class="note" id="fdGar"></small></h3>
-    <p class="note" style="margin:0">Duty numbers or ranges for each PDF, comma-separated, e.g. <code>2401-2499, 2510</code>. Keep the letter for Friday duties: <code>F2401-F2499</code>. Used by Duty check, Driver assignment and the Rota creator.</p>
+    <p class="note" style="margin:0">Duty numbers or ranges for each PDF, comma-separated, e.g. <code>2401-2499, 2510</code>. Keep the letter for Friday duties: <code>F2401-F2499</code>. Used by Duty check, Driver assignment and the Rota Editor Tool.</p>
     <div class="fdGrid">
       <label for="r_fd_mt">Mon–Thu <input type="text" id="r_fd_mt" spellcheck="false"><small id="fdn_mt"></small></label>
       <label for="r_fd_fri">Friday <input type="text" id="r_fd_fri" spellcheck="false"><small id="fdn_fri"></small></label>
@@ -641,7 +642,7 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
     <div class="dGrid" id="ex_newWrap" hidden style="margin-top:8px"><label for="ex_code">New sub rota name</label><input type="text" id="ex_code" value="DRV"></div>
     <fieldset class="moves"><legend>Lines</legend><label><input type="radio" name="ex_mode" value="add" checked> Add at the end</label><label><input type="radio" name="ex_mode" value="replace"> Replace all lines of the sub rota</label></fieldset>
     <p class="status" id="ex_msg" aria-live="polite"></p>
-    <div class="dBtns"><button type="button" class="btn primary" id="exRun">Export</button><button type="button" class="btn" id="exOpen" hidden>Open Rota creator</button><button type="button" class="btn" data-close="expDlg">Close</button></div>
+    <div class="dBtns"><button type="button" class="btn primary" id="exRun">Export</button><button type="button" class="btn" id="exOpen" hidden>Open Rota Editor Tool</button><button type="button" class="btn" data-close="expDlg">Close</button></div>
   </dialog>
 
   <div class="wtPop" id="wtPop" role="dialog" aria-label="Week type" hidden><b id="wtPopT"></b><div id="wtPopL"></div>
@@ -1698,8 +1699,8 @@ function initAssign() {
   $('undoBtn').onclick = undo;
   document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { e.preventDefault(); undo(); } });
   updateUndo();
-  // views: Crew creator is the main view; Duty check and Driver assignment are in the menu (top left)
-  const VIEW_NAMES = { rota: 'Crew creator', check: 'Duty check', assign: 'Driver assignment' };
+  // views: Rota Editor Tool is the main view; Duty check and Driver assignment are in the menu (top left)
+  const VIEW_NAMES = { rota: 'Rota Editor Tool', check: 'Duty check', assign: 'Driver assignment' };
   const menuBtn = $('menuBtn'), menuPanel = $('menuPanel');
   const setMenu = open => { menuPanel.hidden = !open; menuBtn.setAttribute('aria-expanded', String(open)); };
   const showTab = t => { $('checkView').hidden = t !== 'check'; $('assignView').hidden = t !== 'assign'; $('rotaView').hidden = t !== 'rota'; document.body.classList.toggle('rotaMode', t === 'rota');
