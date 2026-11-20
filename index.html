@@ -199,6 +199,13 @@ td.tot small { font-size: 12px; font-weight: 600 } .okc { color: var(--ok) } .ov
 .garList td { padding: 5px 4px; border-bottom: 1px solid var(--line) }
 .garList input { width: 100% }
 .tabs .tabEnd button:disabled { color: var(--muted); cursor: default; opacity: .6 }
+.tabs .menuWrap { position: relative; display: flex; align-items: center; padding-bottom: 4px }
+.tabs .menuBtn { border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg); padding: 6px 12px; font-size: 14px; font-weight: 600; margin: 0; cursor: pointer; white-space: nowrap }
+.tabs .menuBtn:hover, .tabs .menuBtn[aria-expanded="true"] { border-color: var(--accent) }
+.tabs .menuPanel { position: absolute; top: calc(100% + 4px); left: 0; z-index: 50; min-width: 230px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 28px rgba(0,0,0,.18); padding: 6px; display: grid; gap: 2px }
+.tabs .menuPanel button { border: 0; border-bottom: 0; margin: 0; background: none; text-align: left; padding: 9px 12px; border-radius: 7px; font-size: 14px; font-weight: 500; color: var(--fg); cursor: pointer }
+.tabs .menuPanel button:hover { background: var(--accent-soft) }
+.tabs .menuPanel button.on { color: var(--accent); font-weight: 700 }
 .tabs .tabEnd button:not(:disabled):hover { border-color: var(--accent) }
 tr.gap td:nth-child(2) { box-shadow: inset 3px 0 0 var(--bad) }
 .nrGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px }
@@ -236,6 +243,31 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .fld select { font-family: var(--mono); font-size: 13px; padding: 6px 8px; border: 1px solid var(--om-line); border-radius: 4px; background: var(--om-week); color: var(--fg); min-width: 240px }
 .omniSum { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; font-size: 13px }
 .omniSum .e { color: var(--bad); font-weight: 600 } .omniSum .g { color: var(--ok) }
+.omniTop { position: relative }
+.fileMenu { position: relative }
+.filePanel { position: absolute; top: calc(100% + 4px); left: 0; z-index: 60; min-width: 290px; max-width: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 28px rgba(0,0,0,.18); padding: 6px; display: grid; gap: 1px }
+.filePanel hr { border: 0; border-top: 1px solid var(--line); margin: 4px 6px; width: auto }
+.fpName { display: grid; gap: 2px; padding: 6px 10px 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; font-size: 12px; color: var(--muted) }
+.fpName b { font-family: var(--mono); color: var(--fg); font-size: 13px; overflow-wrap: anywhere } .fpName small { font-size: 11.5px }
+.fpItem { border: 0; background: none; text-align: left; padding: 8px 10px; border-radius: 7px; font-size: 14px; color: var(--fg); cursor: pointer }
+.fpItem:hover:not(:disabled) { background: var(--accent-soft) } .fpItem:disabled { color: var(--muted); opacity: .55; cursor: default }
+#rotaView .omniTop { justify-content: flex-start; align-items: center; gap: 8px } #rotaView .omniTop .fld { display: flex; align-items: center; gap: 6px }
+#rotaView .omniTop .omniSum { margin-left: auto }
+.msgBtn { border: 1px solid var(--line); background: var(--surface); color: var(--accent); border-radius: 50%; width: 28px; height: 28px; padding: 0; font-size: 15px; line-height: 1; cursor: pointer; flex: 0 0 auto }
+.msgBtn:hover { border-color: var(--accent) }
+#rotaStatus.toast { position: absolute; top: calc(100% + 6px); right: 0; z-index: 55; max-width: min(760px, 100%); margin: 0; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 8px 12px; box-shadow: 0 8px 22px rgba(0,0,0,.16); cursor: pointer }
+#rotaStatus.toast.err { border-left-color: var(--bad); color: var(--bad) }
+.omT th.ln .wtTag { display: block; margin-top: 4px; width: 100%; text-align: left; font: 600 11.5px var(--sans); padding: 1px 5px; border: 1px solid var(--om-line); border-radius: 4px; background: var(--surface); color: var(--fg); cursor: pointer; white-space: nowrap }
+.omT th.ln .wtTag:hover { border-color: var(--accent) }
+.omT tr.kept th.ln .wtTag { border-color: #b45309; color: #b45309 }
+.omT.fit th.ln .wtTag { display: inline-block; width: auto; margin: 0 0 0 2px; font-size: 10.5px; padding: 0 4px } .omT.d2 th.ln .wtTag { font-size: 10px } .omT.d3 th.ln .wtTag { font-size: 9.5px; line-height: 1 }
+.wtPop { position: fixed; z-index: 80; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 28px rgba(0,0,0,.2); padding: 8px; display: grid; gap: 2px; min-width: 200px }
+.wtPop > b { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 2px 6px 4px }
+.wtPop #wtPopL { display: grid; gap: 1px }
+.wtPop #wtPopL label { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 14px }
+.wtPop #wtPopL label:hover { background: var(--accent-soft) }
+.wtPop .wtKeep { display: flex; gap: 8px; align-items: flex-start; border-top: 1px solid var(--line); margin-top: 4px; padding: 8px 8px 2px; cursor: pointer; font-weight: 600; color: #b45309 }
+.wtPop .wtKeep input { accent-color: #b45309; margin-top: 3px } .wtPop .wtKeep small { display: block; font-weight: 400; color: var(--muted); font-size: 12px }
 .linkBtn { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; font-size: 12.5px; text-decoration: underline }
 .omni { display: grid; grid-template-columns: minmax(0, 1fr) clamp(290px, 21vw, 400px); gap: 10px; align-items: start }
 @media (max-width: 1100px) { .omni { grid-template-columns: minmax(0, 1fr) } }
@@ -375,9 +407,9 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .omT.d4 .oc .r2 { display: none } .omT.d2 th.ln .wtSel { font-size: 10px }
 .omT.fit td.wk b { display: inline; font-size: 15px } .omT.fit td.wk small { display: inline; margin-left: 4px } .omT.fit td.wk i { display: none }
 .omT.d3 td.wk b, .omT.d3 td.wk small { font-size: var(--fs) }
+body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: none }
 /* Rota creator fills one screen on wide displays */
 @media (min-width: 1100px) {
-  body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: none }
   body.rotaMode .wrap { display: flex; flex-direction: column; gap: 8px; max-width: none; padding-block: 8px; height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) }
   body.rotaMode .tabs button { padding: 6px 12px; font-size: 14px }
   body.rotaMode #rotaView { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 0 }
@@ -439,7 +471,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
   </section>
 
 
-  <nav class="tabs" id="tabs" aria-label="Views"><button type="button" data-tab="check" class="on">Duty check</button><button type="button" data-tab="assign">Driver assignment</button><button type="button" data-tab="rota">Rota creator</button><span class="tabEnd"><label class="garSel" for="garSel">Garage <select id="garSel"></select></label><button type="button" id="garBtn">Garages…</button><span class="note" id="undoMsg" aria-live="polite"></span><button type="button" id="undoBtn" class="undo" disabled>Undo</button></span></nav>
+  <nav class="tabs" id="tabs" aria-label="Views"><div class="menuWrap" id="menuWrap"><button type="button" class="menuBtn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-controls="menuPanel">&#9776; Crew creator</button><div class="menuPanel" id="menuPanel" hidden><button type="button" data-tab="rota" class="on">Crew creator</button><button type="button" data-tab="check">Duty check</button><button type="button" data-tab="assign">Driver assignment</button></div></div><span class="tabEnd"><label class="garSel" for="garSel">Garage <select id="garSel"></select></label><button type="button" id="garBtn">Garages…</button><span class="note" id="undoMsg" aria-live="polite"></span><button type="button" id="undoBtn" class="undo" disabled>Undo</button></span></nav>
 
   <div id="checkView" class="view">
   <section id="emptySec" class="emptyBox">
@@ -583,7 +615,9 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
       <label for="gar_copy">Start with</label><select id="gar_copy"><option value="">Default rules, no rotas, no drivers</option></select></div>
     <label class="opRow" style="margin-top:8px"><input type="checkbox" id="gar_autoWt"><span><b>Walsall rule for week types</b><small>When a rota is opened in this garage (now: <b id="gar_cur"></b>), each week gets its type from its duties: only E → Early, only M → Midday, only L → Late, mixed → Mix. Change any line afterwards.</small></span></label>
     <p class="note" id="garMsg" aria-live="polite"></p>
-    <div class="dBtns"><button type="button" class="btn primary" id="garAdd">Add garage</button><button type="button" class="btn" data-close="garDlg">Close</button></div>
+    <p class="note">Save or load a garage’s settings as a file to share them: duty rules and 4 Day numbers, driver assignment settings and sub rota numbers. Drivers, jobs and rota jobs are not included.</p>
+    <input type="file" id="garFile" accept=".json,application/json" hidden>
+    <div class="dBtns"><button type="button" class="btn primary" id="garAdd">Add garage</button><button type="button" class="btn" id="garExp">Save garage settings</button><button type="button" class="btn" id="garImp">Load garage settings</button><button type="button" class="btn" data-close="garDlg">Close</button></div>
   </dialog>
   <dialog id="gsDlg" class="dlg xwide" aria-labelledby="gsT"><h3 id="gsT">Export to Google Sheets</h3>
     <p class="note">One row per driver: number, roll number, name, rota, the requests, and the duty given on each day (RD on rest days, empty where no duty was found), with the weekly pay and the difference to the target.</p>
@@ -606,6 +640,8 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
     <div class="dBtns"><button type="button" class="btn primary" id="exRun">Export</button><button type="button" class="btn" id="exOpen" hidden>Open Rota creator</button><button type="button" class="btn" data-close="expDlg">Close</button></div>
   </dialog>
 
+  <div class="wtPop" id="wtPop" role="dialog" aria-label="Week type" hidden><b id="wtPopT"></b><div id="wtPopL"></div>
+    <label class="wtKeep"><input type="checkbox" id="wtPopK"> <span>Keep<small>Balance weeks does not change this week</small></span></label></div>
   <div id="rotaView" class="view" hidden>
     <input type="file" id="rotaIn" accept=".rif,.RIF,.ord,.ORD,.dcl,.DCL,.orl,.ORL,.txt,text/plain" multiple hidden>
     <input type="file" id="ordDir" webkitdirectory multiple hidden>
@@ -614,31 +650,34 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
       <b class="rjLbl">Rota jobs</b>
       <div class="jobs rjChips" id="rjList"></div>
       <input type="text" id="rjName" aria-label="Rota job name" hidden>
-      <div class="hbtns"><button type="button" class="btn" id="rjNew">New job</button><button type="button" class="btn" id="rjCopy">Copy job</button><button type="button" class="btn danger" id="rjDel">Delete job</button></div>
+      <div class="hbtns"><button type="button" class="btn" id="rjNew">New job</button><button type="button" class="btn" id="rjRen">Rename</button><button type="button" class="btn" id="rjCopy">Copy job</button><button type="button" class="btn danger" id="rjDel">Delete job</button></div>
     </div>
     <div class="omniTop">
-      <div class="omniFiles">
-        <button type="button" class="btn primary" id="ordLoad">Open OmniROTA folder</button>
-        <button type="button" class="btn" id="rotaLoad">Open rota file (.RIF / .ORD)</button>
-        <button type="button" class="btn" id="difLoad">Load duties (.DIF / .DCL)</button>
-        <button type="button" class="btn" id="rotaNewBtn">New sub rota</button>
-        <button type="button" class="btn" id="rotaMainBtn" disabled>Main rota settings</button>
-        <button type="button" class="btn" id="ordDl" disabled>Save for OmniROTA (.ORD)</button>
-        <button type="button" class="btn" id="rotaDl" disabled title="Rota file (.RIF), e.g. WB ROTAS 131226.RIF">Save Rota file for DAS</button>
-        <button type="button" class="btn" id="difDl" disabled title="Copy of the loaded .DIF without the day flags, or a .DIF written from the .DCL / .ORL duty files; duties that are the same on Mon–Thu and Friday are written once. Saved as e.g. WB DUTIES 131226.DIF">Save Duties file for DAS</button>
-        <button type="button" class="btn" id="rotaCopy" disabled>Copy RIF text</button>
+      <div class="fileMenu" id="fileWrap">
+        <button type="button" class="btn primary" id="fileBtn" aria-haspopup="true" aria-expanded="false" aria-controls="filePanel">File &#9662;</button>
+        <div class="filePanel" id="filePanel" hidden>
+          <div class="fpName"><span>Rota file</span><b id="rotaFileName">—</b><small id="rotaSrcInfo"></small></div>
+          <button type="button" class="fpItem" id="ordLoad">Open OmniROTA folder</button>
+          <button type="button" class="fpItem" id="rotaLoad">Open rota file (.RIF / .ORD)</button>
+          <button type="button" class="fpItem" id="difLoad">Load duties (.DIF / .DCL)</button>
+          <button type="button" class="fpItem" id="difClear">Remove duty file</button>
+          <hr>
+          <button type="button" class="fpItem" id="ordDl" disabled>Save for OmniROTA (.ORD)</button>
+          <button type="button" class="fpItem" id="rotaDl" disabled title="Rota file (.RIF), e.g. WB ROTAS 131226.RIF">Save Rota file for DAS</button>
+          <button type="button" class="fpItem" id="difDl" disabled title="Copy of the loaded .DIF without the day flags, or a .DIF written from the .DCL / .ORL duty files; duties that are the same on Mon–Thu and Friday are written once. Saved as e.g. WB DUTIES 131226.DIF">Save Duties file for DAS</button>
+        </div>
       </div>
-      <div class="omniPick">
-        <label class="fld"><span>Rota filename</span><b id="rotaFileName">—</b></label>
-        <label class="fld" for="rotaPick"><span>Current rota</span><select id="rotaPick"></select></label>
-        <button type="button" class="btn" id="rotaSubBtn" disabled>Sub rota settings</button>
-      </div>
+      <label class="fld" for="rotaPick"><span>Current rota</span><select id="rotaPick"></select></label>
+      <button type="button" class="btn" id="rotaSubBtn" disabled>Sub rota settings</button>
+      <button type="button" class="btn" id="rotaNewBtn">New sub rota</button>
+      <button type="button" class="btn" id="rotaMainBtn" disabled>Main rota settings</button>
+      <div class="omniSum" id="omniSum" hidden><span id="rotaSum"></span></div>
+      <button type="button" class="msgBtn" id="msgBtn" title="Show the last message" aria-label="Show the last message" hidden>&#9432;</button>
+      <p class="status toast" id="rotaStatus" aria-live="polite" title="Click to hide" hidden></p>
     </div>
-    <p class="status" id="rotaStatus" aria-live="polite"></p>
     <p class="note" id="rotaNoJob">Load the duties: a .DIF duty file from the rota program (best), or a job with duty PDFs.</p>
-    <div id="rotaEmpty" class="emptyBox"><h3>No rota open</h3><p>Choose the OmniROTA folder that holds the rota's .ORD file: the rota, its duties and settings are read from it. You can also open a .RIF export and load a .DIF duty file. Files are read in your browser only.</p><button type="button" class="btn primary" id="rotaLoad2">Open rota file (.RIF / .ORD)</button></div>
+    <div id="rotaEmpty" class="emptyBox"><h3>No rota open</h3><p>Choose the OmniROTA folder that holds the rota's .ORD file: the rota, its duties and settings are read from it. You can also open a .RIF export and load a .DIF duty file. Files are read in your browser only.</p><div class="hbtns"><button type="button" class="btn primary" id="ordLoad2">Open OmniROTA folder</button><button type="button" class="btn" id="rotaLoad2">Open rota file (.RIF / .ORD)</button></div></div>
     <div id="rotaMain" hidden>
-      <div class="omniSum"><span id="rotaSum"></span><span class="note" id="rotaSrcInfo"></span><button type="button" class="linkBtn" id="difClear">Remove duty file</button></div>
       <div class="omni">
         <div class="omniGrid" id="rotaGridBox" tabindex="0" aria-label="Rota lines. Arrow keys move, Enter edits, R toggles RD, S enters SP, Delete clears.">
           <table class="omT">
@@ -1655,11 +1694,19 @@ function initAssign() {
   $('undoBtn').onclick = undo;
   document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { e.preventDefault(); undo(); } });
   updateUndo();
-  // tabs
+  // views: Crew creator is the main view; Duty check and Driver assignment are in the menu (top left)
+  const VIEW_NAMES = { rota: 'Crew creator', check: 'Duty check', assign: 'Driver assignment' };
+  const menuBtn = $('menuBtn'), menuPanel = $('menuPanel');
+  const setMenu = open => { menuPanel.hidden = !open; menuBtn.setAttribute('aria-expanded', String(open)); };
   const showTab = t => { $('checkView').hidden = t !== 'check'; $('assignView').hidden = t !== 'assign'; $('rotaView').hidden = t !== 'rota'; document.body.classList.toggle('rotaMode', t === 'rota');
-    document.querySelectorAll('#tabs button[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t)); if (t === 'assign') renderAssignResults(); if (t === 'rota') renderRota(); };
-  document.querySelectorAll('#tabs button[data-tab]').forEach(b => b.onclick = () => { if (location.hash !== '#' + b.dataset.tab) location.hash = b.dataset.tab; showTab(b.dataset.tab); });
-  const tabOf = () => ({ '#assign': 'assign', '#rota': 'rota' })[location.hash] || 'check';
+    document.querySelectorAll('#menuPanel button[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+    menuBtn.innerHTML = '&#9776; ' + VIEW_NAMES[t]; setMenu(false);
+    if (t === 'assign') renderAssignResults(); if (t === 'rota') renderRota(); };
+  menuBtn.onclick = e => { e.stopPropagation(); setMenu(menuPanel.hidden); };
+  document.addEventListener('click', e => { if (!e.target.closest('#menuWrap')) setMenu(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
+  document.querySelectorAll('#menuPanel button[data-tab]').forEach(b => b.onclick = () => { if (location.hash !== '#' + b.dataset.tab) location.hash = b.dataset.tab; showTab(b.dataset.tab); });
+  const tabOf = () => ({ '#check': 'check', '#assign': 'assign', '#rota': 'rota' })[location.hash] || 'rota';
   window.addEventListener('hashchange', () => showTab(tabOf()));
   showTab(tabOf());
 }
@@ -1689,7 +1736,13 @@ const saveRota = () => { const j = curJob(); if (j) { j.file = rotaFile; j.sel =
   try { localStorage.setItem('dutyRotaJobs', JSON.stringify(rotaJobs, difReplacer)); localStorage.setItem('dutyRotaJobSel', rotaJobId || ''); localStorage.removeItem('dutyRotaFile'); }
   catch (e) { rotaMsg('This browser has run out of space to save rota jobs. Delete an older rota job.', true); } };
 function newRotaJob(name, file) { const id = 'r' + Date.now() + Math.random().toString(36).slice(2, 5); rotaJobs.push({ garage: window.profSel || 'g1', id, name, created: Date.now(), file, sel: file && file.rotas[0] ? file.rotas[0].code : null }); pickJob(id); return curJob(); }
-function rotaMsg(t, err) { const st = $('rotaStatus'); if (!st) return; st.textContent = t || ''; st.classList.toggle('err', !!err); }
+let rotaMsgT = null;
+function rotaMsg(t, err) { const st = $('rotaStatus'); if (!st) return; st.textContent = t || ''; st.classList.toggle('err', !!err); showRotaMsg(!!t); }
+function showRotaMsg(on) { // messages show for a while over the rota and can be shown again with the (i) button; errors stay until clicked
+  const st = $('rotaStatus'), b = $('msgBtn'); if (!st) return; clearTimeout(rotaMsgT);
+  st.hidden = !on || !st.textContent; if (b) b.hidden = !st.textContent;
+  if (!st.hidden && !st.classList.contains('err')) rotaMsgT = setTimeout(() => { st.hidden = true; }, 12000);
+}
 
 const DEF_SET = { startDate: '', rdCode: 'RD', spCode: 'SP', includeRd: false, earlyOff: 900, lateOff: 1321, midOff: 1170, customTypes: [] };
 const defCfg = r => ({ min: asg.target, max: asg.target + 60, sp: 426, rd: 426, rest: 660, moves: (r && r.rotating === false) ? 'static' : 'down', short: '', startWeek: 1, splitEvery: r && /^SCH/i.test(r.code || '') ? 0 : 3 });
@@ -1870,6 +1923,7 @@ function rotaSrc() {
   };
 }
 // week types: which duty types a line (week) should get
+const WT_TAG = { any: 'Any', mix: 'Mix', early: 'Early', mid: 'Mid', lm: 'L/M', late: 'Late' };
 const WTYPES = [['any', 'Any'], ['mix', 'Mix'], ['early', 'Early'], ['mid', 'Midday'], ['lm', 'L/M'], ['late', 'Late']];
 const WT_SHORT = { any: 'Any', mix: 'Mix', early: 'Early', mid: 'Midday', lm: 'L/M', late: 'Late' };
 // On Sunday only L duties follow the week type: other Sunday duties fit any week (same value, only the 11:00 rest counts).
@@ -2105,10 +2159,11 @@ function buildRota(src, o) {
 let rotaA = null;
 function rotaJobInfo() { const job = jobs.find(j => j.id === jobId); return job ? jobInfo(job) : null; }
 function fillNrRange() { $('nr_range').innerHTML = ROTAS.map(r => `<option>${esc(r)}</option>`).join(''); }
+function editRjName() { const j = curJob(); if (!j) return; const i = $('rjName'); i.value = j.name; i.hidden = false; i.focus(); i.select(); }
 function renderRjobs() {
   $('rjList').innerHTML = garRotaJobs().sort((a, b) => b.created - a.created).map(j => { const f = j.file; const n = f ? f.rotas.length : 0;
     return `<button type="button" class="job ${j.id === rotaJobId ? 'active' : ''}" data-rj="${esc(j.id)}"><b>${esc(j.name)}</b><small>${f ? `${esc(f.name)} · ${n} sub rota${n === 1 ? '' : 's'}${f.dif ? ' · duties loaded' : ''}` : 'empty: open a rota'}</small></button>`; }).join('') || '<span class="note">No rota jobs yet. Opening a rota creates one.</span>';
-  const j = curJob(); $('rjName').hidden = !j; $('rjCopy').disabled = !j || !j.file; $('rjDel').disabled = !j; if (j && document.activeElement !== $('rjName')) $('rjName').value = j.name;
+  const j = curJob(); if (!j) $('rjName').hidden = true; $('rjRen').disabled = !j; $('rjCopy').disabled = !j || !j.file; $('rjDel').disabled = !j; if (j && document.activeElement !== $('rjName')) $('rjName').value = j.name;
 }
 // lines on screen: shrink rows so the chosen number of weeks fits the grid (0 = normal size)
 let rotaRows = 0; try { rotaRows = parseInt(localStorage.getItem('rotaRows'), 10) || 0; } catch (e) {}
@@ -2181,7 +2236,7 @@ function renderRota(reveal) {
   const box0 = $('rotaGridBox'); const keepTop = box0 ? box0.scrollTop : 0, keepLeft = box0 ? box0.scrollLeft : 0;
   if ($('rotaView').hidden) return;
   const has = !!rotaFile && rotaFile.rotas.length; const src = rotaSrc(); const info = src.ok ? src : null;
-  $('rotaEmpty').hidden = has; $('rotaMain').hidden = !has; $('rotaDl').disabled = !has; $('ordDl').disabled = !has; $('difDl').disabled = !(has && (rotaFile.difOut || rotaFile.pcRaw)); $('rotaCopy').disabled = !has;
+  $('rotaEmpty').hidden = has; $('rotaMain').hidden = !has; $('omniSum').hidden = !has; $('difClear').hidden = !(has && rotaFile.dif); $('rotaDl').disabled = !has; $('ordDl').disabled = !has; $('difDl').disabled = !(has && (rotaFile.difOut || rotaFile.pcRaw));
   ['rotaSubBtn', 'rotaMainBtn'].forEach(id => $(id).disabled = !has);
   $('rotaNoJob').hidden = !!info;
   if (!has) { $('rotaFileName').textContent = '—'; $('rotaPick').innerHTML = ''; return; }
@@ -2208,7 +2263,7 @@ function renderRota(reveal) {
         <div class="r3">${du ? fmt(du.pay) : '<span class="e">not in list</span>'}</div>`;
       return `<td class="${cls}" data-li="${li}" data-di="${di}" title="${esc([du ? `${c.v} ${hhmmTxt(du.s)}–${hhmmTxt(du.e)} · ${fmt(du.pay)}` : '', f.dup ? 'used twice on this day' : '', f.unknown ? 'not in the duty list' : '', f.onBad || f.offBad ? 'rest under ' + fmt(r.cfg.rest) : ''].filter(Boolean).join(' · '))}">${inner}</td>`; }).join('');
     const wt = l.wt || 'any';
-    return `<tr${l.keep ? ' class="kept"' : ''}><th class="ln wt-${wt}" scope="row"><b>${esc(l.pre[5])}</b><small>${RDc()}=${x.rd}</small>${l.driver ? `<small class="drvN" title="${esc(l.driver)}">${esc(l.driver)}</small>` : ''}<select class="wtSel" data-li="${li}" aria-label="Week type of line ${esc(l.pre[5])}">${WTYPES.map(([k, t]) => `<option value="${k}" ${k === wt ? 'selected' : ''}>${t}</option>`).join('')}</select><label class="keepT" title="Keep: Balance weeks does not change this week"><input type="checkbox" data-keep="${li}" ${l.keep ? 'checked' : ''} aria-label="Keep line ${esc(l.pre[5])}: do not balance"><span>Keep</span></label></th>${cells}
+    return `<tr${l.keep ? ' class="kept"' : ''}><th class="ln wt-${wt}" scope="row"><b>${esc(l.pre[5])}</b><small>${RDc()}=${x.rd}</small>${l.driver ? `<small class="drvN" title="${esc(l.driver)}">${esc(l.driver)}</small>` : ''}<button type="button" class="wtTag" data-wt="${li}" title="Week type${l.keep ? ' · Keep: Balance weeks does not change this week' : ''}. Click to change." aria-label="Week type of line ${esc(l.pre[5])}: ${WTYPES.find(w => w[0] === wt)[1]}${l.keep ? ', kept' : ''}">${WT_TAG[wt] || wt}${l.keep ? ' &#128274;' : ''}</button></th>${cells}
       <td class="wk ${x.st}" title="${esc(x.issues.join('\n'))}"><b>${fmt(x.total)}</b>${x.st !== 'ok' ? `<small>(${x.diff > 0 ? '+' : '−'}${fmt(Math.abs(x.diff))})</small>` : ''}${x.issues.length ? `<i>${x.issues.length} problem${x.issues.length > 1 ? 's' : ''}</i>` : ''}</td></tr>`; }).join('');
   renderDutyList();
   const sel = $('rotaGrid').querySelector('td.sel'); const box = $('rotaGridBox');
@@ -2606,8 +2661,36 @@ function autoWtOnOpen() { const p = typeof curProfile === 'function' ? curProfil
 function initRota() {
   $('rjList').addEventListener('click', e => { const b = e.target.closest('[data-rj]'); if (!b) return; pickJob(b.dataset.rj); saveRota(); rotaMsg(''); renderRota(); });
   $('rjNew').onclick = () => { newRotaJob('New rota job · ' + new Date().toLocaleDateString('en-GB'), null); saveRota(); renderRota(); rotaMsg('New empty rota job. Open a rota (.RIF) to fill it.'); };
-  $('rjCopy').onclick = () => { const j = curJob(); if (!j || !j.file) return; newRotaJob('Copy of ' + j.name, JSON.parse(JSON.stringify(j.file))); saveRota(); renderRota(); $('rjName').focus(); $('rjName').select();
+  $('rjCopy').onclick = () => { const j = curJob(); if (!j || !j.file) return; newRotaJob('Copy of ' + j.name, JSON.parse(JSON.stringify(j.file))); saveRota(); renderRota(); editRjName();
     rotaMsg('Copied. Give the job a new name, then load the new duties (.DIF) into it.'); };
+  $('rjRen').onclick = editRjName;
+  $('rjList').addEventListener('dblclick', e => { if (e.target.closest('.job.active')) editRjName(); });
+  $('rjName').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); else if (e.key === 'Escape') { const j = curJob(); if (j) e.target.value = j.name; e.target.blur(); } });
+  $('rjName').addEventListener('blur', e => { e.target.hidden = true; });
+  // File menu
+  const fileSet = open => { $('filePanel').hidden = !open; $('fileBtn').setAttribute('aria-expanded', String(open)); };
+  $('fileBtn').onclick = e => { e.stopPropagation(); fileSet($('filePanel').hidden); };
+  $('filePanel').addEventListener('click', e => { if (e.target.closest('.fpItem')) fileSet(false); });
+  document.addEventListener('click', e => { if (!e.target.closest('#fileWrap')) fileSet(false); if (!e.target.closest('#wtPop') && !e.target.closest('.wtTag')) $('wtPop').hidden = true; });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { fileSet(false); $('wtPop').hidden = true; } });
+  $('ordLoad2').onclick = () => $('ordDir').click();
+  $('msgBtn').onclick = () => showRotaMsg($('rotaStatus').hidden);
+  $('rotaStatus').onclick = () => { clearTimeout(rotaMsgT); $('rotaStatus').hidden = true; };
+  // week type and Keep of a line: one tag per line opens a small chooser
+  let wtLi = -1;
+  $('rotaGrid').addEventListener('click', e => { const b = e.target.closest('.wtTag'); if (!b) return; e.stopPropagation(); const rr = curRota(); if (!rr) return;
+    wtLi = +b.dataset.wt; const l = rr.lines[wtLi]; const wt = l.wt || 'any'; rotaCur.li = wtLi;
+    $('wtPopT').textContent = 'Line ' + l.pre[5];
+    $('wtPopL').innerHTML = WTYPES.map(([k, t]) => `<label><input type="radio" name="wtPopR" value="${k}" ${k === wt ? 'checked' : ''}> ${t}</label>`).join('');
+    $('wtPopK').checked = !!l.keep;
+    const pop = $('wtPop'); pop.hidden = false; const rc = b.getBoundingClientRect(), ph = pop.offsetHeight, pw = pop.offsetWidth;
+    pop.style.left = Math.max(8, Math.min(rc.left, innerWidth - pw - 8)) + 'px';
+    pop.style.top = (rc.bottom + 4 + ph > innerHeight - 8 ? Math.max(8, rc.top - ph - 4) : rc.bottom + 4) + 'px';
+    const cur = pop.querySelector('input:checked'); if (cur) cur.focus(); });
+  $('wtPopL').addEventListener('change', e => { const rr = curRota(); if (!rr || wtLi < 0) return; const l = rr.lines[wtLi];
+    pushUndo(`week type of line ${l.pre[5]}`); l.wt = e.target.value; saveRota(); $('wtPop').hidden = true; renderRota(); });
+  $('wtPopK').addEventListener('change', e => { const rr = curRota(); if (!rr || wtLi < 0) return; const l = rr.lines[wtLi];
+    pushUndo(`keep line ${l.pre[5]}`); l.keep = e.target.checked || undefined; saveRota(); $('wtPop').hidden = true; renderRota(); });
   $('rjName').addEventListener('change', e => { const j = curJob(); if (!j) return; j.name = e.target.value.trim() || j.name; e.target.value = j.name; saveRota(); renderRjobs(); });
   let rjT = null; $('rjDel').onclick = () => { const b = $('rjDel'); const j = curJob(); if (!j) return;
     if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Click again to delete'; rjT = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Delete job'; }, 4000); return; }
@@ -2696,7 +2779,7 @@ function initRota() {
           if (cur[i].pay !== nu.pay) { if (!seen.has(nu.no) && ex.length < 3) ex.push(`${nu.no} ${fmt(cur[i].pay)} → ${fmt(nu.pay)}`); const o = Object.assign({}, cur[i]); if (o.pay0 == null) o.pay0 = o.pay; o.pay = nu.pay; o.exact = 1; cur[i] = o; fixed++; }
           else if (cur[i].pay0 != null && !cur[i].exact) cur[i] = Object.assign({}, cur[i], { exact: 1 }); seen.add(nu.no); }); });
     } else rotaFile.dif = Object.assign({}, rotaFile.dif || {}, got);
-    const wtAfter = autoWtOnOpen(); if (wtAfter) setTimeout(() => { const st = $('rotaStatus'); if (st) st.textContent += wtAfter; }, 0);
+    const wtAfter = autoWtOnOpen(); if (wtAfter) setTimeout(() => { const st = $('rotaStatus'); if (st) { st.textContent += wtAfter; showRotaMsg(true); } }, 0);
     const dcls = fs.map((f, i) => /\.dcl$/i.test(f.name) ? raw[i] : null).filter(Boolean); if (dcls.length) { rotaFile.pcRaw = packTxt(dcls.join('\n')); rotaFile.pcKind = '.DCL'; }
     if (fs.every(f => !/\.dcl$/i.test(f.name))) rotaFile.difOut = Object.assign({ name: fs[0].name }, difStrip(raw.join('\r\n')));
     saveRota();
@@ -2915,7 +2998,6 @@ function initRota() {
     rotaMsg(o.made ? `Saved ${o.name}: ${o.duties} duties written from the duty pieces (${rotaFile.pcKind || '.DCL / .ORL'})${o.dropped ? `, ${o.dropped} duties that were the same on two day groups written once` : ''}.`
       : `Saved ${o.name}: ${o.duties} duties, day flags taken off${o.dropped ? `, ${o.dropped} duties that were the same on Mon–Thu and Friday written once` : ''}.`); };
   $('rotaDl').onclick = () => { if (!rotaFile) return; const n = dasName('ROTAS', 'RIF'); saveFile(n, writeRif(rotaFile), 'text/plain', true); rotaMsg(`Saved ${n}.`); };
-  $('rotaCopy').onclick = async () => { const b = $('rotaCopy'); try { await navigator.clipboard.writeText(writeRif(rotaFile)); b.textContent = 'Copied'; } catch (e) { b.textContent = 'Copy blocked'; } setTimeout(() => b.textContent = 'Copy RIF text', 2500); };
   // new sub rota
   fillNrRange();
   $('rotaNewBtn').onclick = () => { $('nrMsg').textContent = ''; showDialog('newDlg'); };
@@ -2985,6 +3067,22 @@ function initProfiles() {
     profiles.push(p); switchGarage(p.id); renderGarDlg();
     m.textContent = `Added ${name} and switched to it. Set its 4 Day numbers in Duty check and its rotas under Driver assignment → Assignment settings.`;
   };
+  $('garExp').onclick = () => { const p = curProfile(); const m = $('garMsg'); if (!p) return;
+    storeProfile(); // the file holds what is on screen now
+    const out = { format: 'wb-garage-settings', version: 1, name: p.name, autoWt: !!p.autoWt, rules: clone(p.rules), asg: clone(p.asg), subRanges: clone(p.subRanges || {}) };
+    saveFile('WB garage settings - ' + p.name + '.json', JSON.stringify(out, null, 2), 'application/json');
+    m.textContent = `Saved the settings of ${p.name}. Drivers are not included.`; };
+  $('garImp').onclick = () => { $('garFile').value = ''; $('garFile').click(); };
+  $('garFile').onchange = async e => { const f = e.target.files[0]; const m = $('garMsg'); if (!f) return;
+    let o; try { o = JSON.parse(await f.text()); } catch (x) { m.textContent = 'This file is not valid JSON.'; return; }
+    if (!o || o.format !== 'wb-garage-settings' || !o.rules || !o.asg) { m.textContent = 'This is not a garage settings file.'; return; }
+    storeProfile();
+    let name = String(o.name || 'Garage').trim() || 'Garage', n = 2, base = name;
+    while (profiles.some(x => x.name.toLowerCase() === name.toLowerCase())) name = `${base} (${n++})`;
+    const p = { id: 'g' + Date.now().toString(36), name, drivers: [], autoWt: o.autoWt != null ? !!o.autoWt : /walsall/i.test(name), subRanges: clone(o.subRanges || {}) };
+    p.rules = fixRules(clone(o.rules)); p.asg = profAsg(clone(o.asg)); p.asg.ranges = clone(o.asg.ranges || {});
+    profiles.push(p); switchGarage(p.id); renderGarDlg();
+    m.textContent = `Loaded ${name} as a new garage and switched to it. Add its drivers under Driver assignment.`; };
   $('garBody').addEventListener('change', e => { const t = e.target; if (!t.dataset.gname) return; const p = profiles.find(x => x.id === t.dataset.gname);
     const v = t.value.trim(); if (!v || profiles.some(x => x !== p && x.name.toLowerCase() === v.toLowerCase())) { t.value = p.name; return; }
     p.name = v; storeProfile(); try { localStorage.setItem('dutyProfiles', JSON.stringify(profiles)); } catch (x) {} renderGarages(); });
