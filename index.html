@@ -351,7 +351,11 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .moves { border: 1px solid var(--line); border-radius: 6px; margin: 12px 0 0; padding: 6px 10px 8px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13.5px }
 .moves small { flex-basis: 100%; color: var(--muted) }
 .dlg .cbrow { display: flex; gap: 8px; align-items: center; margin-top: 10px; font-size: 13.5px }
-.dBtns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px }
+.dBtns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 14px }
+#garDlg { width: min(780px, calc(100vw - 32px)); overflow-x: hidden } #garDlg .garList { min-width: 0 }
+#garDlg .garList td:first-child { width: 38% } #garDlg .garList td:last-child { width: 1%; white-space: nowrap }
+#garDlg .dGrid input, #garDlg .dGrid select { width: 100%; min-width: 0 }
+#garDlg .dBtns .btn { white-space: nowrap }
 .dlg.xwide { width: min(1340px, calc(100vw - 32px)) }
 .statCols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px 28px; margin-bottom: 10px }
 .statG { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; font-size: 13.5px; align-content: start }
@@ -650,7 +654,7 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
       <b class="rjLbl">Rota jobs</b>
       <div class="jobs rjChips" id="rjList"></div>
       <input type="text" id="rjName" aria-label="Rota job name" hidden>
-      <div class="hbtns"><button type="button" class="btn" id="rjNew">New job</button><button type="button" class="btn" id="rjRen">Rename</button><button type="button" class="btn" id="rjCopy">Copy job</button><button type="button" class="btn danger" id="rjDel">Delete job</button></div>
+      <div class="hbtns"><button type="button" class="btn primary" id="rjNew" title="Choose an OmniROTA folder: its rota (.ORD) and duty files (.DCL) open as a new rota job">Add new OmniROTA</button><button type="button" class="btn" id="rjRen">Rename</button><button type="button" class="btn" id="rjCopy">Copy job</button><button type="button" class="btn danger" id="rjDel">Delete job</button></div>
     </div>
     <div class="omniTop">
       <div class="fileMenu" id="fileWrap">
@@ -1736,7 +1740,7 @@ const saveRota = () => { const j = curJob(); if (j) { j.file = rotaFile; j.sel =
   try { localStorage.setItem('dutyRotaJobs', JSON.stringify(rotaJobs, difReplacer)); localStorage.setItem('dutyRotaJobSel', rotaJobId || ''); localStorage.removeItem('dutyRotaFile'); }
   catch (e) { rotaMsg('This browser has run out of space to save rota jobs. Delete an older rota job.', true); } };
 function newRotaJob(name, file) { const id = 'r' + Date.now() + Math.random().toString(36).slice(2, 5); rotaJobs.push({ garage: window.profSel || 'g1', id, name, created: Date.now(), file, sel: file && file.rotas[0] ? file.rotas[0].code : null }); pickJob(id); return curJob(); }
-let rotaMsgT = null;
+let rotaMsgT = null, pickOrdFolder = () => {};
 function rotaMsg(t, err) { const st = $('rotaStatus'); if (!st) return; st.textContent = t || ''; st.classList.toggle('err', !!err); showRotaMsg(!!t); }
 function showRotaMsg(on) { // messages show for a while over the rota and can be shown again with the (i) button; errors stay until clicked
   const st = $('rotaStatus'), b = $('msgBtn'); if (!st) return; clearTimeout(rotaMsgT);
@@ -2660,7 +2664,7 @@ function autoWtOnOpen() { const p = typeof curProfile === 'function' ? curProfil
   if (done.length) saveRota(); return done.length ? ` Week types set from the duties (Walsall rule) — ${done.slice(0, 6).join('; ')}${done.length > 6 ? ' …' : ''}. Change any line with its week type box.` : ''; }
 function initRota() {
   $('rjList').addEventListener('click', e => { const b = e.target.closest('[data-rj]'); if (!b) return; pickJob(b.dataset.rj); saveRota(); rotaMsg(''); renderRota(); });
-  $('rjNew').onclick = () => { newRotaJob('New rota job · ' + new Date().toLocaleDateString('en-GB'), null); saveRota(); renderRota(); rotaMsg('New empty rota job. Open a rota (.RIF) to fill it.'); };
+  $('rjNew').onclick = () => pickOrdFolder();
   $('rjCopy').onclick = () => { const j = curJob(); if (!j || !j.file) return; newRotaJob('Copy of ' + j.name, JSON.parse(JSON.stringify(j.file))); saveRota(); renderRota(); editRjName();
     rotaMsg('Copied. Give the job a new name, then load the new duties (.DIF) into it.'); };
   $('rjRen').onclick = editRjName;
@@ -2673,7 +2677,7 @@ function initRota() {
   $('filePanel').addEventListener('click', e => { if (e.target.closest('.fpItem')) fileSet(false); });
   document.addEventListener('click', e => { if (!e.target.closest('#fileWrap')) fileSet(false); if (!e.target.closest('#wtPop') && !e.target.closest('.wtTag')) $('wtPop').hidden = true; });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { fileSet(false); $('wtPop').hidden = true; } });
-  $('ordLoad2').onclick = () => $('ordDir').click();
+  $('ordLoad2').onclick = () => pickOrdFolder();
   $('msgBtn').onclick = () => showRotaMsg($('rotaStatus').hidden);
   $('rotaStatus').onclick = () => { clearTimeout(rotaMsgT); $('rotaStatus').hidden = true; };
   // week type and Keep of a line: one tag per line opens a small chooser
@@ -2730,7 +2734,7 @@ function initRota() {
   // Open OmniROTA folder: find the .ORD rota files and the duty files (.DCL, or the rota's own .ORL) in the folder.
   // With more than one rota, or more than one set of duty files, ask which to open.
   const dclSetKey = n => n.replace(/\.dcl$/i, '').toUpperCase().replace(/^(.{2})(SU|SA|MH|FO|MF|FR|MT|MO)/, '$1');
-  const openOrd = async files => { files = [...files]; const ords = files.filter(f => /\.ord$/i.test(f.name));
+  const openOrd = async files => { files = [...files]; rotaMsg(''); const ords = files.filter(f => /\.ord$/i.test(f.name));
     if (!ords.length) { rotaMsg('No OmniROTA data file found. The folder must contain the .ORD file of the rota.', true); return; }
     const sets = new Map(); files.filter(f => /\.dcl$/i.test(f.name)).forEach(f => { const k = dclSetKey(f.name); (sets.get(k) || sets.set(k, []).get(k)).push(f); });
     const info = []; for (const f of ords) { const H = csvRow((await f.slice(0, 400).text()).split(/\r?\n/)[0] || ''); info.push({ f, title: (H[11] || '').trim() || f.name, date: (H[8] || '').trim(), lines: parseInt(H[0], 10) || 0, subs: parseInt(H[2], 10) || 0, mod: f.lastModified }); }
@@ -2755,8 +2759,19 @@ function initRota() {
       } catch (err) { bad.push(f.name); } }
     const wtTxt = done.length ? autoWtOnOpen() : '';
     rotaMsg((done.length ? `New rota job from OmniROTA: ${done.join('; ')}.` : '') + wtTxt + (bad.length ? ` Could not read ${bad.join(', ')}.` : ''), !done.length); renderRota(); };
-  $('ordDir').addEventListener('change', e => { const fs = e.target.files; openOrd(fs); e.target.value = ''; });
-  $('ordLoad').onclick = () => $('ordDir').click();
+  $('ordDir').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) openOrd(fs); }); // Cancel on the upload question gives no files: nothing to report
+  // Open OmniROTA folder: read only the .ORD, .DCL and .ORL files at the top of the folder (no subfolders).
+  // Chrome and Edge ask once to view the folder; other browsers fall back to the folder upload picker.
+  pickOrdFolder = async () => {
+    if (window.showDirectoryPicker) { let dir;
+      try { dir = await window.showDirectoryPicker({ id: 'omnirota', mode: 'read' }); }
+      catch (err) { if (err && err.name === 'AbortError') return; $('ordDir').click(); return; }
+      const files = []; try { for await (const h of dir.values()) if (h.kind === 'file' && /\.(ord|dcl|orl)$/i.test(h.name)) files.push(await h.getFile()); }
+      catch (err) { rotaMsg('Could not read the folder ' + dir.name + '.', true); return; }
+      if (!files.some(f => /\.ord$/i.test(f.name))) { rotaMsg(`No OmniROTA data file (.ORD) in ${dir.name}. Choose the folder that holds the rota's .ORD file.`, true); return; }
+      openOrd(files); return; }
+    $('ordDir').click(); };
+  $('ordLoad').onclick = () => pickOrdFolder();
   $('rotaIn').addEventListener('change', async e => { const all = [...e.target.files]; const f = all[0]; e.target.value = ''; if (!f) return;
     if (all.some(x => /\.ord$/i.test(x.name))) { openOrd(all); return; }
     try { const parsed = parseRif(await f.text(), f.name); if (!parsed.rotas.length) throw new Error('none');
