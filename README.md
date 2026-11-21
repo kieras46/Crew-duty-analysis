@@ -4,6 +4,14 @@ A single-page tool that reads West Midlands Bus “WB CREW DUTY SUMMARY” PDF f
 
 PDFs are read in your browser with [pdf.js](https://mozilla.github.io/pdf.js/). Nothing is uploaded anywhere.
 
+## Install as an app
+
+RET can be installed from the GitHub Pages address as a desktop app (Chrome or Edge, no administrator rights needed): open the page, then **☰ → Install RET as an app** (or the install icon at the right of the address bar). RET then has its own window, a Start menu and taskbar icon, and works without internet after the first visit. Jobs and settings are the same as on the web page (same browser storage).
+
+**Saving files**: on the GitHub page, in the installed app and in the Chrome extension every Save button opens the Windows **Save as** window, so the file can go straight to any folder or network drive (e.g. N:\OmniHub\L44H). It remembers the last folder separately for each kind of file (.RIF, .DIF, .ORD, .csv, .json). Cancel saves nothing. Where the browser does not offer this window, the file is downloaded to the Downloads folder as before.
+
+The installed app opens OmniROTA files from Windows: right-click an `.ORD`, `.DCL`, `.ORL`, `.RIF` or `.DIF` file → **Open with → RET** (select the `.ORD` with its `.DCL` files together to open a rota with its duties). The first time, Windows or Chrome asks to allow RET to open these files. Updates uploaded to GitHub reach the app the next time it opens online.
+
 ## How to use
 
 The page opens in the **Rota Editor Tool**. **Duty check** and **Driver assignment** are in the **☰** menu in the top left corner; the menu button shows the view you are in.
