@@ -851,7 +851,7 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
       <div class="dBtns"><button type="button" class="btn primary" id="opOk">Open</button><button type="button" class="btn" data-close="openDlg">Cancel</button></div>
     </dialog>
     <dialog id="spdDlg" class="dlg wide" aria-labelledby="spdT"><h3 id="spdT">Special days</h3>
-      <p class="note">On the days you choose, every duty on the rota changes to SP, or to its special version with the letter in front: 2001 → E2001. If that duty is missing, already used or breaks the minimum rest, the most similar free special duty of the same sub rota’s subset is used (closest sign-on and sign-off); if none fits, SP. RD and SP stay. Load the special duties first with <b>Load duties (.DIF / .DCL)</b>. Tip: use Copy job first to keep the normal rota.</p>
+      <p class="note">On the days you choose, every duty on the rota changes to SP, or to its special version with the letter in front: 2001 → E2001. If that duty is missing, already used or breaks the minimum rest, the most similar free special duty of the same sub rota’s subset is used (closest sign-on and sign-off); if none fits, SP. Empty working days get the free special duties left over (the one most like the line’s nearest duty, keeping the 11:00 rest); when there are more empty days than special duties, the rest become SP. RD and SP stay. Load the special duties first with <b>Load duties (.DIF / .DCL)</b>. Tip: use Copy job first to keep the normal rota.</p>
       <fieldset class="spdDays"><legend>Days</legend>
         <label><input type="checkbox" name="spd_day" value="sun"> Sun</label><label><input type="checkbox" name="spd_day" value="mon"> Mon</label><label><input type="checkbox" name="spd_day" value="tue"> Tue</label><label><input type="checkbox" name="spd_day" value="wed"> Wed</label><label><input type="checkbox" name="spd_day" value="thu"> Thu</label><label><input type="checkbox" name="spd_day" value="fri"> Fri</label><label><input type="checkbox" name="spd_day" value="sat"> Sat</label>
       </fieldset>
@@ -2632,12 +2632,17 @@ function bhmBuild(f, rule) {
 // (closest sign-on, from the same sub rota's subset); if there is none, SP. RD and SP stay. Each special duty is used once.
 function specialPrefixes(src, days) { const c = {}; days.forEach(d => src.day(d).forEach(du => { const m = du.no.match(/^([A-Z]+)\d/i); if (m) { const k = m[1].toUpperCase(); c[k] = (c[k] || 0) + 1; } })); return c; }
 function specialRun(src, days, pre, codes) {
-  const stats = { same: 0, similar: 0, sp: 0, unused: [], perDay: {} }; const sp = (rotaFile.set && rotaFile.set.spCode) || 'SP';
+  const stats = { same: 0, similar: 0, sp: 0, filled: 0, spEmpty: 0, unused: [], perDay: {} }; const sp = (rotaFile.set && rotaFile.set.spCode) || 'SP';
   const spec = no => new RegExp('^' + pre + '\\d', 'i').test(no);
   days.forEach(d => { const di = DAYS.findIndex(x => x[0] === d); const pool = src.day(d).filter(du => spec(du.no)); const byNo = new Map(pool.map(du => [du.no, du])); const used = new Set();
-    const ps = { same: 0, similar: 0, sp: 0 };
+    const ps = { same: 0, similar: 0, sp: 0, filled: 0, spEmpty: 0 };
     const todo = [];
-    rotaFile.rotas.filter(r => !codes || codes.includes(r.code)).forEach(r => r.lines.forEach((l, li) => { const v = l.cells[di].v; if (!isDutyVal(v) || spec(v)) return; todo.push({ r, l, li, v, old: src.look(d, v) }); }));
+    // the line's nearest duty on another day: what an empty day's special duty should be most like
+    const refDuty = l => { for (let k = 1; k < 7; k++) for (const j of [di - k, di + k]) { if (j < 0 || j > 6) continue; const du = src.look(DAYS[j][0], l.cells[j].v); if (du) return du; } return null; };
+    // working days: a normal duty (changed to its special version) or an empty day (gets a free special duty); RD and SP are kept
+    rotaFile.rotas.filter(r => !codes || codes.includes(r.code)).forEach(r => r.lines.forEach((l, li) => { const v = l.cells[di].v;
+      if (!v) { todo.push({ r, l, li, v: '', old: refDuty(l), empty: true }); return; }
+      if (!isDutyVal(v) || spec(v)) return; todo.push({ r, l, li, v, old: src.look(d, v) }); }));
     const nb = (r, li) => { const L = r.lines; const prev = di > 0 ? src.look(DAYS[di - 1][0], L[li].cells[di - 1].v) : (prevLine(r, li) != null ? src.look('sat', L[prevLine(r, li)].cells[6].v) : null);
       const next = di < 6 ? src.look(DAYS[di + 1][0], L[li].cells[di + 1].v) : (nextLine(r, li) != null ? src.look('sun', L[nextLine(r, li)].cells[0].v) : null); return { prev, next }; };
     const fits = (t, du) => { const { prev, next } = nb(t.r, t.li); return !(prev && restFail(prev, du, t.r.cfg)) && !(next && restFail(du, next, t.r.cfg)); };
@@ -2646,16 +2651,16 @@ function specialRun(src, days, pre, codes) {
     const inSub = (code, du) => { const g = rgOf(code); return !g || !String(g[dayGroupF(d)] || '').trim() || inRc(code, d, du.num); };
     // 1. the special version of the same duty (2001 → E2001; F001 → EF001 or E001)
     const rest = [];
-    todo.forEach(t => { const base = t.v.replace(/^[A-Z]+/i, ''); const cand = [pre + t.v, pre + base].map(x => x.toUpperCase()).find(x => byNo.has(x) && !used.has(x));
+    todo.forEach(t => { if (t.empty) { rest.push(t); return; } const base = t.v.replace(/^[A-Z]+/i, ''); const cand = [pre + t.v, pre + base].map(x => x.toUpperCase()).find(x => byNo.has(x) && !used.has(x));
       if (cand && fits(t, byNo.get(cand))) { put(t, cand); used.add(cand); ps.same++; } else rest.push(t); });
     // 2. the most similar free special duty in the sub rota's subset
     // closest pairs first, so each special duty goes to the line whose own duty it is most like
-    const pairs = []; rest.forEach((t, ti) => pool.forEach(du => { if (used.has(du.no) || !inSub(t.r.code, du)) return; pairs.push({ ti, du, dd: t.old ? Math.abs(du.s - t.old.s) + Math.abs(du.e - t.old.e) / 2 : 0 }); }));
+    const pairs = []; rest.forEach((t, ti) => pool.forEach(du => { if (used.has(du.no) || !inSub(t.r.code, du)) return; pairs.push({ ti, du, dd: (t.old ? Math.abs(du.s - t.old.s) + Math.abs(du.e - t.old.e) / 2 : 0) + (t.empty ? (t.old ? 1 : 5000) : 0) }); }));
     pairs.sort((x, y) => x.dd - y.dd); const done = new Set();
-    pairs.forEach(p => { if (done.has(p.ti) || used.has(p.du.no)) return; const t = rest[p.ti]; if (!fits(t, p.du)) return; put(t, p.du.no); used.add(p.du.no); done.add(p.ti); ps.similar++; });
-    rest.forEach((t, ti) => { if (!done.has(ti)) { put(t, sp); ps.sp++; } });
+    pairs.forEach(p => { if (done.has(p.ti) || used.has(p.du.no)) return; const t = rest[p.ti]; if (!fits(t, p.du)) return; put(t, p.du.no); used.add(p.du.no); done.add(p.ti); if (t.empty) ps.filled++; else ps.similar++; });
+    rest.forEach((t, ti) => { if (!done.has(ti)) { put(t, sp); if (t.empty) ps.spEmpty++; else ps.sp++; } });
     pool.forEach(du => { if (!used.has(du.no) && (!codes || codes.some(c => inRc(c, d, du.num)))) stats.unused.push(`${DAYS[di][1]} ${du.no}`); });
-    stats.same += ps.same; stats.similar += ps.similar; stats.sp += ps.sp; stats.perDay[d] = ps; });
+    stats.same += ps.same; stats.similar += ps.similar; stats.sp += ps.sp; stats.filled += ps.filled; stats.spEmpty += ps.spEmpty; stats.perDay[d] = ps; });
   return stats;
 }
 // ---- Walsall rule: week types from the duties already on each line ----
@@ -2748,7 +2753,8 @@ function initRota() {
   const move = (dl, dd) => { const r = curRota(); if (!r) return; rotaCur.li = Math.min(r.lines.length - 1, Math.max(0, rotaCur.li + dl)); rotaCur.di = Math.min(6, Math.max(0, rotaCur.di + dd)); renderRota(true); };
   // Open OmniROTA folder: find the .ORD rota files and the duty files (.DCL, or the rota's own .ORL) in the folder.
   // With more than one rota, or more than one set of duty files, ask which to open.
-  const dclSetKey = n => n.replace(/\.dcl$/i, '').toUpperCase().replace(/^(.{2})(SU|SA|MH|FO|MF|FR|MT|MO)/, '$1');
+  // a set of duty files: same garage (first 2 letters) and same ending, whatever the 2-letter day code (WAMWL46, WASUL46, WAHOL46 → WA·L46)
+  const dclSetKey = n => n.replace(/\.dcl$/i, '').toUpperCase().replace(/^(.{2})[A-Z]{2}/, '$1');
   const openOrd = async files => { files = [...files]; rotaMsg(''); const ords = files.filter(f => /\.ord$/i.test(f.name));
     if (!ords.length) { rotaMsg('No OmniROTA data file found. The folder must contain the .ORD file of the rota.', true); return; }
     const sets = new Map(); files.filter(f => /\.dcl$/i.test(f.name)).forEach(f => { const k = dclSetKey(f.name); (sets.get(k) || sets.set(k, []).get(k)).push(f); });
@@ -2935,7 +2941,7 @@ function initRota() {
     const codes = document.querySelector('input[name="spd_scope"]:checked').value === 'one' ? [rotaSel] : null;
     pushUndo(`special days ${pre}`); const st = specialRun(src, days, pre, codes); saveRota(); closeDialog('spdDlg'); rotaA = analyseRota(rotaSrc()); renderRota();
     const dn = days.map(d => DAYS.find(x => x[0] === d)[1]).join(', ');
-    rotaMsg(`Special days (${pre}) on ${dn}${codes ? ' in ' + codes[0] : ''}: ${st.same} duties changed to their ${pre} version, ${st.similar} to the most similar ${pre} duty, ${st.sp} SP (no ${pre} duty fitted).` + (st.unused.length ? ` ${pre} duties not used: ${st.unused.slice(0, 15).join(', ')}${st.unused.length > 15 ? ' …' : ''}.` : ` Every ${pre} duty is used.`) + ' Undo puts the normal duties back.'); };
+    rotaMsg(`Special days (${pre}) on ${dn}${codes ? ' in ' + codes[0] : ''}: ${st.same} duties changed to their ${pre} version, ${st.similar} to the most similar ${pre} duty, ${st.sp} SP (no ${pre} duty fitted)` + (st.filled || st.spEmpty ? `; empty days: ${st.filled} given a ${pre} duty, ${st.spEmpty} SP (more empty days than ${pre} duties, or none fitted the 11:00 rest)` : '') + '.' + (st.unused.length ? ` ${pre} duties not used: ${st.unused.slice(0, 15).join(', ')}${st.unused.length > 15 ? ' …' : ''}.` : ` Every ${pre} duty is used.`) + ' Undo puts the normal duties back.'); };
   $('rbBhm').onclick = () => { const j = curJob(); if (!j || !rotaFile) { rotaMsg('Open a rota first.', true); return; }
     $('bhm_msg').textContent = ''; $('bhm_name').textContent = j.name;
     const wb = /west\s*brom|^wb\b/i.test((curProfile() || {}).name || '') || (rotaFile.depot || '').toUpperCase() === 'WB';
