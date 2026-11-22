@@ -273,6 +273,10 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .wtPop #wtPopL label:hover { background: var(--accent-soft) }
 .wtPop .wtKeep { display: flex; gap: 8px; align-items: flex-start; border-top: 1px solid var(--line); margin-top: 4px; padding: 8px 8px 2px; cursor: pointer; font-weight: 600; color: #b45309 }
 .wtPop .wtKeep input { accent-color: #b45309; margin-top: 3px } .wtPop .wtKeep small { display: block; font-weight: 400; color: var(--muted); font-size: 12px }
+.ckWrap { max-height: 46vh; overflow: auto; border: 1px solid var(--line); border-radius: 8px }
+.ckT { width: 100%; min-width: 0; border-collapse: collapse; font-size: 13.5px } .ckT th, .ckT td { padding: 5px 10px; border-bottom: 1px solid var(--line); text-align: left }
+.ckT thead th { position: sticky; top: 0; background: var(--surface); font-size: 12px; color: var(--muted) } .ckT select { font-size: 13px }
+.ckH { margin: 14px 0 6px; font-size: 14px } #ckUnused details { margin: 2px 0 } #ckUnused p { margin: 4px 0 8px 16px; font-size: 12.5px; overflow-wrap: anywhere }
 .linkBtn { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; font-size: 12.5px; text-decoration: underline }
 .omni { display: grid; grid-template-columns: minmax(0, 1fr) clamp(290px, 21vw, 400px); gap: 10px; align-items: start }
 @media (max-width: 1100px) { .omni { grid-template-columns: minmax(0, 1fr) } }
@@ -718,7 +722,7 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
         <fieldset><legend>Rota lines</legend>
           <button type="button" id="rbIns">Insert</button><button type="button" id="rbDel">Remove</button><button type="button" id="rbSwap">Swap days</button><button type="button" id="rbWeeks">Week types…</button></fieldset>
         <fieldset><legend>Tools</legend>
-          <button type="button" id="rbFill">Auto-fill</button><button type="button" id="rbBal">Balance weeks</button><button type="button" id="rbStats">Rota statistics</button><button type="button" id="rbGStats">Global statistics</button><button type="button" id="rbBhm" title="Bank Holiday Monday: Monday runs the Sunday duties">BHM</button><button type="button" id="rbSpecial" title="Christmas Eve, days between Christmas and New Year: duties change to their special version (2001 → E2001)">Special days</button></fieldset>
+          <button type="button" id="rbFill">Auto-fill</button><button type="button" id="rbBal">Balance weeks</button><button type="button" id="rbStats">Rota statistics</button><button type="button" id="rbGStats">Global statistics</button><button type="button" id="rbCheck" title="Duty numbers on the rota that are not in the duty files, and duties no line works (like Check Duties in OmniROTA)">Check duties</button><button type="button" id="rbBhm" title="Bank Holiday Monday: Monday runs the Sunday duties">BHM</button><button type="button" id="rbSpecial" title="Christmas Eve, days between Christmas and New Year: duties change to their special version (2001 → E2001)">Special days</button></fieldset>
         <fieldset><legend>View</legend>
           <label class="rowsLbl" for="rotaRows">Lines on screen</label><select id="rotaRows"><option value="0">Normal</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option></select>
           <span class="tipHint" tabindex="0" title="Click a cell, then click a duty in the list to put it there. Click a duty's type letter in the list to change it (E, M, L, S). Set each line's week type under its number. Tag &amp; type changes many duties at once. Double-click or Enter to type. Keys: arrows move, R toggles RD, S enters SP, Delete clears, Ctrl+Z undoes.">Tips ⓘ</span></fieldset>
@@ -850,6 +854,13 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
       <div id="op_srcBox"><h4 class="opH">Duty pieces for the duty rule checks</h4><div id="op_srcs" class="opList"></div></div>
       <div class="dBtns"><button type="button" class="btn primary" id="opOk">Open</button><button type="button" class="btn" data-close="openDlg">Cancel</button></div>
     </dialog>
+    <dialog id="ckDlg" class="dlg wide" aria-labelledby="ckT"><h3 id="ckT">Check duties</h3>
+      <p id="ckSum"></p>
+      <div class="ckWrap" id="ckTable"><table class="ckT"><thead><tr><th>Day</th><th>Duty on the rota</th><th>Sub rota · line</th><th>What to do</th></tr></thead><tbody id="ckBody"></tbody></table></div>
+      <h4 class="ckH">Duties in the duty files that no line works</h4><div id="ckUnused"></div>
+      <p class="note">Replace puts the special duty (e.g. E2005 for 2005 on Christmas Eve) on the same line and day. Clear leaves the day empty, to fill with Auto-fill, Special days or by hand. Undo puts everything back.</p>
+      <p class="note" id="ckMsg" aria-live="polite"></p>
+      <div class="dBtns"><button type="button" class="btn primary" id="ckApply">Apply</button><button type="button" class="btn" data-close="ckDlg">Close</button></div></dialog>
     <dialog id="spdDlg" class="dlg wide" aria-labelledby="spdT"><h3 id="spdT">Special days</h3>
       <p class="note">On the days you choose, every duty on the rota changes to SP, or to its special version with the letter in front: 2001 → E2001. If that duty is missing, already used or breaks the minimum rest, the most similar free special duty of the same sub rota’s subset is used (closest sign-on and sign-off); if none fits, SP. Empty working days get the free special duties left over (the one most like the line’s nearest duty, keeping the 11:00 rest); when there are more empty days than special duties, the rest become SP. RD and SP stay. Load the special duties first with <b>Load duties (.DIF / .DCL)</b>. Tip: use Copy job first to keep the normal rota.</p>
       <fieldset class="spdDays"><legend>Days</legend>
@@ -1922,7 +1933,9 @@ function parseDclDays(text) {
 }
 // where duties come from: the .DIF duty file for days it covers, otherwise the PDFs of the selected job
 function rotaSrc() {
-  const info = rotaJobInfo(); const dif = (rotaFile && rotaFile.dif) || {};
+  const dif = (rotaFile && rotaFile.dif) || {};
+  // a rota with its own duty file (ORD, DCL or DIF): a day without duties in it has none (bank holidays), no duties are taken from a PDF job
+  const ownDuties = Object.values(dif).some(l => l && l.length); const info = ownDuties ? null : rotaJobInfo();
   const lists = {};
   DAYS.forEach(([d]) => {
     if (dif[d] && dif[d].length) lists[d] = dif[d].slice();
@@ -2220,6 +2233,42 @@ function rotaChecks() {
       for (let di = 0; di < 6; di++) { const rb = restBetween(D[li][di], D[li][di + 1]); if (rb != null && rb < RTA_REST) out.rest.push(`${r.code} line ${l.pre[5]} ${DAYS[di][1]}→${DAYS[di + 1][1]}: ${fmt(rb)} (${D[li][di].no} off ${clock(D[li][di].e)}, ${D[li][di + 1].no} on ${clock(D[li][di + 1].s)})`); }
       const nl = nextLine(r, li); if (nl != null) { const rb = restBetween(D[li][6], D[nl][0]); if (rb != null && rb < RTA_REST) out.rest.push(`${r.code} line ${l.pre[5]} Sat→Sun of line ${r.lines[nl].pre[5]}: ${fmt(rb)}`); } }); });
   return out;
+}
+// ---- Check duties (like OmniROTA's Check Duties): duty numbers on the rota that are not in the duty files for that day,
+// with the special version to put instead (2005 on Thursday → E2005) or Clear; and duties in the files that no line works ----
+let ckRows = [];
+function dutyCheckData() {
+  const src = rotaSrc(); const A = analyseRota(src); const rows = []; const taken = {};
+  DAYS.forEach(([d]) => taken[d] = new Set(Object.keys(A.usedBy[d])));
+  rotaFile.rotas.forEach(r => r.lines.forEach((l, li) => l.cells.forEach((c, di) => { const d = DAYS[di][0];
+    if (!isDutyVal(c.v) || src.look(d, c.v)) return;
+    const base = String(c.v).replace(/^[A-Z]+/i, '');
+    const sp = (src.day(d) || []).filter(du => du.no !== c.v && /^[A-Z]/i.test(du.no) && du.no.replace(/^[A-Z]+/i, '') === base && !taken[d].has(du.no)).sort((a, b) => a.no.length - b.no.length)[0];
+    if (sp) taken[d].add(sp.no);
+    rows.push({ code: r.code, li, line: l.pre[5], di, v: c.v, sp: sp ? sp.no : null }); })));
+  const unused = []; DAYS.forEach(([d, sh]) => { const n = (src.day(d) || []).filter(du => !A.usedBy[d][du.no] && !(d === 'fri' && A.usedBy[d]['F' + du.no])).map(du => du.no); if (n.length) unused.push([sh, n]); });
+  return { rows, unused, none: DAYS.filter(([d]) => !(src.day(d) || []).length).map(x => x[1]) };
+}
+function dutyCheckOpen(auto) {
+  if (!rotaFile) return; const c = dutyCheckData(); ckRows = c.rows;
+  if (auto && !c.rows.length) return; // nothing to fix after opening: no window
+  const nSp = c.rows.filter(x => x.sp).length;
+  $('ckSum').textContent = c.rows.length ? `${c.rows.length} duty number${c.rows.length === 1 ? ' is' : 's are'} on the rota on a day the duty files do not have ${c.rows.length === 1 ? 'it' : 'them'}` + (nSp ? `; ${nSp} can be replaced by ${nSp === 1 ? 'its' : 'their'} special version.` : '.') + (c.none.length ? ` No duties at all on ${c.none.join(', ')} (bank holiday or no service).` : '')
+    : 'Every duty number on the rota is in the duty files for its day.';
+  $('ckBody').innerHTML = c.rows.map((x, i) => `<tr><td>${DAYS[x.di][1]}</td><td class="mono"><b>${esc(x.v)}</b></td><td>${esc(x.code)} ${esc(x.line)}</td>
+    <td><select data-ck="${i}" aria-label="What to do with ${esc(x.v)} on ${DAYS[x.di][1]}">${x.sp ? `<option value="sp" selected>Replace with ${esc(x.sp)}</option>` : ''}<option value="clear" ${x.sp ? '' : 'selected'}>Clear</option><option value="keep">Keep</option></select></td></tr>`).join('');
+  $('ckTable').hidden = !c.rows.length; $('ckApply').hidden = !c.rows.length;
+  $('ckUnused').innerHTML = c.unused.length ? c.unused.map(([sh, n]) => `<details><summary>${sh}: ${n.length} not on the rota</summary><p class="mono">${n.map(esc).join(' ')}</p></details>`).join('') : '<p class="note">Every duty in the duty files is on the rota.</p>';
+  $('ckMsg').textContent = ''; showDialog('ckDlg');
+}
+function dutyCheckApply() {
+  const acts = [...document.querySelectorAll('#ckBody select[data-ck]')].map(s => [ckRows[+s.dataset.ck], s.value]).filter(([, a]) => a !== 'keep');
+  if (!acts.length) { closeDialog('ckDlg'); return; }
+  pushUndo('check duties'); let nR = 0, nC = 0;
+  acts.forEach(([x, a]) => { const r = rotaFile.rotas.find(q => q.code === x.code); if (!r) return; const l = r.lines[x.li]; if (!l || l.cells[x.di].v !== x.v) return;
+    l.cells[x.di] = Object.assign({}, l.cells[x.di], { v: a === 'sp' ? x.sp : '' }); if (a === 'sp') nR++; else nC++; });
+  saveRota(); closeDialog('ckDlg'); rotaA = analyseRota(rotaSrc()); renderRota();
+  rotaMsg(`Check duties: ${nR} replaced by the special duty, ${nC} cleared. Undo puts them back.`);
 }
 function checksHtml() {
   const c = rotaChecks(); const row = (ok, title, txt, list) => `<div class="gck ${ok ? 'ok' : 'bad'}"><b>${ok ? '✓' : '✗'}</b><div><span class="ckT">${title}</span> <span>${txt}</span>${list && list.length ? `<details><summary>Show ${list.length}</summary><ul>${list.slice(0, 300).map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}</div></div>`;
@@ -2779,7 +2828,7 @@ function initRota() {
         rotaSel = parsed.rotas[0].code; saveRota(); done.push(`${f.name} (${parsed.rotas.length} sub rotas, ${parsed.rotas.reduce((t, r) => t + r.lines.length, 0)} lines, duties for ${DAYS.filter(([d]) => parsed.dif[d]).length} days${parsed.variants ? `, ${parsed.variants} school-variation duty versions not used by the rota left out` : ''}${pcNote})`);
       } catch (err) { bad.push(f.name); } }
     const wtTxt = done.length ? autoWtOnOpen() : '';
-    rotaMsg((done.length ? `New rota job from OmniROTA: ${done.join('; ')}.` : '') + wtTxt + (bad.length ? ` Could not read ${bad.join(', ')}.` : ''), !done.length); renderRota(); };
+    rotaMsg((done.length ? `New rota job from OmniROTA: ${done.join('; ')}.` : '') + wtTxt + (bad.length ? ` Could not read ${bad.join(', ')}.` : ''), !done.length); renderRota(); if (done.length) dutyCheckOpen(true); };
   $('ordDir').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) openOrd(fs); }); // Cancel on the upload question gives no files: nothing to report
   // Open OmniROTA folder: read only the .ORD, .DCL and .ORL files at the top of the folder (no subfolders).
   // Chrome and Edge ask once to view the folder; other browsers fall back to the folder upload picker.
@@ -2832,7 +2881,7 @@ function initRota() {
     if (fs.every(f => !/\.dcl$/i.test(f.name))) rotaFile.difOut = Object.assign({ name: fs[0].name }, difStrip(raw.join('\r\n')));
     saveRota();
     const days = DAYS.filter(([d]) => got[d]).map(([d, s]) => `${s} (${got[d].length})`).join(', ');
-    rotaMsg((rotaFile.ord ? `Duty file checked against the OmniROTA duties for ${days}: ${fixed} pay value${fixed === 1 ? '' : 's'} updated${ex.length ? ' (' + ex.join(', ') + (fixed > ex.length ? ' …' : '') + ')' : ''}${added ? `, ${added} new duties added` : ''}.` : `Loaded duties for ${days}.`) + (bad.length ? ` Skipped incomplete duty record${bad.length > 1 ? 's' : ''}: ${bad.join(', ')}. The file may have been cut off; export it again.` : ''), bad.length > 0); renderRota(); });
+    rotaMsg((rotaFile.ord ? `Duty file checked against the OmniROTA duties for ${days}: ${fixed} pay value${fixed === 1 ? '' : 's'} updated${ex.length ? ' (' + ex.join(', ') + (fixed > ex.length ? ' …' : '') + ')' : ''}${added ? `, ${added} new duties added` : ''}.` : `Loaded duties for ${days}.`) + (bad.length ? ` Skipped incomplete duty record${bad.length > 1 ? 's' : ''}: ${bad.join(', ')}. The file may have been cut off; export it again.` : ''), bad.length > 0); renderRota(); dutyCheckOpen(true); });
   $('difClear').onclick = () => { if (!rotaFile || !rotaFile.dif) return; pushUndo('remove duty file'); delete rotaFile.dif; saveRota(); rotaMsg('Duty file removed. Times and values now come from the PDFs.'); renderRota(); };
   $('rotaPick').onchange = e => { rotaSel = e.target.value; rotaCur = { li: 0, di: 0 }; rotaSubset = ''; rotaSwap = null; saveRota(); renderRota(); };
   $('rotaGrid').addEventListener('click', e => { if (e.target.closest('.wtSel') || e.target.closest('.keepT')) return; const td = e.target.closest('td[data-li]'); if (!td || td.querySelector('input')) return;
@@ -2924,6 +2973,8 @@ function initRota() {
   const spHint = () => { const src = rotaSrc(); const c = specialPrefixes(src, spDays()); const ks = Object.keys(c).sort((a, b) => c[b] - c[a]);
     $('spd_found').textContent = spDays().length ? (ks.length ? 'Duty numbers with a letter on these days: ' + ks.map(k => `${k} (${c[k]})`).join(', ') + '.' : 'No duties with a letter on these days. Load the special duties first (Load duties .DIF / .DCL).') : 'Choose a day.';
     const cur = $('spd_pre').value.trim().toUpperCase(); if (!cur || !c[cur]) { const k = ks.find(x => x !== 'F') || ks[0]; if (k) $('spd_pre').value = k; } };
+  $('rbCheck').onclick = () => { if (!rotaFile) { rotaMsg('Open a rota first.', true); return; } dutyCheckOpen(false); };
+  $('ckApply').onclick = dutyCheckApply;
   $('rbSpecial').onclick = () => { if (!rotaFile) { rotaMsg('Open a rota first.', true); return; } $('spd_msg').textContent = ''; $('spd_rota').textContent = rotaSel || ''; spHint(); spModeUI(); showDialog('spdDlg'); };
   const spMode = () => (document.querySelector('input[name="spd_mode"]:checked') || {}).value || 'letter';
   const spModeUI = () => { const sp = spMode() === 'sp'; $('spd_letterBox').hidden = sp; $('spd_found').hidden = sp; $('spd_rd').disabled = !sp; $('spdRun').textContent = sp ? 'Change to SP' : 'Change duties'; };
