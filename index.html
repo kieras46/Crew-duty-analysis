@@ -273,6 +273,8 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .wtPop #wtPopL label:hover { background: var(--accent-soft) }
 .wtPop .wtKeep { display: flex; gap: 8px; align-items: flex-start; border-top: 1px solid var(--line); margin-top: 4px; padding: 8px 8px 2px; cursor: pointer; font-weight: 600; color: #b45309 }
 .wtPop .wtKeep input { accent-color: #b45309; margin-top: 3px } .wtPop .wtKeep small { display: block; font-weight: 400; color: var(--muted); font-size: 12px }
+.balLock { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px 8px; margin: 10px 0 0 } .balLock legend { font-weight: 600; font-size: 13px; padding: 0 4px }
+#bal_days { display: flex; flex-wrap: wrap; gap: 4px 14px } #bal_days label { display: inline-flex; gap: 5px; align-items: center; font-size: 14px; cursor: pointer }
 .ckWrap { max-height: 46vh; overflow: auto; border: 1px solid var(--line); border-radius: 8px }
 .ckT { width: 100%; min-width: 0; border-collapse: collapse; font-size: 13.5px } .ckT th, .ckT td { padding: 5px 10px; border-bottom: 1px solid var(--line); text-align: left }
 .ckT thead th { position: sticky; top: 0; background: var(--surface); font-size: 12px; color: var(--muted) } .ckT select { font-size: 13px }
@@ -785,6 +787,8 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
       <div class="dGrid" style="margin-top:10px"><label for="bal_only">Only these lines</label><input type="text" id="bal_only" placeholder="whole rota, or e.g. 1-10, 15, 22">
         <label for="bal_skip">Don’t balance these lines</label><input type="text" id="bal_skip" placeholder="none, or e.g. 3, 7, 40-45"></div>
       <p class="note" style="margin:6px 0 0">With lines given, only those weeks swap duties among themselves. Lines you don’t balance keep their duties exactly as they are. The other weeks are not touched. Both can be used together.</p>
+      <fieldset class="balLock"><legend>Keep these days as they are</legend><div id="bal_days"></div>
+        <p class="note" style="margin:4px 0 0">A kept day does not change on any line: its duties, SP (still counted at the SP value, e.g. 7:06 or 9:23) and empty days stay where they are, and the other days are balanced around it with the 11:00 rest. Days with special duties (e.g. E1401 on Christmas Eve) are ticked for you.</p></fieldset>
       <p class="note" id="bal_kept" style="margin:6px 0 0"></p>
       <p class="status" id="bal_msg"></p>
       <div class="dBtns"><button type="button" class="btn primary" id="balRun">Balance weeks</button><button type="button" class="btn" data-close="balDlg">Cancel</button></div>
@@ -2683,7 +2687,9 @@ function specialPrefixes(src, days) { const c = {}; days.forEach(d => src.day(d)
 function specialRun(src, days, pre, codes) {
   const stats = { same: 0, similar: 0, sp: 0, filled: 0, spEmpty: 0, unused: [], perDay: {} }; const sp = (rotaFile.set && rotaFile.set.spCode) || 'SP';
   const spec = no => new RegExp('^' + pre + '\\d', 'i').test(no);
-  days.forEach(d => { const di = DAYS.findIndex(x => x[0] === d); const pool = src.day(d).filter(du => spec(du.no)); const byNo = new Map(pool.map(du => [du.no, du])); const used = new Set();
+  days.forEach(d => { const di = DAYS.findIndex(x => x[0] === d); const pool = src.day(d).filter(du => spec(du.no)); const byNo = new Map(pool.map(du => [du.no, du]));
+    // special duties already on any line that day (e.g. from an earlier run on another sub rota) are taken
+    const used = new Set(); rotaFile.rotas.forEach(r => r.lines.forEach(l => { const v = l.cells[di] && l.cells[di].v; if (v && byNo.has(String(v).toUpperCase())) used.add(String(v).toUpperCase()); }));
     const ps = { same: 0, similar: 0, sp: 0, filled: 0, spEmpty: 0 };
     const todo = [];
     // the line's nearest duty on another day: what an empty day's special duty should be most like
@@ -3009,7 +3015,12 @@ function initRota() {
     rotaMsg(`New rota job for Bank Holiday Monday (${rule === 'walsall' ? 'Walsall' : 'West Bromwich'} rule): Monday now runs the Sunday duties. Same Sunday duty as the week's Sunday: ${tot('same')}; similar Sunday duty: ${tot('similar')}` + (rule === 'westbrom' ? `; Sunday duties moved to weeks with Sunday off: ${tot('extra')}` : '') + `; SP on Monday: ${tot('sp')}.` + (un ? ` Sunday duties not worked on the Monday: ${un}.` : ' Every Sunday duty is worked on the Monday.') + ' The normal rota job is unchanged.'); };
   $('rbBal').onclick = () => { $('bal_wbs').checked = rotaWbs; $('bal_only').value = ''; $('bal_skip').value = ''; $('bal_msg').textContent = ''; const kl = (curRota() ? curRota().lines : []).filter(l => l.keep).map(l => l.pre[5]);
     $('bal_kept').textContent = kl.length ? `Lines tagged Keep in the grid are not changed: ${kl.join(', ')}.` : 'Tick Keep under a line number in the grid to leave that week out of Balance weeks.';
-    if (rotaFile && rotaFile.bhm) $('bal_kept').textContent += ' Bank Holiday Monday copy: Sunday and Monday stay exactly as they are.'; $('bal_rota').textContent = rotaSel; showDialog('balDlg'); };
+    if (rotaFile && rotaFile.bhm) $('bal_kept').textContent += ' Bank Holiday Monday copy: Sunday and Monday stay exactly as they are.'; $('bal_rota').textContent = rotaSel;
+    // days kept as they are: the choice made for this rota job, otherwise days with special duties (and Sun + Mon in a BHM copy)
+    const r0 = curRota(); const specDay = di => r0 && r0.lines.some(l => /^[A-Z]+\d/i.test(String(l.cells[di].v || '')) && !isSP(l.cells[di].v) && !isRD(l.cells[di].v));
+    const lockNow = rotaFile && Array.isArray(rotaFile.balLock) ? new Set(rotaFile.balLock) : new Set(DAYS.map((_, di) => di).filter(di => specDay(di) || (rotaFile && rotaFile.bhm && di < 2)));
+    $('bal_days').innerHTML = DAYS.map(([d, sh], di) => `<label><input type="checkbox" data-lockday="${di}" ${lockNow.has(di) ? 'checked' : ''}> ${sh}</label>`).join('');
+    showDialog('balDlg'); };
   $('balRun').onclick = () => { const src = rotaSrc(); const r = curRota(); if (!src.ok || !r) return; rotaWbs = $('bal_wbs').checked; const before = rdTimes(r, src); const muBefore = makeUpOf(r) || { now: 0 };
     const snap = { label: 'balance weeks ' + r.code, snap: snapshot() }; let only = null; const spec = $('bal_only').value.trim();
     const skipSpec = $('bal_skip').value.trim(); let skip = skipSpec ? new Set(linesOfSpec(r, skipSpec)) : null;
@@ -3019,7 +3030,10 @@ function initRota() {
     const skipTxt = [skipSpec ? 'lines ' + skipSpec : '', kept.length ? `${kept.length} kept line${kept.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' and ');
     if (spec || skip) { only = new Set(spec ? linesOfSpec(r, spec) : r.lines.map((_, i) => i)); if (skip) skip.forEach(i => only.delete(i));
       if (only.size < 2) { $('bal_msg').textContent = 'At least two lines must be left to balance.'; return; } }
-    const out = autoFill(r, src, { useFree: false, wbs: rotaWbs, only, lockDays: rotaFile.bhm ? new Set([0, 1]) : null }); const after = rdTimes(r, src);
+    const lockDays = new Set([...document.querySelectorAll('#bal_days input[data-lockday]:checked')].map(x => +x.dataset.lockday));
+    if (lockDays.size > 5) { $('bal_msg').textContent = 'Leave at least two days to balance.'; return; }
+    rotaFile.balLock = [...lockDays]; // remembered for this rota job
+    const out = autoFill(r, src, { useFree: false, wbs: rotaWbs, only, lockDays: lockDays.size ? lockDays : null }); const after = rdTimes(r, src);
     const wbsTxt = rotaWbs && !out.unchanged && after.off != null ? ` West Brom Special: before rest days duties now finish at ${clock(after.off)} on average (was ${clock(before.off)}), after rest days they start at ${clock(after.on)} (was ${clock(before.on)}).` : '';
     closeDialog('balDlg');
     if (out.unchanged) rotaMsg(`${r.code} is already as even as Balance Weeks can make it, so nothing was changed.`);
