@@ -1097,16 +1097,17 @@ $('resetRules').addEventListener('click', () => { pushUndo('restore rule default
 // Save: the Windows "Save as" window where the browser allows it (GitHub page, installed app, extension), remembering
 // the last folder for each kind of file; otherwise a download to the Downloads folder.
 // Resolves to the saved file name, or null when the person cancels.
+// text can be a function of the chosen file name (an ORD carries its own title inside)
 async function saveFile(name, text, type, plain) {
-  const blob = new Blob([(plain ? '' : '\ufeff') + text], { type }); name = name.replace(/[^\w\- .]+/g, '_').slice(0, 90);
+  const mk = n => new Blob([(plain ? '' : '\ufeff') + (typeof text === 'function' ? text(n) : text)], { type }); name = name.replace(/[^\w\- .]+/g, '_').slice(0, 90);
   if (window.showSaveFilePicker && window.top === window) {
     const ext = (name.match(/\.([A-Za-z0-9]+)$/) || [, ''])[1];
     const opts = { suggestedName: name, id: 'ret-' + (ext.toLowerCase() || 'file') };
     if (ext) opts.types = [{ description: ext.toUpperCase() + ' file', accept: { [type === 'text/plain' ? 'text/plain' : type]: ['.' + ext] } }];
-    try { const h = await window.showSaveFilePicker(opts); const w = await h.createWritable(); await w.write(blob); await w.close(); return h.name; }
+    try { const h = await window.showSaveFilePicker(opts); const w = await h.createWritable(); await w.write(mk(h.name)); await w.close(); return h.name; }
     catch (e) { if (e && e.name === 'AbortError') return null; } // anything else: fall back to a download
   }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(mk(name));
   a.download = name; document.body.appendChild(a); a.click(); a.remove(); return name;
 }
 $('dlCsv').addEventListener('click', () => {
@@ -2125,6 +2126,9 @@ function autoFill(r, src, opts) {
         if (best >= 0) { const p = left[best]; left.splice(best, 1); if (pi) left.push(pi); pick[i][di] = p; better++; } });
     }
     if (!better) break; } };
+  const score = () => { let sq = 0, empty = 0, wrong = 0; L.forEach((l, li) => { sq += cost(li); wrong += mis(li); pick[li].forEach((p, di) => { if (work[li][di] && !p) empty++; }); }); return wrong * 1e13 + empty * 1e12 + sq; };
+  // improve, fill empty days, improve again, then the West Brom Special pass
+  const polish = () => { useW = false;
   improve();
   // fill empty days: a duty left over goes in directly, or through a chain of moves on the same day
   // (a duty moves to the empty day, its own day is filled the same way, …), keeping rest and week types
@@ -2148,7 +2152,6 @@ function autoFill(r, src, opts) {
           if (restOK(ni, nd, b.du) && restOK(j, nd, a.du) && fill(i, new Set([i]))) return;
           pick[ni][nd] = a; pick[j][nd] = b; } } });
   }
-  const score = () => { let sq = 0, empty = 0, wrong = 0; L.forEach((l, li) => { sq += cost(li); wrong += mis(li); pick[li].forEach((p, di) => { if (work[li][di] && !p) empty++; }); }); return wrong * 1e13 + empty * 1e12 + sq; };
   improve(); // the repair may have unbalanced some weeks
   // West Brom Special: second pass, swapping duties between lines (never leaves a day empty)
   if (opts.wbs) { useW = true;
@@ -2158,11 +2161,25 @@ function autoFill(r, src, opts) {
           const set = zone(i, j, pi, pj); const before = sumCost(set); pick[i][di] = pj; pick[j][di] = pi;
           if (restOK(i, di, pj.du) && restOK(j, di, pi.du) && sumCost(set) < before - 1) better++; else { pick[i][di] = pi; pick[j][di] = pj; } } }
       if (!better) break; } }
+  };
+  polish();
   if (!opts.fresh) {
-    const newScore = score(); const keep = pick.map(x => x.slice());
-    L.forEach((l, li) => l.cells.forEach((c, di) => { if (!work[li][di]) return; const du = isSP(c.v) ? { pay: cfg.sp, s: null, e: null, sp: true } : look(DAYS[di][0], c.v); pick[li][di] = du ? { v: c.v, du } : null; }));
-    const oldScore = score(); if (oldScore <= newScore) return { unchanged: true, oldScore, newScore };
-    keep.forEach((x, li) => pick[li] = x);
+    // more than one start: the build from scratch above, the rota as it is now, and the rota as it is now with some duties shuffled.
+    // Each is improved the same way; the best one is kept (only if it beats the rota as it is now)
+    const take = () => ({ p: pick.map(x => x.slice()), left: DAYS.map(([d]) => (pool[d].left || []).slice()) });
+    const put = s => { s.p.forEach((x, li) => { pick[li] = x.slice(); }); DAYS.forEach(([d], i) => { pool[d].left = s.left[i].slice(); }); };
+    const fromRota = () => { L.forEach((l, li) => l.cells.forEach((c, di) => { if (!work[li][di]) return; const du = isSP(c.v) ? { pay: cfg.sp, s: null, e: null, sp: true } : look(DAYS[di][0], c.v); pick[li][di] = du ? { v: c.v, du } : null; }));
+      DAYS.forEach(([d], di) => { const rest = pool[d].slice(); L.forEach((l, li) => { const p = pick[li][di]; if (!work[li][di] || !p) return; const k = rest.findIndex(q => q.v === p.v); if (k >= 0) rest.splice(k, 1); }); pool[d].left = rest; }); };
+    let best = take(), bestScore = score();
+    fromRota(); const oldScore = score();
+    let seed = 20261123; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    for (let t = 0; t < 7; t++) { fromRota();
+      if (t > 0) for (let di = 0; di < 7; di++) { const ls = L.map((_, li) => li).filter(li => work[li][di] && pick[li][di]);
+        for (let k = 0; k < Math.ceil(ls.length * 0.3); k++) { const i = ls[Math.floor(rnd() * ls.length)], j = ls[Math.floor(rnd() * ls.length)]; if (i === j) continue; const pi = pick[i][di], pj = pick[j][di];
+          pick[i][di] = pj; pick[j][di] = pi; if (!(restOK(i, di, pj.du) && restOK(j, di, pi.du))) { pick[i][di] = pi; pick[j][di] = pj; } } }
+      polish(); const sc = score(); if (sc < bestScore) { bestScore = sc; best = take(); } }
+    if (oldScore <= bestScore) return { unchanged: true, oldScore, newScore: bestScore };
+    put(best);
   }
   let spare = 0; L.forEach((l, li) => l.cells.forEach((c, di) => { if (!work[li][di]) return; const p = pick[li][di]; if (p) c.v = p.v; else { c.v = opts.fresh ? SPc() : ''; spare++; } }));
   const leftL = DAYS.flatMap(([d, dn]) => (pool[d].left || []).filter(p => !p.du.sp).map(p => ({ d: dn, v: p.v, t: typeLetter(p.du) || '–' })));
@@ -2541,7 +2558,7 @@ function difFromPieces(f) { const txt = unpackTxt(f.pcRaw || ''); const dp = (f.
   const yy = sd ? sd[1].slice(2) + sd[2] + sd[3] : '';
   return { name: `${dp}${yy || ''}.DIF`, text: out.join('\r\n') + '\r\n', duties: out.length, dropped, made: true };
 }
-function writeOrd(f) {
+function writeOrd(f, title0) {
   const o = f.ord; const q = v => '"' + v + '"'; const pad = (v, n) => String(v == null ? '' : v).slice(0, n).padEnd(n, ' '); const hm = m => m == null ? 0 : Math.floor(m / 60) * 100 + m % 60;
   const dRows = unpackTxt(o.d).split('\n'); const src = rotaSrc(); const DCH = ['$', 'M', 'T', 'W', 'H', 'F', 'S'];
   // duty number + day -> position in the duty table (the school version the rota uses first)
@@ -2555,7 +2572,7 @@ function writeOrd(f) {
     .map(row => { const m = row.match(/^("([^"]*)",)(\d+)(,.*)$/); if (!m) return row; const c = csvRow(row); if ((c[13] || '').trim() !== '$') return row;
       const du = src.look('sun', m[2].trim().toUpperCase()); return du && du.pay0 != null ? m[1] + hm(du.pay) + m[4] : row; });
   const out = []; const nLines = f.rotas.reduce((t, r) => t + r.lines.length, 0); const H = o.h.slice();
-  const title = ordTitle(f); const sd = (f.set.startDate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const title = (title0 || ordTitle(f)).replace(/"/g, ''); const sd = (f.set.startDate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   out.push([nLines, H[1], f.rotas.length, H[3], q(pad(f.set.spCode, 6)), q(pad(f.set.rdCode, 6)), q(H[6] || ''), H[7], q(sd ? `${sd[3]}/${sd[2]}/${sd[1]}` : H[8]), q(pad(f.depot, 4)), H[10], q(title), q(H[12] || '')].join(','));
   f.rotas.forEach(r => r.lines.forEach(l => { const dus = l.cells.map((c, di) => src.look(DAYS[di][0], c.v)); const w = weekTotal(r, l.cells, dus);
     out.push([l.pre[5], q(pad(l.driver || '', 20)), q(pad('', 10)), l.s0 != null && l.s0 === l.cells.map(c => c.v).join(',') && !dus.some(du => du && du.pay0 != null) ? l.t0 : hm(w.t), q('')].join(','));
@@ -3104,7 +3121,8 @@ function initRota() {
   // file out
   $('ordDl').onclick = async () => { if (!rotaFile) return;
     if (!rotaFile.ord) { rotaMsg('Save for OmniROTA works for rotas opened from an OmniROTA folder (.ORD), because the duty table comes from that file. Use Save RIF for this one.', true); return; }
-    const t = ordTitle(rotaFile); const sv = await saveFile(t + '.ORD', writeOrd(rotaFile), 'text/plain', true); if (!sv) return;
+    // the title inside the file follows the name chosen in Save as
+    const t = ordTitle(rotaFile); const sv = await saveFile(t + '.ORD', n => writeOrd(rotaFile, n.replace(/\.ord$/i, '').trim()), 'text/plain', true); if (!sv) return;
     const emp = rotaFile.rotas.reduce((n, r) => n + r.lines.reduce((m, l) => m + l.cells.filter(c => !c.v).length, 0), 0);
     rotaMsg(`Saved ${sv} for OmniROTA.` + (emp ? ` ${emp} empty day${emp === 1 ? '' : 's'} were written as empty.` : '') + ' Open it in OmniROTA on a copy first to check it.'); };
   $('difDl').onclick = async () => { if (!rotaFile) return; const o = rotaFile.difOut || (rotaFile.pcRaw ? difFromPieces(rotaFile) : null);
