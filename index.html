@@ -238,9 +238,9 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .rotaT tr.gap td:nth-child(2) { box-shadow: none }
 
 /* --- Rota creator, OmniROTA look --- */
-:root { --om-green: #7fdc7f; --om-head: #c9f1f7; --om-week: #fff7c2; --om-duty: #1238c9; --om-mag: #c0189b; --om-sel: #ffd84d; --om-rest: #f6a6a6; --om-line: #b9c6d3 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --om-green: #1f6b2a; --om-head: #123c46; --om-week: #3d3612; --om-duty: #8fb0ff; --om-mag: #f08ad8; --om-sel: #8a6d00; --om-rest: #7a2a2a; --om-line: #34414f } }
-:root[data-theme="dark"] { --om-green: #1f6b2a; --om-head: #123c46; --om-week: #3d3612; --om-duty: #8fb0ff; --om-mag: #f08ad8; --om-sel: #8a6d00; --om-rest: #7a2a2a; --om-line: #34414f }
+:root { --om-green: #7fdc7f; --om-head: #c9f1f7; --om-week: #fff7c2; --om-duty: #1238c9; --om-mag: #c0189b; --om-sel: #ffd84d; --om-rest: #f6a6a6; --om-line: #b9c6d3; --om-rd: #d8ebfb; --om-sp: #d9f2d9 }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --om-green: #1f6b2a; --om-head: #123c46; --om-week: #3d3612; --om-duty: #8fb0ff; --om-mag: #f08ad8; --om-sel: #8a6d00; --om-rest: #7a2a2a; --om-line: #34414f; --om-rd: #16283a; --om-sp: #17301c } }
+:root[data-theme="dark"] { --om-green: #1f6b2a; --om-head: #123c46; --om-week: #3d3612; --om-duty: #8fb0ff; --om-mag: #f08ad8; --om-sel: #8a6d00; --om-rest: #7a2a2a; --om-line: #34414f; --om-rd: #16283a; --om-sp: #17301c }
 .omniTop { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: flex-end }
 .omniFiles, .omniPick { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end }
 .fld { display: grid; gap: 2px; font-size: 12px; color: var(--muted) }
@@ -293,6 +293,8 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .omT th.ln b { display: block; font-size: 17px }
 .omT th.ln small { color: var(--accent); font-weight: 600; font-size: 11.5px }
 .omT td.oc { vertical-align: top; padding: 3px 6px; min-width: 112px; cursor: pointer; font-family: var(--mono); font-size: 13px; line-height: 1.35; background: var(--surface) }
+.omT td.oc.rdC { background: var(--om-rd) } /* rest day: light blue */
+.omT td.oc.spC { background: var(--om-sp) } /* SP: light green */
 .omT td.oc:hover { background: var(--accent-soft) }
 .omT td.oc.sel { box-shadow: inset 0 0 0 3px var(--om-sel) }
 .omT td.oc.swp { box-shadow: inset 0 0 0 3px var(--accent) }
@@ -2325,7 +2327,7 @@ function renderRota(reveal) {
   $('rotaSum').innerHTML = `<b>${esc(r.code)}</b> · ${r.lines.length} lines · week ${fmt(r.cfg.min)}–${fmt(r.cfg.max)} · <span class="${low ? 'e' : ''}">${low} under</span> · <span class="${high ? 'e' : ''}">${high} over</span> · <span class="${probs ? 'e' : 'g'}">${probs} line${probs === 1 ? '' : 's'} with problems</span> · moves ${r.cfg.moves}`;
   $('rotaGrid').innerHTML = r.lines.map((l, li) => { const x = a.lines[li];
     const cells = l.cells.map((c, di) => { const du = x.dus[di]; const f = x.flag[di]; const sel = rotaCur.li === li && rotaCur.di === di;
-      const cls = ['oc', sel ? 'sel' : '', rotaSwap && rotaSwap.li === li && rotaSwap.di === di ? 'swp' : '', f.dup || f.unknown || f.empty ? 'badC' : ''].join(' ');
+      const cls = ['oc', sel ? 'sel' : '', rotaSwap && rotaSwap.li === li && rotaSwap.di === di ? 'swp' : '', f.dup || f.unknown || f.empty ? 'badC' : isRD(c.v) ? 'rdC' : isSP(c.v) ? 'spC' : ''].join(' ');
       let inner;
       if (isRD(c.v)) inner = `<div class="r1"><b class="rdx">${esc(c.v)}</b></div>${rotaFile.set.includeRd ? `<div class="r3">${fmt(r.cfg.rd)}</div>` : ''}`;
       else if (isSP(c.v)) inner = `<div class="r1"><b class="dno">${esc(c.v)}</b><span class="v1">${fmt(r.cfg.sp)}</span></div><div class="r2"></div><div class="r3">${fmt(r.cfg.sp)}</div>`;
