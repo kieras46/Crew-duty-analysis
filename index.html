@@ -292,7 +292,7 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .omT tbody th.ln { top: auto; font-size: 13px; text-transform: none; letter-spacing: 0; color: var(--fg); font-weight: 400; cursor: default; white-space: nowrap }
 .omT th.ln b { display: block; font-size: 17px }
 .omT th.ln small { color: var(--accent); font-weight: 600; font-size: 11.5px }
-.omT td.oc { vertical-align: top; padding: 3px 6px; min-width: 112px; cursor: pointer; font-family: var(--mono); font-size: 13px; line-height: 1.35; background: var(--surface) }
+.omT td.oc { vertical-align: top; padding: 3px 5px; min-width: 100px; cursor: pointer; font-family: var(--mono); font-size: 13px; line-height: 1.35; background: var(--surface) }
 .omT td.oc.rdC { background: var(--om-rd) } /* rest day: light blue */
 .omT td.oc.spC { background: var(--om-sp) } /* SP: light green */
 .omT td.oc:hover { background: var(--accent-soft) }
@@ -315,6 +315,10 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .oc .r3 { color: var(--om-mag); font-weight: 600 }
 .oc .r3 .e { color: var(--bad); font-family: var(--sans); font-weight: 500; font-size: 11.5px }
 .omT .wkh { background: var(--om-week) !important; width: 92px }
+.omT .rdh { background: var(--om-rd) !important; width: 40px; text-align: center }
+.omT td.rdc { background: var(--om-rd); text-align: center; vertical-align: middle; font: 700 16px var(--mono); color: var(--om-duty); width: 40px; padding: 0 4px }
+.omT td.rdc.bad { background: var(--bad-soft); color: var(--bad); box-shadow: inset 0 0 0 2px var(--bad) }
+.omT.fit td.rdc { font-size: 14px } .omT.d3 td.rdc { font-size: 12px }
 .omT td.wk { background: var(--om-week); vertical-align: top; padding: 4px 6px; font-family: var(--mono) }
 .omT td.wk b { display: block; font-size: 17px; color: var(--om-duty) }
 .omT td.wk.low b, .omT td.wk.high b, .omT td.wk small { color: var(--bad) }
@@ -698,7 +702,7 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
       <div class="omni">
         <div class="omniGrid" id="rotaGridBox" tabindex="0" aria-label="Rota lines. Arrow keys move, Enter edits, R toggles RD, S enters SP, Delete clears.">
           <table class="omT">
-            <thead><tr><th class="ln"></th><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th class="wkh">Week</th></tr></thead>
+            <thead><tr><th class="ln"></th><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th class="wkh">Week</th><th class="rdh" title="Rest days in the week">RD</th></tr></thead>
             <tbody id="rotaGrid"></tbody>
           </table>
         </div>
@@ -737,7 +741,7 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
       <div class="dGrid">
         <span>Rota no.</span><b id="sr_no"></b>
         <label for="sr_name">Rota name</label><input type="text" id="sr_name">
-        <label for="sr_short">Rota short code</label><input type="text" id="sr_short">
+        <label for="sr_rdw">Rest days per week</label><input type="text" id="sr_rdw" inputmode="numeric" title="2 on a 5 day rota, 3 on a 4 Day rota. Lines with another number of RD show red in the RD column next to Week.">
         <label for="sr_week">Rota start week no.</label><input type="text" id="sr_week">
         <label for="sr_min">Minimum week value</label><input type="text" id="sr_min">
         <label for="sr_max">Maximum week value</label><input type="text" id="sr_max">
@@ -2002,6 +2006,10 @@ const restFail = (a, b, cfg) => { const r = restBetween(a, b); return r != null 
 // which line follows a line from one week to the next
 const nextLine = (r, li) => { const n = r.lines.length; if (r.cfg.moves === 'static' || n < 2) return null; return r.cfg.moves === 'up' ? (li - 1 + n) % n : (li + 1) % n; };
 const prevLine = (r, li) => { const n = r.lines.length; if (r.cfg.moves === 'static' || n < 2) return null; return r.cfg.moves === 'up' ? (li + 1) % n : (li - 1 + n) % n; };
+// rest days a week: set in Sub rota settings, otherwise what most lines of the sub rota have (2, or 3 on a 4 Day rota)
+function rdMode(r) { const n = {}; r.lines.forEach(l => { const k = l.cells.filter(c => isRD(c.v)).length; n[k] = (n[k] || 0) + 1; });
+  let best = 0, bc = -1; Object.keys(n).forEach(k => { if (n[k] > bc || (n[k] === bc && +k > best)) { bc = n[k]; best = +k; } }); return best; }
+const rdExp = r => (r.cfg && r.cfg.rdWeek > 0) ? r.cfg.rdWeek : rdMode(r);
 function weekTotal(r, cells, dus) {
   let t = 0, sp = 0, rd = 0; cells.forEach((c, di) => { if (isSP(c.v)) { t += r.cfg.sp; sp++; } else if (isRD(c.v)) { rd++; if (rotaFile.set.includeRd) t += r.cfg.rd; } else if (dus[di]) t += dus[di].pay; });
   return { t, sp, rd };
@@ -2013,7 +2021,7 @@ function analyseRota(src) {
   rotaFile.rotas.forEach(r => r.lines.forEach(l => l.cells.forEach((c, di) => { if (isDutyVal(c.v)) { const d = DAYS[di][0]; (usedBy[d][c.v] = usedBy[d][c.v] || []).push({ code: r.code, line: l.pre[5] }); } })));
   const res = {};
   rotaFile.rotas.forEach(r => {
-    const cfg = r.cfg; const D = r.lines.map(l => l.cells.map((c, di) => look(DAYS[di][0], c.v)));
+    const cfg = r.cfg; const D = r.lines.map(l => l.cells.map((c, di) => look(DAYS[di][0], c.v))); const rdE = rdExp(r);
     const lines = r.lines.map((l, li) => {
       const dus = D[li]; const issues = []; const flag = l.cells.map(() => ({}));
       l.cells.forEach((c, di) => { const d = DAYS[di][0];
@@ -2034,7 +2042,8 @@ function analyseRota(src) {
       const pl = prevLine(r, li); if (pl != null && restFail(D[pl][6], dus[0], cfg) != null) flag[0].onBad = 1;
       const w = weekTotal(r, l.cells, dus);
       const st = w.t < cfg.min ? 'low' : w.t > cfg.max ? 'high' : 'ok';
-      return { dus, total: w.t, sp: w.sp, rd: w.rd, st, diff: st === 'low' ? w.t - cfg.min : st === 'high' ? w.t - cfg.max : 0, issues, flag };
+      const rdBad = !!rdE && w.rd !== rdE; if (rdBad) issues.push(`${w.rd} rest day${w.rd === 1 ? '' : 's'}, the rota has ${rdE} a week`);
+      return { dus, total: w.t, sp: w.sp, rd: w.rd, rdBad, rdE, st, diff: st === 'low' ? w.t - cfg.min : st === 'high' ? w.t - cfg.max : 0, issues, flag };
     });
     const free = {};
     if (hasRanges(r.code)) DAYS.forEach(([d]) => { free[d] = src.day(d, r.code).filter(du => !usedBy[d][du.no] && !(d === 'fri' && usedBy[d]['F' + du.no])).map(du => du.no); });
@@ -2354,8 +2363,9 @@ function renderRota(reveal) {
         <div class="r3">${du ? fmt(du.pay) : '<span class="e">not in list</span>'}</div>`;
       return `<td class="${cls}" data-li="${li}" data-di="${di}" title="${esc([du ? `${c.v} ${hhmmTxt(du.s)}–${hhmmTxt(du.e)} · ${fmt(du.pay)}` : '', f.dup ? 'used twice on this day' : '', f.unknown ? 'not in the duty list' : '', f.onBad || f.offBad ? 'rest under ' + fmt(r.cfg.rest) : ''].filter(Boolean).join(' · '))}">${inner}</td>`; }).join('');
     const wt = l.wt || 'any';
-    return `<tr${l.keep ? ' class="kept"' : ''}><th class="ln wt-${wt}" scope="row"><b>${esc(l.pre[5])}</b><small>${RDc()}=${x.rd}</small>${l.driver ? `<small class="drvN" title="${esc(l.driver)}">${esc(l.driver)}</small>` : ''}<button type="button" class="wtTag" data-wt="${li}" title="Week type${l.keep ? ' · Keep: Balance weeks does not change this week' : ''}. Click to change." aria-label="Week type of line ${esc(l.pre[5])}: ${WTYPES.find(w => w[0] === wt)[1]}${l.keep ? ', kept' : ''}">${WT_TAG[wt] || wt}${l.keep ? ' &#128274;' : ''}</button></th>${cells}
-      <td class="wk ${x.st}" title="${esc(x.issues.join('\n'))}"><b>${fmt(x.total)}</b>${x.st !== 'ok' ? `<small>(${x.diff > 0 ? '+' : '−'}${fmt(Math.abs(x.diff))})</small>` : ''}${x.issues.length ? `<i>${x.issues.length} problem${x.issues.length > 1 ? 's' : ''}</i>` : ''}</td></tr>`; }).join('');
+    return `<tr${l.keep ? ' class="kept"' : ''}><th class="ln wt-${wt}" scope="row"><b>${esc(l.pre[5])}</b>${l.driver ? `<small class="drvN" title="${esc(l.driver)}">${esc(l.driver)}</small>` : ''}<button type="button" class="wtTag" data-wt="${li}" title="Week type${l.keep ? ' · Keep: Balance weeks does not change this week' : ''}. Click to change." aria-label="Week type of line ${esc(l.pre[5])}: ${WTYPES.find(w => w[0] === wt)[1]}${l.keep ? ', kept' : ''}">${WT_TAG[wt] || wt}${l.keep ? ' &#128274;' : ''}</button></th>${cells}
+      <td class="wk ${x.st}" title="${esc(x.issues.join('\n'))}"><b>${fmt(x.total)}</b>${x.st !== 'ok' ? `<small>(${x.diff > 0 ? '+' : '−'}${fmt(Math.abs(x.diff))})</small>` : ''}${x.issues.length ? `<i>${x.issues.length} problem${x.issues.length > 1 ? 's' : ''}</i>` : ''}</td>
+      <td class="rdc${x.rdBad ? ' bad' : ''}" title="${x.rd} rest day${x.rd === 1 ? '' : 's'} this week${x.rdE ? (x.rdBad ? ` – the rota has ${x.rdE} a week` : '') : ''}">${x.rd}</td></tr>`; }).join('');
   renderDutyList();
   const sel = $('rotaGrid').querySelector('td.sel'); const box = $('rotaGridBox');
   if (box) { box.scrollTop = keepTop; box.scrollLeft = keepLeft; }
@@ -2406,7 +2416,7 @@ function renumber(r, start) { r.lines.forEach((l, i) => l.pre[5] = String(start 
 function showDialog(id) { const d = $(id); if (d.showModal) { try { d.showModal(); return; } catch (e) {} } d.setAttribute('open', ''); }
 function closeDialog(id) { const d = $(id); if (d.close) d.close(); else d.removeAttribute('open'); }
 function fillSubDialog() { const r = curRota(); const c = r.cfg;
-  $('sr_no').textContent = rotaFile.rotas.indexOf(r) + 1; $('sr_name').value = r.code; $('sr_short').value = c.short || ''; $('sr_week').value = c.startWeek || 1;
+  $('sr_no').textContent = rotaFile.rotas.indexOf(r) + 1; $('sr_name').value = r.code; $('sr_rdw').value = c.rdWeek || rdMode(r) || ''; $('sr_week').value = c.startWeek || 1;
   { const g = rgOf(r.code) || {}; ['mt', 'fri', 'sat', 'sun'].forEach(k => $('sr_rg_' + k).value = g[k] || ''); }
   $('sr_min').value = fmt(c.min); $('sr_max').value = fmt(c.max); $('sr_sp').value = fmt(c.sp); $('sr_rd').value = fmt(c.rd); $('sr_rest').value = fmt(c.rest);
   document.querySelectorAll('input[name="sr_moves"]').forEach(x => x.checked = x.value === c.moves); $('sr_msg').textContent = '';
@@ -3097,7 +3107,7 @@ function initRota() {
     if (code !== r.code && rotaFile.rotas.some(x => x.code === code)) { m.textContent = `A rota called ${code} already exists.`; return; }
     const se = parseInt($('sr_split').value, 10); if (!(se >= 0)) { m.textContent = 'Write the split rule as a number of weeks, or 0 for no limit.'; return; }
     pushUndo('sub rota settings ' + r.code);
-    Object.assign(r.cfg, vals, { splitEvery: se, short: $('sr_short').value.trim(), startWeek: parseInt($('sr_week').value, 10) || 1, moves: (document.querySelector('input[name="sr_moves"]:checked') || {}).value || 'down' });
+    Object.assign(r.cfg, vals, { splitEvery: se, rdWeek: Math.max(0, parseInt($('sr_rdw').value, 10) || 0), startWeek: parseInt($('sr_week').value, 10) || 1, moves: (document.querySelector('input[name="sr_moves"]:checked') || {}).value || 'down' });
     rotaFile.ranges = rotaFile.ranges || {}; rotaFile.ranges[r.code] = { mt: $('sr_rg_mt').value.trim(), fri: $('sr_rg_fri').value.trim(), sat: $('sr_rg_sat').value.trim(), sun: $('sr_rg_sun').value.trim() };
     if (code !== r.code) { rotaFile.ranges[code] = rotaFile.ranges[r.code]; delete rotaFile.ranges[r.code]; r.code = code; rotaSel = code; }
     if (typeof curProfile === 'function' && curProfile()) { const pr = curProfile(); pr.subRanges = pr.subRanges || {}; pr.subRanges[code] = rotaFile.ranges[code]; storeProfile(); } // remembered for this garage's next rota
