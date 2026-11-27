@@ -210,6 +210,7 @@ td.tot small { font-size: 12px; font-weight: 600 } .okc { color: var(--ok) } .ov
 .tabs .menuPanel button { border: 0; border-bottom: 0; margin: 0; background: none; text-align: left; padding: 9px 12px; border-radius: 7px; font-size: 14px; font-weight: 500; color: var(--fg); cursor: pointer }
 .tabs .menuPanel button:hover { background: var(--accent-soft) }
 .tabs .menuPanel button.on { color: var(--accent); font-weight: 700 }
+.tabs .menuPanel .menuSep { border-top: 1px solid var(--line); border-radius: 0; margin-top: 4px; padding-top: 10px }
 .tabs .menuPanel .menuInstall { border-top: 1px solid var(--line); border-radius: 0 0 7px 7px; margin-top: 4px; padding-top: 10px; color: var(--accent); font-weight: 600 }
 .tabs .tabEnd button:not(:disabled):hover { border-color: var(--accent) }
 tr.gap td:nth-child(2) { box-shadow: inset 3px 0 0 var(--bad) }
@@ -275,6 +276,10 @@ td.rIss { font-size: 12px; color: var(--bad); min-width: 220px }
 .wtPop .wtKeep input { accent-color: #b45309; margin-top: 3px } .wtPop .wtKeep small { display: block; font-weight: 400; color: var(--muted); font-size: 12px }
 .balLock { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px 8px; margin: 10px 0 0 } .balLock legend { font-weight: 600; font-size: 13px; padding: 0 4px }
 #bal_days { display: flex; flex-wrap: wrap; gap: 4px 14px } #bal_days label { display: inline-flex; gap: 5px; align-items: center; font-size: 14px; cursor: pointer }
+.ckRow { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; cursor: pointer } .ckRow input { margin-top: 3px }
+.rpGrid { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; margin: 10px 0 } .rpGrid select { max-width: 260px }
+.rpDays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px } .rpDays label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); text-align: center }
+.rpDays input { width: 100%; text-align: center; font: 600 14px var(--mono); padding: 4px 2px }
 .ckWrap { max-height: 46vh; overflow: auto; border: 1px solid var(--line); border-radius: 8px }
 .ckT { width: 100%; min-width: 0; border-collapse: collapse; font-size: 13.5px } .ckT th, .ckT td { padding: 5px 10px; border-bottom: 1px solid var(--line); text-align: left }
 .ckT thead th { position: sticky; top: 0; background: var(--surface); font-size: 12px; color: var(--muted) } .ckT select { font-size: 13px }
@@ -492,7 +497,8 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
   </section>
 
 
-  <nav class="tabs" id="tabs" aria-label="Views"><div class="menuWrap" id="menuWrap"><button type="button" class="menuBtn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-controls="menuPanel">&#9776; Rota Editor Tool</button><div class="menuPanel" id="menuPanel" hidden><button type="button" data-tab="rota" class="on">Rota Editor Tool</button><button type="button" data-tab="check">Duty check</button><button type="button" data-tab="assign">Driver assignment</button><button type="button" id="installBtn" class="menuInstall" hidden>Install RET as an app</button></div></div><span class="tabEnd"><label class="garSel" for="garSel">Garage <select id="garSel"></select></label><button type="button" id="garBtn">Garages…</button><span class="note" id="undoMsg" aria-live="polite"></span><button type="button" id="undoBtn" class="undo" disabled>Undo</button></span></nav>
+  <nav class="tabs" id="tabs" aria-label="Views"><div class="menuWrap" id="menuWrap"><button type="button" class="menuBtn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-controls="menuPanel">&#9776; Rota Editor Tool</button><div class="menuPanel" id="menuPanel" hidden><button type="button" data-tab="rota" class="on">Rota Editor Tool</button><button type="button" data-tab="check">Duty check</button><button type="button" data-tab="assign">Driver assignment</button><button type="button" id="bkSave" class="menuSep" title="Everything in RET on this computer – jobs, rota jobs, garages, drivers and settings – in one file">Save backup…</button><button type="button" id="bkLoad" title="Put back everything from a backup file (replaces what is in RET now)">Load backup…</button><button type="button" id="installBtn" class="menuInstall" hidden>Install RET as an app</button></div></div>
+<input type="file" id="bkFile" accept=".json,application/json" hidden><span class="tabEnd"><label class="garSel" for="garSel">Garage <select id="garSel"></select></label><button type="button" id="garBtn">Garages…</button><span class="note" id="undoMsg" aria-live="polite"></span><button type="button" id="undoBtn" class="undo" disabled>Undo</button></span></nav>
 
   <div id="checkView" class="view">
   <section id="emptySec" class="emptyBox">
@@ -629,7 +635,12 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
     </section>
   </div>
 
-  <dialog id="garDlg" class="dlg" aria-labelledby="garT"><h3 id="garT">Garages</h3>
+  <dialog id="bkDlg" class="dlg" aria-labelledby="bkT"><h3 id="bkT">Load backup</h3>
+  <p id="bkTxt"></p>
+  <p class="note">Everything in RET on this computer is replaced by the backup: jobs, rota jobs, garages, drivers and settings. If you are not sure, save a backup of what is here now first (☰ → Save backup…).</p>
+  <p class="note" id="bkMsg" aria-live="polite"></p>
+  <div class="dBtns"><button type="button" class="btn danger" id="bkGo">Replace everything</button><button type="button" class="btn" data-close="bkDlg">Cancel</button></div></dialog>
+<dialog id="garDlg" class="dlg" aria-labelledby="garT"><h3 id="garT">Garages</h3>
     <p class="note">Each garage keeps its own duty rules and 4 Day numbers, driver assignment settings (rotas and their duty numbers), driver list and sub rota duty numbers. Jobs and rota jobs are listed under the garage they were made in.</p>
     <table class="garList"><tbody id="garBody"></tbody></table>
     <div class="dGrid"><label for="gar_new">New garage</label><input type="text" id="gar_new" placeholder="e.g. Walsall">
@@ -726,7 +737,7 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
       </div>
       <div class="omniBar">
         <fieldset><legend>Rota duty</legend>
-          <button type="button" id="rbEdit">Edit</button><button type="button" id="rbClear">Clear</button><button type="button" id="rbSP">Enter 'SP'</button><button type="button" id="rbRD">Toggle 'RD' on/off</button></fieldset>
+          <button type="button" id="rbEdit">Edit</button><button type="button" id="rbClear">Clear</button><button type="button" id="rbSP">Enter 'SP'</button><button type="button" id="rbRD">Toggle 'RD' on/off</button><button type="button" id="rbClrAll" title="Clear every day of this sub rota (rest days too, if you choose)">Clear all…</button><button type="button" id="rbRdPat" title="Put the rest days on every line: rest days a week, weekends off, long weekends, days in a row">RD pattern…</button></fieldset>
         <fieldset><legend>Rota lines</legend>
           <button type="button" id="rbIns">Insert</button><button type="button" id="rbDel">Remove</button><button type="button" id="rbSwap">Swap days</button><button type="button" id="rbWeeks">Week types…</button></fieldset>
         <fieldset><legend>Tools</legend>
@@ -741,7 +752,7 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
       <div class="dGrid">
         <span>Rota no.</span><b id="sr_no"></b>
         <label for="sr_name">Rota name</label><input type="text" id="sr_name">
-        <label for="sr_rdw">Rest days per week</label><input type="text" id="sr_rdw" inputmode="numeric" title="2 on a 5 day rota, 3 on a 4 Day rota. Lines with another number of RD show red in the RD column next to Week.">
+        <label for="sr_rdw">Rest days per week</label><select id="sr_rdw" title="Lines with another number of RD show red in the RD column next to Week. No rule: every week can have a different number (e.g. PTS rotas)."></select>
         <label for="sr_week">Rota start week no.</label><input type="text" id="sr_week">
         <label for="sr_min">Minimum week value</label><input type="text" id="sr_min">
         <label for="sr_max">Maximum week value</label><input type="text" id="sr_max">
@@ -864,6 +875,31 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
       <div id="op_srcBox"><h4 class="opH">Duty pieces for the duty rule checks</h4><div id="op_srcs" class="opList"></div></div>
       <div class="dBtns"><button type="button" class="btn primary" id="opOk">Open</button><button type="button" class="btn" data-close="openDlg">Cancel</button></div>
     </dialog>
+    <dialog id="caDlg" class="dlg" aria-labelledby="caT"><h3 id="caT">Clear all</h3>
+      <p>Clear every duty and SP on <b id="ca_rota"></b>. The days are left empty, to fill with Auto-fill.</p>
+      <label class="ckRow"><input type="checkbox" id="ca_rd"> Including RD (every day of every line becomes empty)</label>
+      <p class="note" id="ca_keep"></p>
+      <div class="dBtns"><button type="button" class="btn danger" id="caGo">Clear</button><button type="button" class="btn" data-close="caDlg">Cancel</button></div></dialog>
+    <dialog id="rpDlg" class="dlg wide" aria-labelledby="rpT"><h3 id="rpT">RD pattern</h3>
+      <p>Puts the rest days on every line of <b id="rp_rota"></b> (<span id="rp_info"></span>). Duties and SP on the sub rota are cleared, ready for Auto-fill. Kept lines (🔒) stay as they are.</p>
+      <div class="rpGrid">
+        <label for="rp_k">Rest days per week</label><select id="rp_k"><option value="2">2</option><option value="3">3 (4 Day rota)</option></select>
+        <label for="rp_run">Most working days in a row</label><select id="rp_run"><option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option></select>
+        <label for="rp_wk">Weekend off (Sat + Sun)</label><select id="rp_wk"><option value="0">No rule</option><option value="2">At least 1 in 2 weeks</option><option value="3" selected>At least 1 in 3 weeks</option><option value="4">At least 1 in 4 weeks</option></select>
+      </div>
+      <label class="ckRow"><input type="checkbox" id="rp_long" checked> Long weekends: a Friday off before a weekend off, a Monday off after it (4 days Fri–Mon, or 3 days Fri–Sun / Sat–Mon)</label>
+      <label class="ckRow"><input type="checkbox" id="rp_sun" checked> Never two Sundays worked in a row (ticked when Sunday has rest days on at least half the lines)</label>
+      <label class="ckRow"><input type="checkbox" id="rp_blocks"> Keep rest days together (no single rest days)</label>
+      <fieldset class="balLock"><legend>Duties each day</legend><div class="rpDays" id="rp_duties"></div>
+        <label class="ckRow"><input type="checkbox" id="rp_spare"> <span>Add spare drivers: <input type="text" id="rp_spp" value="10" inputmode="decimal" size="3" aria-label="Spare per cent"> % more drivers than duties each day (they get SP)</span></label>
+        <div class="dBtns" style="justify-content:flex-start;margin-top:4px"><button type="button" class="btn" id="rpCalc">Work out the weeks</button></div>
+        <p class="note" id="rp_calc" style="margin:6px 0 0"></p>
+        <label class="ckRow" id="rp_resizeRow" hidden><input type="checkbox" id="rp_resize" checked> <span>Change the sub rota to <b id="rp_n"></b> lines (weeks)</span></label></fieldset>
+      <fieldset class="balLock"><legend>Rest days on each day</legend><div class="rpDays" id="rp_days"></div>
+        <p class="note" id="rp_sum" style="margin:4px 0 0"></p></fieldset>
+      <p class="note" id="rp_msg" aria-live="polite"></p>
+      <label class="ckRow"><input type="checkbox" id="rp_fill" checked> Open Auto-fill afterwards</label>
+      <div class="dBtns"><button type="button" class="btn primary" id="rpGo">Make RD pattern</button><button type="button" class="btn" data-close="rpDlg">Cancel</button></div></dialog>
     <dialog id="ckDlg" class="dlg wide" aria-labelledby="ckT"><h3 id="ckT">Check duties</h3>
       <p id="ckSum"></p>
       <div class="ckWrap" id="ckTable"><table class="ckT"><thead><tr><th>Day</th><th>Duty on the rota</th><th>Sub rota · line</th><th>What to do</th></tr></thead><tbody id="ckBody"></tbody></table></div>
@@ -919,6 +955,33 @@ body.rotaMode header, body.rotaMode #drop, body.rotaMode #jobsSec { display: non
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
+// ================= Storage =================
+// Jobs and rota jobs are large (a rota job with its duty files is about 0.7 MB), so they are kept in IndexedDB,
+// which holds hundreds of MB; small settings stay in localStorage. Without IndexedDB everything stays in localStorage as before.
+const retStore = (() => {
+  let db = null;
+  const open = () => new Promise(res => {
+    try { const rq = indexedDB.open('RET', 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore('kv');
+      rq.onsuccess = () => { db = rq.result; res(true); }; rq.onerror = () => res(false); rq.onblocked = () => res(false); }
+    catch (e) { res(false); } });
+  const get = k => new Promise(res => { if (!db) return res(null);
+    try { const rq = db.transaction('kv').objectStore('kv').get(k); rq.onsuccess = () => res(rq.result == null ? null : rq.result); rq.onerror = () => res(null); }
+    catch (e) { res(null); } });
+  // writes run in the order they are made, so the last save always wins
+  const put = (k, v) => new Promise(res => { if (!db) return res(false);
+    try { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, k); tx.oncomplete = () => res(true); tx.onerror = tx.onabort = () => res(false); }
+    catch (e) { res(false); } });
+  return { open, get, put, get ok() { return !!db; } };
+})();
+const BIG_KEYS = ['dutyJobs', 'dutyRotaJobs'];
+// one CSV line → fields, for every file RET reads: quoted fields lose their quotes, a doubled quote inside a quoted field is one quote
+function csvSplit(l) { l = String(l); const out = []; let cur = '', q = false;
+  for (let i = 0; i < l.length; i++) { const ch = l[i];
+    if (q) { if (ch === '"') { if (l[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true; else if (ch === ',') { out.push(cur); cur = ''; } else cur += ch; }
+  out.push(cur); return out; }
+
 // ---- Duty parser + checker (shared by the HTML tool and node tests) ----
 const DUR = /^\d{1,2}:\d{2}$/, HHMM = /^\d{4}$/, BOARD = /^[A-Za-z0-9]+\/\d{1,3}$/, DUTY = /^[A-Za-z]?\d{2,5}$/;
 const toMin = s => { if (!s) return null; const [h, m] = s.split(':').map(Number); return h * 60 + m; };
@@ -1025,10 +1088,7 @@ function checkDuty(d, sunday, rules, override, g) {
 // ---- OmniROTA / scheduling .DCL duty files: one row per piece ----
 // duty, days ($ Sun, M T W H Mon–Thu, F Fri, S Sat), version (0, or 1/2 for duties with two versions), sign on, board,
 // depart, from, route, arrive, to, 0, sign off, -, value (h:mm), depot
-function csvCells(l) { const out = []; let i = 0; l = String(l);
-  while (i <= l.length) { if (l[i] === '"') { const j = l.indexOf('"', i + 1); out.push(l.slice(i + 1, j < 0 ? l.length : j)); i = (j < 0 ? l.length : j) + 2; }
-    else { const j = l.indexOf(',', i); out.push(l.slice(i, j < 0 ? l.length : j)); i = (j < 0 ? l.length : j) + 1; } if (i > l.length) break; }
-  return out; }
+function csvCells(l) { return csvSplit(l); } // the shared CSV reader (store.js)
 const DCL_DAY = { $: 'Sunday', M: 'Monday', T: 'Tuesday', W: 'Wednesday', H: 'Thursday', F: 'Friday', S: 'Saturday' };
 function dclDayLabel(code) { const ns = String(code).trim().split('').map(c => DCL_DAY[c]).filter(Boolean); return ns.length > 2 ? ns[0] + ' to ' + ns[ns.length - 1] : ns.join(' and '); }
 function parseDcl(text, name) {
@@ -1040,10 +1100,10 @@ function parseDcl(text, name) {
     if (c.length < 14 || !/^[A-Za-z]?\d+$/.test(c[0].trim())) { bad++; return; }
     const k = c[0].trim().toUpperCase() + '|' + c[1].trim() + '|' + (parseInt(c[2], 10) || 0);
     (groups.get(k) || groups.set(k, []).get(k)).push(c); });
-  const files = new Map(); // one entry per days code; duties with two versions: version 2 (schooldays) in the main list, version 1 in its own list
+  const files = new Map(); // one entry per days code. Duties with two versions: version 2 (schooldays) is read; version 1 (school holidays) is left out on purpose and only counted
   let hol = 0;
   groups.forEach((rows, k) => { const [no, days, v] = k.split('|'); const ver = +v;
-    if (ver === 1) { hol++; return; } // duties with two versions: the school holidays version (1) is left out
+    if (ver === 1) { hol++; return; }
     const pieces = []; let prevEnd = null, prevDep = null;
     rows.forEach((c, i) => { const dep = t4(c[5]); let arr = t4(c[8]); const on = t4(c[3]); const off = t4(c[c.length >= 15 ? 11 : 10]);
       let onBus = dep != null && arr != null ? arr - dep : 0; if (onBus < 0) onBus += 1440;
@@ -1054,10 +1114,10 @@ function parseDcl(text, name) {
     const pay = (() => { const m = String(rows[0][13] || '').trim().match(/^(\d+):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : 0; })();
     const onBusTotal = pieces.reduce((t, p) => t + p.onBus, 0);
     const d = { duty: no, pieces, reliefs: pieces.map(p => p.relief).filter(r => r != null), totals: { onBusTotal, dutyTotal: pay, compass, pay } };
-    const fk = days + '|' + (ver === 1 ? 1 : 0); if (!files.has(fk)) files.set(fk, { days, alt: ver === 1, duties: [] }); files.get(fk).duties.push(d); });
+    if (!files.has(days)) files.set(days, { days, duties: [] }); files.get(days).duties.push(d); });
   const base = String(name || 'duties').replace(/\.dcl$/i, '');
-  return { bad, hol, files: [...files.values()].sort((a, b) => a.alt - b.alt).map(f => ({ name: base + '.DCL' + (f.alt ? ' · version 1' : ''),
-    dayLabel: f.alt ? 'Version 1 of ' + base + ' (duties with two versions)' : dclDayLabel(f.days), commencing: '', duties: f.duties, incomplete: [] })) };
+  return { bad, hol, files: [...files.values()].map(f => ({ name: base + '.DCL',
+    dayLabel: dclDayLabel(f.days), commencing: '', duties: f.duties, incomplete: [] })) };
 }
 
 if (typeof module !== 'undefined') module.exports = { parseLines, checkDuty, DEFAULT_RULES, isSundayLabel, fmt, inNumList, is4DayFor, parseDcl, csvCells };
@@ -1076,8 +1136,10 @@ try { const s = localStorage.getItem('dutyOverrides'); if (s) overrides = JSON.p
 try { const s = localStorage.getItem('dutyJobs'); if (s) jobs = JSON.parse(s) || []; } catch (e) { jobs = []; }
 try { jobId = localStorage.getItem('dutyActiveJob'); } catch (e) {}
 function saveJobs() {
-  try { localStorage.setItem('dutyJobs', JSON.stringify(jobs)); localStorage.setItem('dutyActiveJob', jobId || ''); return true; }
-  catch (e) { const st = $('status'); st.textContent = 'This browser has run out of space to save jobs. Delete an older job and upload again.'; st.classList.add('err'); return false; }
+  const txt = JSON.stringify(jobs); try { localStorage.setItem('dutyActiveJob', jobId || ''); } catch (e) {}
+  const full = () => { const st = $('status'); st.textContent = 'This browser has run out of space to save jobs. Delete an older job and upload again.'; st.classList.add('err'); };
+  if (retStore.ok) { retStore.put('dutyJobs', txt).then(ok => { if (!ok) full(); }); return true; }
+  try { localStorage.setItem('dutyJobs', txt); return true; } catch (e) { full(); return false; }
 }
 const garOf = j => (j && j.garage) || 'g1';
 const garJobs = () => jobs.filter(j => garOf(j) === (window.profSel || 'g1'));
@@ -1774,8 +1836,10 @@ function unpackDif(p) { const out = {}; p.l.forEach(([no, pay, s, e, mr, cls, co
 function difReplacer(k, v) { return k === 'dif' && v && !v._p ? packDif(v) : v; }
 function pickJob(id) { const gr = garRotaJobs(); const j = gr.find(x => x.id === id) || gr[gr.length - 1] || null; rotaJobId = j ? j.id : null; rotaFile = j ? fixFile(j.file) : null; if (j) j.file = rotaFile; rotaSel = j ? j.sel : null; rotaCur = { li: 0, di: 0 }; rotaSubset = ''; }
 const saveRota = () => { const j = curJob(); if (j) { j.file = rotaFile; j.sel = rotaSel; }
-  try { localStorage.setItem('dutyRotaJobs', JSON.stringify(rotaJobs, difReplacer)); localStorage.setItem('dutyRotaJobSel', rotaJobId || ''); localStorage.removeItem('dutyRotaFile'); }
-  catch (e) { rotaMsg('This browser has run out of space to save rota jobs. Delete an older rota job.', true); } };
+  const txt = JSON.stringify(rotaJobs, difReplacer); const full = () => rotaMsg('This browser has run out of space to save rota jobs. Delete an older rota job.', true);
+  try { localStorage.setItem('dutyRotaJobSel', rotaJobId || ''); localStorage.removeItem('dutyRotaFile'); } catch (e) {}
+  if (retStore.ok) { retStore.put('dutyRotaJobs', txt).then(ok => { if (!ok) full(); }); return; }
+  try { localStorage.setItem('dutyRotaJobs', txt); } catch (e) { full(); } };
 function newRotaJob(name, file) { const id = 'r' + Date.now() + Math.random().toString(36).slice(2, 5); rotaJobs.push({ garage: window.profSel || 'g1', id, name, created: Date.now(), file, sel: file && file.rotas[0] ? file.rotas[0].code : null }); pickJob(id); return curJob(); }
 let rotaMsgT = null, pickOrdFolder = () => {};
 function rotaMsg(t, err) { const st = $('rotaStatus'); if (!st) return; st.textContent = t || ''; st.classList.toggle('err', !!err); showRotaMsg(!!t); }
@@ -1814,7 +1878,7 @@ const rcOf = (d, num) => { const r = rotaFile && rotaFile.rotas.find(x => inRc(x
 function parseRif(text, name) {
   const out = { name, depot: '', rotas: [] }; let cur = null;
   String(text).replace(/\r/g, '').split('\n').forEach(l => {
-    if (!l.trim()) return; const c = l.split(',');
+    if (!l.trim()) return; const c = csvSplit(l);
     if (c[2] === 'P' && c.length >= 29) {
       if (!cur || cur.code !== c[1]) { cur = { code: c[1], header: [c[0], c[1], '', '', '', '', '', '', 'YES', 'E ', '', '', ''], rotating: true, lines: [] }; out.rotas.push(cur); }
       const cells = []; for (let i = 0; i < 7; i++) cells.push({ v: (c[8 + i * 3] || '').trim().toUpperCase(), f: [c[9 + i * 3] || 'NO', c[10 + i * 3] || 'NO'] });
@@ -1841,7 +1905,7 @@ function sun4Factor() { return asg.sun4Factor > 0 ? asg.sun4Factor : 1.16; }
 function sun4Pay(v) { return Math.round(v * sun4Factor()); }
 // ---- OmniROTA data file (.ORD): the whole rota with its duties and settings ----
 // header · per line: no,name,roll,total + 7 × (duty,index) · duty table · day names · sub rotas (first,last,name,startNo,count,SP,RD,min,max,short+moves,rest)
-function csvRow(l) { const out = []; let cur = '', q = false; for (let i = 0; i < l.length; i++) { const ch = l[i]; if (ch === '"') q = !q; else if (ch === ',' && !q) { out.push(cur); cur = ''; } else cur += ch; } out.push(cur); return out; }
+function csvRow(l) { return csvSplit(l); } // the shared CSV reader (store.js)
 // .ORL: one row per piece — duty, days, school version, sign on, board, depart, from, route, arrive, to, sign off, -, value
 // .DCL (duty files) have the same rows with an extra 0 before the sign off, and the depot at the end
 function parseOrl(text) { const m = new Map(); const t4 = x => { x = String(x || '').trim(); return /^\d{4}$/.test(x) ? +x.slice(0, 2) * 60 + +x.slice(2) : null; };
@@ -1892,6 +1956,7 @@ function parseOrd(text, name, orlText) { const orl = orlText ? parseOrl(orlText)
 function difStrip(text) {
   const out = [], seen = new Set(); let rec = [], duties = 0, dropped = 0;
   const flush = () => { if (!rec.length) return; const k = rec.join('\n'); if (seen.has(k)) dropped++; else { seen.add(k); out.push(...rec); duties++; } rec = []; };
+  // copy of a loaded DIF: plain split and join, so the copy keeps the file exactly as it was
   String(text).split(/\r?\n/).forEach(l => { if (/^D,/.test(l)) { flush(); const c = l.split(','); rec = [c.length >= 20 ? c.slice(0, 10).join(',') : l]; } else if (l) { if (/^L,/.test(l)) { const c = l.split(','); if (c.length >= 10) { if (!c[4]) c[4] = '00.00'; if (!c[9]) c[9] = '00.00'; } l = c.join(','); } // blank sign-on / sign-off as 00.00, like OmniROTA
     if (rec.length) rec.push(l); else out.push(l); } });
   flush();
@@ -1909,7 +1974,7 @@ function parseDif(text) {
     const mr = rel.length ? Math.max(...rel) : null;
     const du = { no: cur.no, num: parseInt(cur.no.replace(/^\D+/, ''), 10), pay: cur.pay, s, e, maxRelief: mr, routes: [], valid: true, cls: mr != null && mr >= 120 ? 'split' : '', code: cur.code, src: 'DIF', pc: P.map(p => [p.dep, p.arr, p.on, p.off]) };
     cur.days.forEach(d => (out[d] = out[d] || []).push(du)); cur = null; };
-  String(text).replace(/\r/g, '').split('\n').forEach(l => { const c = l.split(',');
+  String(text).replace(/\r/g, '').split('\n').forEach(l => { const c = csvSplit(l);
     if (c[0] === 'D' && c.length >= 4) { close(); let days;
       // fields 14–20 are the days the duty runs (Sun..Sat, YES/NO); older exports only have the date
       if (c.length >= 20 && c.slice(13, 20).some(x => /^(YES|NO)$/i.test(x.trim()))) days = DAYS.map(([d]) => d).filter((d, i) => /^YES$/i.test((c[13 + i] || '').trim()));
@@ -2009,7 +2074,8 @@ const prevLine = (r, li) => { const n = r.lines.length; if (r.cfg.moves === 'sta
 // rest days a week: set in Sub rota settings, otherwise what most lines of the sub rota have (2, or 3 on a 4 Day rota)
 function rdMode(r) { const n = {}; r.lines.forEach(l => { const k = l.cells.filter(c => isRD(c.v)).length; n[k] = (n[k] || 0) + 1; });
   let best = 0, bc = -1; Object.keys(n).forEach(k => { if (n[k] > bc || (n[k] === bc && +k > best)) { bc = n[k]; best = +k; } }); return best; }
-const rdExp = r => (r.cfg && r.cfg.rdWeek > 0) ? r.cfg.rdWeek : rdMode(r);
+// rdWeek: 0 or empty = what most lines have, -1 = no rule (every week can differ), n = n rest days
+const rdExp = r => { const w = r.cfg && r.cfg.rdWeek; return w === -1 ? 0 : w > 0 ? w : rdMode(r); };
 function weekTotal(r, cells, dus) {
   let t = 0, sp = 0, rd = 0; cells.forEach((c, di) => { if (isSP(c.v)) { t += r.cfg.sp; sp++; } else if (isRD(c.v)) { rd++; if (rotaFile.set.includeRd) t += r.cfg.rd; } else if (dus[di]) t += dus[di].pay; });
   return { t, sp, rd };
@@ -2194,6 +2260,128 @@ function autoFill(r, src, opts) {
   const leftL = DAYS.flatMap(([d, dn]) => (pool[d].left || []).filter(p => !p.du.sp).map(p => ({ d: dn, v: p.v, t: typeLetter(p.du) || '–' })));
   return { spare, left: leftL.length, leftList: leftL };
 }
+
+// ---- RD pattern: where the rest days go on every line of a sub rota ----
+// Hard rules: exactly k rest days a week, at most maxRun working days in a row (also across the week, as the rota moves),
+// a weekend off (Saturday and the next Sunday) at least once in every wkN weeks. Wishes: rest days per day as asked,
+// rest days together, long weekends (Fri, Sat + Sun, Mon) when asked, no single working day between rest days. Kept lines stay.
+const bitc = m => { let c = 0; while (m) { c += m & 1; m >>= 1; } return c; };
+function rdTargets(r, k, src) { const n = r.lines.length, tot = n * k;
+  const cur = DAYS.map((_, di) => r.lines.filter(l => isRD(l.cells[di].v)).length);
+  let w = cur.reduce((a, b) => a + b, 0) ? cur : null;
+  if (!w && src && hasRanges(r.code)) { const s = DAYS.map(([d]) => Math.max(0, n - src.day(d, r.code).length)); if (s.some(Boolean)) w = s; }
+  if (!w) w = [1, 1, 1, 1, 1, 1, 1];
+  const sum = w.reduce((a, b) => a + b, 0); const raw = w.map(x => x * tot / sum); const t = raw.map(Math.floor);
+  raw.map((x, i) => [x - Math.floor(x), i]).sort((a, b) => b[0] - a[0]).slice(0, tot - t.reduce((a, b) => a + b, 0)).forEach(([, i]) => t[i]++);
+  return t.map(x => Math.min(n, x)); }
+function rdPatternBuild(r, o) {
+  const n = r.lines.length, k = o.k; const fixed = r.lines.map(l => !!l.keep);
+  const maskOf = l => l.cells.reduce((m, c, di) => m | (isRD(c.v) ? 1 << di : 0), 0);
+  const nx = r.lines.map((_, li) => { const x = nextLine(r, li); return x == null ? li : x; });
+  const pv = r.lines.map((_, li) => li); nx.forEach((x, li) => { pv[x] = li; }); // the week before
+  const cycles = []; const seen = new Set(); for (let s = 0; s < n; s++) { if (seen.has(s)) continue; const c = []; let x = s; while (!seen.has(x)) { seen.add(x); c.push(x); x = nx[x]; } cycles.push(c); }
+  const ord = cycles.flat(); const has = (m, d) => (m >> d) & 1;
+  let seed = 7919 + n * 31; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const P = r.lines.map((l, li) => fixed[li] ? maskOf(l) : 0); const free = ord.filter(li => !fixed[li]);
+  const spaced = (list, m) => { const out = []; const q = Math.min(m, list.length); for (let i = 0; i < q; i++) out.push(list[Math.floor(i * list.length / q)]); return out; };
+  const cnt = d => P.filter(x => has(x, d)).length;
+  // 1. Saturdays off, spread evenly through the cycle
+  spaced(free, o.target[6] - cnt(6)).forEach(li => { P[li] |= 1 << 6; });
+  // 2. Sundays: the weeks that work Sunday are spread evenly, never two in a row, and are the weeks with Saturday off
+  //    when they can be (Saturday off is then followed by next week's Sunday off: a weekend). Every other week has Sunday off.
+  const wS = n - o.target[0]; const satL = free.filter(li => has(P[li], 6));
+  let workSun = wS <= satL.length ? spaced(satL, wS) : satL.concat(spaced(free.filter(li => !has(P[li], 6) && !satL.includes(pv[li]) && !satL.includes(nx[li])), wS - satL.length));
+  if (workSun.length < wS) workSun = workSun.concat(spaced(free.filter(li => !workSun.includes(li)), wS - workSun.length));
+  const ws = new Set(workSun); free.forEach(li => { if (!ws.has(li) && bitc(P[li]) < k) P[li] |= 1; });
+  // 3. Monday to Friday: the days that need rest days most; a Friday before a Saturday off and a Monday after a weekend off first
+  const need = DAYS.map((_, d) => o.target[d] - cnt(d));
+  free.forEach(li => { while (bitc(P[li]) < k) { let best = -1, bs = -1e9;
+    for (let d = 1; d <= 5; d++) { if (has(P[li], d)) continue; let s = need[d] * 10;
+      if (o.longW && d === 5 && has(P[li], 6)) s += 25; if (o.longW && d === 1 && has(P[li], 0) && has(P[pv[li]], 6)) s += 25;
+      if (o.longW && d === 4 && has(P[nx[li]], 5) && has(P[nx[li]], 6)) s += 8; // Thursday off before a long weekend: no long run into it
+      if (s > bs) { bs = s; best = d; } }
+    if (best < 0) break; P[li] |= 1 << best; need[best]--; } });
+  // 4. improve: the same rules as a cost; moves that keep the rest days per day are tried most
+  const cost = () => { let c = 0; const cn = [0, 0, 0, 0, 0, 0, 0];
+    P.forEach(m => { for (let d = 0; d < 7; d++) if (has(m, d)) cn[d]++; });
+    for (let d = 0; d < 7; d++) c += Math.abs(cn[d] - o.target[d]) * 10000; // rest days per day first: each one too many leaves a duty without a driver
+    P.forEach((m, li) => { const nm = P[nx[li]]; if (bitc(m) !== k && !fixed[li]) c += 20000;
+      let run = 0; const lead = (() => { let x = 0; while (x < 7 && !has(nm, x)) x++; return x; })();
+      const runCost = t => (t > o.maxRun ? (t - o.maxRun) * 6000 : 0) + (t === 1 ? 30 : 0) + (t > 5 ? (t - 5) * 12 : 0);
+      for (let d = 0; d < 7; d++) { if (has(m, d)) { if (run) c += runCost(run); run = 0; } else run++; }
+      if (run) c += runCost(run + (lead < 7 ? lead : 0));
+      if (o.sunAlt && !has(m, 0) && !has(nm, 0)) c += 3000; // two Sundays worked in a row
+      if (has(m, 5) && !has(m, 6)) c += 300; // a Friday off goes with the Saturday off
+      if (o.blocks) for (let d = 0; d < 7; d++) if (has(m, d)) { const prev = d ? has(m, d - 1) : has(P[pv[li]], 6), nxt = d < 6 ? has(m, d + 1) : has(nm, 0); if (!prev && !nxt) c += 60; }
+      if (has(m, 6) && has(nm, 0)) { c -= 200; // a weekend off
+        if (o.longW) { const f = has(m, 5), mo = has(nm, 1); if (f && mo) c -= 150; else if (f || mo) c -= 70; } } });
+    // even spacing through each driver's weeks: Sundays worked (with the Sunday rule) and Saturdays off, e.g. 13 of 38 = every 3rd week (once every 2nd)
+    const even = (cy, on, w) => { const pos = []; cy.forEach((li, i) => { if (on(li)) pos.push(i); }); const m = pos.length, L = cy.length; if (m < 2 || m >= L) return;
+      const lo = Math.floor(L / m), hi = Math.ceil(L / m); for (let i = 0; i < m; i++) { const g = (pos[(i + 1) % m] - pos[i] + L) % L || L; if (g < lo) c += (lo - g) * w; else if (g > hi) c += (g - hi) * w; } };
+    cycles.forEach(cy => { if (o.sunAlt) even(cy, li => !has(P[li], 0), 2500); even(cy, li => has(P[li], 6), 1500); });
+    if (o.wkN > 0) cycles.forEach(cy => { const L = cy.length, wk = cy.map(li => has(P[li], 6) && has(P[nx[li]], 0));
+      if (L <= o.wkN) { if (!wk.some(Boolean)) c += 4000; return; }
+      for (let s = 0; s < L; s++) { let ok = false; for (let t = 0; t < o.wkN; t++) if (wk[(s + t) % L]) { ok = true; break; } if (!ok) c += 4000; } });
+    return c; };
+  if (free.length) { let cur = cost(), best = cur, bestP = P.slice(), T = 300; const iters = 40000 + n * 900;
+    const tryIt = undo => { const c2 = cost(); if (c2 <= cur || rnd() < Math.exp((cur - c2) / T)) { cur = c2; if (c2 < best) { best = c2; bestP = P.slice(); } } else undo(); };
+    for (let it = 0; it < iters; it++) { T = 300 * Math.pow(0.002, it / iters); const u = rnd();
+      if (u < 0.55 && free.length > 1) { // two weeks swap one rest day each: the rest days per day stay the same
+        const a = free[Math.floor(rnd() * free.length)], b = free[Math.floor(rnd() * free.length)]; if (a === b) continue;
+        const ab = [], ba = []; for (let d = 0; d < 7; d++) { if (has(P[a], d) && !has(P[b], d)) ab.push(d); if (has(P[b], d) && !has(P[a], d)) ba.push(d); }
+        if (!ab.length || !ba.length) continue; const f = (1 << ab[Math.floor(rnd() * ab.length)]) | (1 << ba[Math.floor(rnd() * ba.length)]);
+        P[a] ^= f; P[b] ^= f; tryIt(() => { P[a] ^= f; P[b] ^= f; }); }
+      else if (u < 0.75) { // a rest day moves to another day of the same week
+        const a = free[Math.floor(rnd() * free.length)]; const on = [], off = []; for (let d = 0; d < 7; d++) (has(P[a], d) ? on : off).push(d); if (!on.length || !off.length) continue;
+        const f = (1 << on[Math.floor(rnd() * on.length)]) | (1 << off[Math.floor(rnd() * off.length)]); P[a] ^= f; tryIt(() => { P[a] ^= f; }); }
+      else if (u < 0.9 || free.length < 2) { // two whole weeks change places
+        const a = free[Math.floor(rnd() * free.length)], b = free[Math.floor(rnd() * free.length)]; if (a === b || P[a] === P[b]) continue;
+        [P[a], P[b]] = [P[b], P[a]]; tryIt(() => { [P[a], P[b]] = [P[b], P[a]]; }); }
+      else if (u < 0.95) { // Friday off joins a Saturday off; the week before then gets its rest day on Thursday, so the run into it stays short
+        const sat = free.filter(x => has(P[x], 6) && !has(P[x], 5)), lone = free.filter(x => has(P[x], 5) && !has(P[x], 6)); if (!sat.length || !lone.length) continue;
+        const a = sat[Math.floor(rnd() * sat.length)], b = lone[Math.floor(rnd() * lone.length)]; if (a === b) continue;
+        const dd = [1, 2, 3, 4].filter(d => has(P[a], d) && !has(P[b], d)); if (!dd.length) continue; const d = dd[Math.floor(rnd() * dd.length)];
+        const save = P.slice(); const f1 = (1 << d) | (1 << 5); P[a] ^= f1; P[b] ^= f1;
+        // the Thursday taken for it must not be one that is itself before a Fri + Sat off
+        const pp = pv[a]; if (!fixed[pp] && pp !== a && pp !== b && !has(P[pp], 4)) { const ee = [1, 2, 3].filter(e => has(P[pp], e)); if (ee.length) { const e = ee[0];
+          const qs = free.filter(q => q !== a && q !== b && q !== pp && has(P[q], 4) && !has(P[q], e) && !(has(P[nx[q]], 5) && has(P[nx[q]], 6))); if (qs.length) { const q = qs[Math.floor(rnd() * qs.length)]; const f2 = (1 << e) | (1 << 4); P[pp] ^= f2; P[q] ^= f2; } } }
+        tryIt(() => { save.forEach((m, i) => { P[i] = m; }); }); }
+      else { // long weekend: a week with Fri + Sat off gets a next week starting Sun + Mon off
+        const i = free[Math.floor(rnd() * free.length)], j = nx[i]; if (!has(P[i], 5) || !has(P[i], 6) || fixed[j] || (has(P[j], 0) && has(P[j], 1))) continue;
+        const cand = free.filter(x => x !== j && x !== i && has(P[x], 0) && has(P[x], 1)); if (!cand.length) continue; const b2 = cand[Math.floor(rnd() * cand.length)];
+        [P[j], P[b2]] = [P[b2], P[j]]; tryIt(() => { [P[j], P[b2]] = [P[b2], P[j]]; }); } }
+    bestP.forEach((m, li) => { P[li] = m; }); }
+  // week 1 starts with a Sunday worked: turn the cycle round (same pattern, it only starts at another week); not with kept lines
+  if (!fixed.some(Boolean) && cycles.length === 1 && has(P[ord[0]], 0)) {
+    const L = ord.length; let s = ord.findIndex((li, i) => !has(P[li], 0) && has(P[li], 6)); if (s < 0) s = ord.findIndex(li => !has(P[li], 0));
+    if (s > 0) { const Q = ord.map((_, i) => P[ord[(i + s) % L]]); ord.forEach((li, i) => { P[li] = Q[i]; }); } }
+  return P; }
+// how many lines (weeks) a sub rota needs for these duties: working drivers each day = duties (+ spare %),
+// lines × working days a week must cover them all, no day may need more drivers than lines, and Saturday and Sunday
+// need enough rest days for a weekend off in every wkN weeks. Then the rest days per day that add up to lines × k.
+function rdPlan(duties, k, wkN, spare, longW) {
+  const w = duties.map(x => Math.ceil(Math.max(0, x) * (1 + spare) - 1e-9)); const W = w.reduce((a, b) => a + b, 0);
+  const why = []; let n = Math.ceil(W / (7 - k)); why.push(['work', n]);
+  const busy = Math.max(...w); if (busy > n) { n = busy; why.push(['busy', n]); }
+  const wkNeed = x => wkN ? Math.ceil(x / wkN) : 0; let n0 = n;
+  while (wkN && (n - w[6] < wkNeed(n) || n - w[0] < wkNeed(n))) n++; if (n > n0) why.push(['weekend', n]);
+  // Saturday and Sunday get all the rest days they can (no spare at weekends); the spare (more drivers than duties) goes to Monday–Friday
+  // with long weekends, Friday, Monday and Thursday come next (a Friday off before a weekend off, a Monday off after it, a Thursday off the week before)
+  const cap = w.map(x => n - x), T = n * k; const floor = [0, 0, 0, 0, 0, 0, 0]; let left0 = T;
+  // (Thursday too: a Thursday off before each Fri + Sat off keeps the run into it to 7 days)
+  for (const d of (longW ? [0, 6, 5, 1, 4] : [0, 6])) { const v = Math.max(0, Math.min(cap[d], left0)); floor[d] = v; left0 -= v; }
+  const t = floor.slice(); let rest = T - t.reduce((a, b) => a + b, 0);
+  const room = cap.map((c, d) => Math.max(0, c - floor[d])); const rs = room.reduce((a, b) => a + b, 0);
+  if (rs > 0 && rest > 0) { const raw = room.map(x => x * rest / rs); raw.forEach((x, d) => { t[d] += Math.floor(x); });
+    let left = T - t.reduce((a, b) => a + b, 0); raw.map((x, d) => [x - Math.floor(x), d]).sort((a, b) => b[0] - a[0]).forEach(([, d]) => { if (left > 0 && t[d] < cap[d]) { t[d]++; left--; } }); }
+  return { n, w, W, t, spareDays: n * (7 - k) - W, why: why[why.length - 1][0], weekends: wkNeed(n) }; }
+// what a pattern gives: rest days per day, longest working run, weekends off, long weekends
+function rdPatternStats(r, P) { const n = r.lines.length; const nx = r.lines.map((_, li) => { const x = nextLine(r, li); return x == null ? li : x; }); const has = (m, d) => (m >> d) & 1;
+  const cnt = DAYS.map((_, d) => P.filter(m => has(m, d)).length); let maxRun = 0, wk = 0, lw = 0, lw3 = 0, sun2 = 0;
+  P.forEach((m, li) => { const nm = P[nx[li]]; let run = 0; for (let d = 0; d < 7; d++) { if (has(m, d)) run = 0; else { run++; maxRun = Math.max(maxRun, run); } }
+    if (run) { let x = 0; while (x < 7 && !has(nm, x)) x++; maxRun = Math.max(maxRun, run + x); }
+    if (has(m, 6) && has(nm, 0)) { wk++; const f = has(m, 5), mo = has(nm, 1); if (f && mo) lw++; else if (f || mo) lw3++; } if (!has(m, 0) && !has(nm, 0)) sun2++; });
+  return { cnt, maxRun, wk, lw, lw3, sun2, every: wk ? n / wk : 0 }; }
 
 // ---- new sub rota from scratch: RD pattern from duty counts, then balance ----
 function buildRota(src, o) {
@@ -2416,7 +2604,7 @@ function renumber(r, start) { r.lines.forEach((l, i) => l.pre[5] = String(start 
 function showDialog(id) { const d = $(id); if (d.showModal) { try { d.showModal(); return; } catch (e) {} } d.setAttribute('open', ''); }
 function closeDialog(id) { const d = $(id); if (d.close) d.close(); else d.removeAttribute('open'); }
 function fillSubDialog() { const r = curRota(); const c = r.cfg;
-  $('sr_no').textContent = rotaFile.rotas.indexOf(r) + 1; $('sr_name').value = r.code; $('sr_rdw').value = c.rdWeek || rdMode(r) || ''; $('sr_week').value = c.startWeek || 1;
+  $('sr_no').textContent = rotaFile.rotas.indexOf(r) + 1; $('sr_name').value = r.code; { const m = rdMode(r); $('sr_rdw').innerHTML = `<option value="">Automatic: ${m} (what most lines have)</option><option value="none">No rule: weeks can differ</option>` + [1, 2, 3, 4, 5].map(n => `<option value="${n}">${n}</option>`).join(''); $('sr_rdw').value = c.rdWeek === -1 ? 'none' : c.rdWeek > 0 ? String(c.rdWeek) : ''; } $('sr_week').value = c.startWeek || 1;
   { const g = rgOf(r.code) || {}; ['mt', 'fri', 'sat', 'sun'].forEach(k => $('sr_rg_' + k).value = g[k] || ''); }
   $('sr_min').value = fmt(c.min); $('sr_max').value = fmt(c.max); $('sr_sp').value = fmt(c.sp); $('sr_rd').value = fmt(c.rd); $('sr_rest').value = fmt(c.rest);
   document.querySelectorAll('input[name="sr_moves"]').forEach(x => x.checked = x.value === c.moves); $('sr_msg').textContent = '';
@@ -3008,6 +3196,67 @@ function initRota() {
   const spHint = () => { const src = rotaSrc(); const c = specialPrefixes(src, spDays()); const ks = Object.keys(c).sort((a, b) => c[b] - c[a]);
     $('spd_found').textContent = spDays().length ? (ks.length ? 'Duty numbers with a letter on these days: ' + ks.map(k => `${k} (${c[k]})`).join(', ') + '.' : 'No duties with a letter on these days. Load the special duties first (Load duties .DIF / .DCL).') : 'Choose a day.';
     const cur = $('spd_pre').value.trim().toUpperCase(); if (!cur || !c[cur]) { const k = ks.find(x => x !== 'F') || ks[0]; if (k) $('spd_pre').value = k; } };
+  // ---- Clear all ----
+  $('rbClrAll').onclick = () => { const r = curRota(); if (!r) { rotaMsg('Open a rota first.', true); return; }
+    $('ca_rota').textContent = r.code; $('ca_rd').checked = false; const kp = r.lines.filter(l => l.keep).length;
+    $('ca_keep').textContent = kp ? `${kp} kept line${kp === 1 ? '' : 's'} (🔒) stay as ${kp === 1 ? 'it is' : 'they are'}.` : ''; showDialog('caDlg'); };
+  $('caGo').onclick = () => { const r = curRota(); if (!r) return; const rd = $('ca_rd').checked; pushUndo('clear all ' + r.code); let k = 0;
+    r.lines.forEach(l => { if (l.keep) return; l.cells.forEach((c, di) => { if (!c.v || (isRD(c.v) && !rd)) return; l.cells[di] = Object.assign({}, c, { v: '' }); k++; }); });
+    saveRota(); closeDialog('caDlg'); rotaA = analyseRota(rotaSrc()); renderRota();
+    rotaMsg(`Cleared ${k} day${k === 1 ? '' : 's'} on ${r.code}${rd ? ', rest days included' : ' (rest days kept)'}. Next: ${rd ? 'RD pattern…, then ' : ''}Auto-fill. Undo puts them back.`); };
+  // ---- RD pattern ----
+  const rpSum = () => { const r = curRota(); if (!r) return; const k = +$('rp_k').value, n = r.lines.length; const t = [...document.querySelectorAll('#rp_days input')].reduce((a, x) => a + (parseInt(x.value, 10) || 0), 0);
+    $('rp_sum').textContent = `${t} of ${n * k} rest days (${n} lines × ${k}).` + (t !== n * k ? ' The days are adjusted to add up when the pattern is made.' : '') + ' Fewer rest days on a day means more drivers working that day: set them by the duties each day has.'; };
+  const rpFillDays = () => { const r = curRota(); const t = rdTargets(r, +$('rp_k').value, rotaSrc());
+    $('rp_days').innerHTML = DAYS.map(([, sh], di) => `<label>${sh}<input type="text" inputmode="numeric" data-rpd="${di}" value="${t[di]}" aria-label="Rest days on ${sh}"></label>`).join(''); rpSum(); };
+  let rpPlan = null;
+  const rpFillDuties = () => { const r = curRota(); const src = rotaSrc();
+    // duties with this sub rota's numbers that no other sub rota has, or (no numbers set) the duties on it now
+    const other = DAYS.map((_, di) => new Set(rotaFile.rotas.filter(x => x !== r).flatMap(x => x.lines.map(l => String(l.cells[di].v || '').replace(/^F/, '')))));
+    const du = DAYS.map(([d], di) => hasRanges(r.code) && src.ok ? src.day(d, r.code).filter(x => !other[di].has(String(x.no).replace(/^F/, ''))).length : r.lines.filter(l => isDutyVal(l.cells[di].v)).length);
+    $('rp_duties').innerHTML = DAYS.map(([, sh], di) => `<label>${sh}<input type="text" inputmode="numeric" data-rpu="${di}" value="${du[di]}" aria-label="Duties on ${sh}"></label>`).join('');
+    $('rp_calc').textContent = hasRanges(r.code) ? `Duties with ${r.code}'s numbers (Sub rota settings) that are not on another sub rota. Change them for a new or changed timetable.` : `Duties on the rota now (no duty numbers set for ${r.code} in Sub rota settings). Change them for a new or changed timetable.`;
+    $('rp_resizeRow').hidden = true; rpPlan = null; };
+  $('rpCalc').onclick = () => { const r = curRota(); if (!r) return; const k = +$('rp_k').value, wkN = +$('rp_wk').value;
+    const du = [...document.querySelectorAll('#rp_duties input')].map(x => parseInt(x.value, 10) || 0); if (!du.some(Boolean)) { $('rp_calc').textContent = 'Write how many duties each day has first.'; return; }
+    const sp = $('rp_spare').checked ? Math.max(0, parseFloat(String($('rp_spp').value).replace(',', '.')) || 0) / 100 : 0;
+    const pl = rdPlan(du, k, wkN, sp, $('rp_long').checked); rpPlan = pl;
+    document.querySelectorAll('#rp_days input').forEach((x, di) => { x.value = pl.t[di]; }); rpSum(); rpSunAuto();
+    const whyT = { work: `${pl.W} working days a week (${sp ? `duties + ${Math.round(sp * 100)}% spare` : 'one per duty'}) ÷ ${7 - k} working days a line`, busy: `the busiest day needs ${Math.max(...pl.w)} drivers`, weekend: `a weekend off in every ${wkN} weeks needs at least ${pl.weekends} rest days on both Saturday and Sunday` };
+    $('rp_calc').innerHTML = `<b>${pl.n} lines (weeks)</b> are needed – set by ${whyT[pl.why]}. Drivers working each day: ${DAYS.map(([, sh], di) => `${sh} ${pl.w[di]}`).join(', ')}. ` +
+      (pl.spareDays ? `${pl.spareDays} working day${pl.spareDays === 1 ? '' : 's'} a cycle more than ${sp ? 'duties and spare' : 'duties'}: they get SP. ` : '') + `Rest days on each day are filled in below.`;
+    $('rp_n').textContent = pl.n; $('rp_resizeRow').hidden = pl.n === r.lines.length; if (pl.n !== r.lines.length) $('rp_resize').checked = true;
+    if (pl.n === r.lines.length) $('rp_calc').innerHTML += ` ${r.code} already has ${pl.n} lines.`; };
+  ['rp_k', 'rp_wk', 'rp_spare', 'rp_long'].forEach(id => $(id).addEventListener('change', () => { if (rpPlan) $('rpCalc').click(); }));
+  $('rp_spp').addEventListener('input', () => { if (rpPlan && $('rp_spare').checked) $('rpCalc').click(); });
+  $('rp_duties').addEventListener('input', () => { rpPlan = null; $('rp_resizeRow').hidden = true; });
+  $('rbRdPat').onclick = () => { const r = curRota(); if (!r) { rotaMsg('Open a rota first.', true); return; }
+    const k0 = rdExp(r) >= 3 ? 3 : 2; $('rp_k').value = String(k0); $('rp_rota').textContent = r.code;
+    $('rp_info').textContent = `${r.lines.length} lines, rota moves ${r.cfg.moves || 'down'}`; $('rp_msg').textContent = ''; rpFillDays(); rpFillDuties(); rpSunAuto(); showDialog('rpDlg'); };
+  const rpSunAuto = () => { const r = curRota(); const x = document.querySelector('#rp_days input[data-rpd="0"]'); if (r && x) $('rp_sun').checked = (parseInt(x.value, 10) || 0) * 2 >= r.lines.length; };
+  $('rp_k').onchange = () => { rpFillDays(); rpSunAuto(); }; $('rp_days').addEventListener('input', rpSum);
+  $('rpGo').onclick = () => { const r = curRota(); if (!r) return; const k = +$('rp_k').value;
+    const newN = rpPlan && !$('rp_resizeRow').hidden && $('rp_resize').checked ? rpPlan.n : r.lines.length;
+    if (newN < r.lines.length && r.lines.filter(l => !l.keep).length < r.lines.length - newN) { $('rp_msg').textContent = 'Too many kept lines (🔒) to take the sub rota down to ' + newN + ' lines.'; return; }
+    const n = newN;
+    // the rest days per day, made to add up to lines × rest days a week
+    let t = [...document.querySelectorAll('#rp_days input')].map(x => Math.max(0, Math.min(n, parseInt(x.value, 10) || 0)));
+    let diff = n * k - t.reduce((a, b) => a + b, 0); for (let g = 0; diff && g < 1000; g++) { const i = g % 7; if (diff > 0 && t[i] < n) { t[i]++; diff--; } else if (diff < 0 && t[i] > 0) { t[i]--; diff++; } }
+    const o = { k, maxRun: +$('rp_run').value, wkN: +$('rp_wk').value, longW: $('rp_long').checked, blocks: $('rp_blocks').checked, sunAlt: $('rp_sun').checked, target: t };
+    $('rp_msg').textContent = 'Working…'; setTimeout(() => {
+      pushUndo('RD pattern ' + r.code); const n0 = r.lines.length;
+      if (n !== n0) { const start = parseInt(r.lines[0].pre[5], 10) || 1;
+        if (n > n0) { const base = r.lines[n0 - 1]; for (let i = n0; i < n; i++) r.lines.push({ pre: base.pre.slice(), cells: DAYS.map(() => ({ v: '', f: ['NO', 'NO'] })) }); }
+        else { let cut = n0 - n; for (let i = r.lines.length - 1; i >= 0 && cut > 0; i--) if (!r.lines[i].keep) { r.lines.splice(i, 1); cut--; } }
+        renumber(r, start); }
+      const P = rdPatternBuild(r, o); const has = (m, d) => (m >> d) & 1;
+      r.lines.forEach((l, li) => { if (l.keep) return; l.cells.forEach((c, di) => { l.cells[di] = Object.assign({}, c, { v: has(P[li], di) ? RDc() : '' }); }); });
+      r.cfg.rdWeek = k; saveRota(); closeDialog('rpDlg'); rotaA = analyseRota(rotaSrc()); renderRota();
+      const st = rdPatternStats(r, P); const off = DAYS.map(([, sh], di) => st.cnt[di] !== t[di] ? `${sh} ${st.cnt[di]} (asked ${t[di]})` : '').filter(Boolean);
+      const bad = [st.maxRun > o.maxRun ? `${st.maxRun} working days in a row somewhere (more than ${o.maxRun})` : '', o.sunAlt && st.sun2 ? `two Sundays worked in a row ${st.sun2} time${st.sun2 === 1 ? '' : 's'}` : '', o.wkN && st.wk && st.every > o.wkN + 0.001 ? `weekends off only 1 in ${st.every.toFixed(1)}` : ''].filter(Boolean);
+      rotaMsg(`RD pattern on ${r.code}${n !== n0 ? ` (now ${n} lines, was ${n0})` : ''}: ${k} rest days a week, at most ${st.maxRun} working days in a row, a weekend off on ${st.wk} of ${n} weeks (1 in ${st.every ? st.every.toFixed(1) : '–'}): ${st.lw} of 4 days (Fri–Mon), ${st.lw3} of 3 days; ${st.sun2 ? `${st.sun2} time${st.sun2 === 1 ? '' : 's'} two Sundays worked in a row` : 'never two Sundays worked in a row'}.` +
+        (off.length ? ` Rest days per day could not all be as asked: ${off.join(', ')}.` : '') + (bad.length ? ` Not possible with these settings: ${bad.join('; ')}.` : '') + ' Duties were cleared: use Auto-fill. Undo puts the rota back.', !!bad.length);
+      if ($('rp_fill').checked) $('rbFill').click(); }, 30); };
   $('rbCheck').onclick = () => { if (!rotaFile) { rotaMsg('Open a rota first.', true); return; } dutyCheckOpen(false); };
   $('ckApply').onclick = dutyCheckApply;
   $('rbSpecial').onclick = () => { if (!rotaFile) { rotaMsg('Open a rota first.', true); return; } $('spd_msg').textContent = ''; $('spd_rota').textContent = rotaSel || ''; spHint(); spModeUI(); showDialog('spdDlg'); };
@@ -3046,7 +3295,9 @@ function initRota() {
     $('bal_kept').textContent = kl.length ? `Lines tagged Keep in the grid are not changed: ${kl.join(', ')}.` : 'Tick Keep under a line number in the grid to leave that week out of Balance weeks.';
     if (rotaFile && rotaFile.bhm) $('bal_kept').textContent += ' Bank Holiday Monday copy: Sunday and Monday stay exactly as they are.'; $('bal_rota').textContent = rotaSel;
     // days kept as they are: the choice made for this rota job, otherwise days with special duties (and Sun + Mon in a BHM copy)
-    const r0 = curRota(); const specDay = di => r0 && r0.lines.some(l => /^[A-Z]+\d/i.test(String(l.cells[di].v || '')) && !isSP(l.cells[di].v) && !isRD(l.cells[di].v));
+    // a special day: at least half its duties are lettered ones (E1401 on Christmas Eve); a few lettered duties (H01, F2401) do not count
+    const r0 = curRota(); const specDay = di => { if (!r0) return false; const v = r0.lines.map(l => String(l.cells[di].v || '')).filter(x => isDutyVal(x));
+      return v.length > 0 && v.filter(x => /^[A-Z]+\d/i.test(x) && !/^F\d/i.test(x)).length * 2 >= v.length; };
     const lockNow = rotaFile && Array.isArray(rotaFile.balLock) ? new Set(rotaFile.balLock) : new Set(DAYS.map((_, di) => di).filter(di => specDay(di) || (rotaFile && rotaFile.bhm && di < 2)));
     $('bal_days').innerHTML = DAYS.map(([d, sh], di) => `<label><input type="checkbox" data-lockday="${di}" ${lockNow.has(di) ? 'checked' : ''}> ${sh}</label>`).join('');
     showDialog('balDlg'); };
@@ -3107,7 +3358,7 @@ function initRota() {
     if (code !== r.code && rotaFile.rotas.some(x => x.code === code)) { m.textContent = `A rota called ${code} already exists.`; return; }
     const se = parseInt($('sr_split').value, 10); if (!(se >= 0)) { m.textContent = 'Write the split rule as a number of weeks, or 0 for no limit.'; return; }
     pushUndo('sub rota settings ' + r.code);
-    Object.assign(r.cfg, vals, { splitEvery: se, rdWeek: Math.max(0, parseInt($('sr_rdw').value, 10) || 0), startWeek: parseInt($('sr_week').value, 10) || 1, moves: (document.querySelector('input[name="sr_moves"]:checked') || {}).value || 'down' });
+    Object.assign(r.cfg, vals, { splitEvery: se, rdWeek: $('sr_rdw').value === 'none' ? -1 : (parseInt($('sr_rdw').value, 10) || 0), startWeek: parseInt($('sr_week').value, 10) || 1, moves: (document.querySelector('input[name="sr_moves"]:checked') || {}).value || 'down' });
     rotaFile.ranges = rotaFile.ranges || {}; rotaFile.ranges[r.code] = { mt: $('sr_rg_mt').value.trim(), fri: $('sr_rg_fri').value.trim(), sat: $('sr_rg_sat').value.trim(), sun: $('sr_rg_sun').value.trim() };
     if (code !== r.code) { rotaFile.ranges[code] = rotaFile.ranges[r.code]; delete rotaFile.ranges[r.code]; r.code = code; rotaSel = code; }
     if (typeof curProfile === 'function' && curProfile()) { const pr = curProfile(); pr.subRanges = pr.subRanges || {}; pr.subRanges[code] = rotaFile.ranges[code]; storeProfile(); } // remembered for this garage's next rota
@@ -3263,7 +3514,43 @@ function afterSwitch() {
   renderGarages(); fillRules(); fillAsgSettings(); renderDrivers(); fillNrRange(); render(); renderAssignResults(); renderRota();
 }
 
-initProfiles(); selectJob(jobId); fillRules(); initAssign(); initRota(); render();
+// start: jobs and rota jobs come from IndexedDB (moved there from localStorage the first time), then the app starts
+async function retBoot() {
+  if (!(await retStore.open())) return; // no IndexedDB: localStorage as before
+  const [j, r] = await Promise.all([retStore.get('dutyJobs'), retStore.get('dutyRotaJobs')]);
+  if (j != null) { try { jobs = JSON.parse(j) || []; } catch (e) {} }
+  else { let old = null; try { old = localStorage.getItem('dutyJobs'); } catch (e) {} if (old && await retStore.put('dutyJobs', old)) try { localStorage.removeItem('dutyJobs'); } catch (e) {} }
+  if (r != null) { try { rotaJobs = JSON.parse(r) || []; } catch (e) {} }
+  else { let old = null; try { old = localStorage.getItem('dutyRotaJobs'); } catch (e) {} if (old && await retStore.put('dutyRotaJobs', old)) try { localStorage.removeItem('dutyRotaJobs'); } catch (e) {} }
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} // ask the browser not to clear RET's data when space is low
+}
+// ---- Backup: everything in RET in one file, and back ----
+const bkLocalKeys = () => { const ks = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if ((/^duty/.test(k) || k === 'rotaRows') && !BIG_KEYS.includes(k)) ks.push(k); } } catch (e) {} return ks; };
+let bkData = null;
+$('bkSave').onclick = async () => {
+  try { storeProfile(); } catch (e) {}
+  const local = {}; bkLocalKeys().forEach(k => { local[k] = localStorage.getItem(k); });
+  const b = { format: 'ret-backup', version: 1, saved: new Date().toISOString(), local, jobs: JSON.stringify(jobs), rotaJobs: JSON.stringify(rotaJobs, difReplacer) };
+  const d = new Date(), p2 = n => String(n).padStart(2, '0');
+  const sv = await saveFile(`RET backup ${p2(d.getDate())}-${p2(d.getMonth() + 1)}-${d.getFullYear()}.json`, JSON.stringify(b), 'application/json', true);
+  if (sv) rotaMsg(`Saved ${sv}: ${jobs.length} job${jobs.length === 1 ? '' : 's'}, ${rotaJobs.length} rota job${rotaJobs.length === 1 ? '' : 's'}, ${profiles.length} garage${profiles.length === 1 ? '' : 's'}.`); };
+$('bkLoad').onclick = () => { $('bkFile').value = ''; $('bkFile').click(); };
+$('bkFile').onchange = async e => { const f = e.target.files[0]; if (!f) return; let b = null;
+  try { b = JSON.parse(await f.text()); } catch (x) {}
+  if (!b || b.format !== 'ret-backup' || !b.local || typeof b.jobs !== 'string' || typeof b.rotaJobs !== 'string') { rotaMsg(`${f.name} is not a RET backup file.`, true); return; }
+  let nJ = 0, nR = 0, nG = 0; try { nJ = JSON.parse(b.jobs).length; nR = JSON.parse(b.rotaJobs).length; nG = JSON.parse(b.local.dutyProfiles || '[]').length; } catch (x) { rotaMsg(`${f.name} is damaged and cannot be loaded.`, true); return; }
+  bkData = b; const when = new Date(b.saved);
+  $('bkTxt').innerHTML = `<b>${esc(f.name)}</b>, saved ${isNaN(when) ? '' : when.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}: ${nJ} job${nJ === 1 ? '' : 's'}, ${nR} rota job${nR === 1 ? '' : 's'}, ${nG} garage${nG === 1 ? '' : 's'}.`;
+  $('bkMsg').textContent = ''; showDialog('bkDlg'); };
+$('bkGo').onclick = async () => { const b = bkData; if (!b) return; $('bkGo').disabled = true;
+  try { bkLocalKeys().forEach(k => localStorage.removeItem(k)); Object.keys(b.local).forEach(k => { if (!BIG_KEYS.includes(k)) localStorage.setItem(k, b.local[k]); }); }
+  catch (x) { $('bkMsg').textContent = 'Could not write the settings: ' + x.message; $('bkGo').disabled = false; return; }
+  let ok = true;
+  if (retStore.ok) ok = (await retStore.put('dutyJobs', b.jobs)) && (await retStore.put('dutyRotaJobs', b.rotaJobs));
+  else try { localStorage.setItem('dutyJobs', b.jobs); localStorage.setItem('dutyRotaJobs', b.rotaJobs); } catch (x) { ok = false; }
+  if (!ok) { $('bkMsg').textContent = 'There is not enough space in this browser for the whole backup.'; $('bkGo').disabled = false; return; }
+  location.reload(); };
+const retReady = retBoot().catch(() => {}).then(() => { initProfiles(); selectJob(jobId); fillRules(); initAssign(); initRota(); render(); });
 // ---- Installed app (GitHub Pages only: the page there links a web app manifest) ----
 if (document.querySelector('link[rel="manifest"]')) {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); // works offline after the first visit
@@ -3274,7 +3561,7 @@ if (document.querySelector('link[rel="manifest"]')) {
 }
 // Files opened from Windows with the installed app (double-click or Open with → RET)
 if ('launchQueue' in window) launchQueue.setConsumer(async p => { if (!p.files || !p.files.length) return;
-  const fs = await Promise.all(p.files.map(h => h.getFile())); if (window.retOpenFiles) window.retOpenFiles(fs); });
+  const fs = await Promise.all(p.files.map(h => h.getFile())); await retReady; if (window.retOpenFiles) window.retOpenFiles(fs); });
 </script>
 </body>
 </html>
